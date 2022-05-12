@@ -69,6 +69,12 @@ if (NOT TINYOBJ_PATH)
   set(TINYOBJ_PATH external/tinyobjloader)
 endif()
 
+# Если путь до stb_image не был указан явно в .env.cmake, то исп. его версию из external директории
+if (NOT STB_IMAGE_PATH)
+  message(STATUS "STB_IMAGE_PATH not specified in .env.cmake, using external/stb_image")
+  set(STB_IMAGE_PATH external/stb_image)
+endif()
+
 # GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
@@ -100,6 +106,7 @@ if (WIN32)
     ${TINYOBJ_PATH}
     ${GLFW_INCLUDE_DIRS}
     ${GLM_PATH}
+    ${STB_IMAGE_PATH}
     )
 
   target_link_directories(${PROJECT_NAME} PUBLIC

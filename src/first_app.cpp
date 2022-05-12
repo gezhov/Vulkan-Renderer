@@ -164,6 +164,8 @@ namespace vget
 		flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
 		gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
+		vgetModel->createTextureImage();
+
 		vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
 		auto smoothVase = VgetGameObject::createGameObject();
 		smoothVase.model = vgetModel;

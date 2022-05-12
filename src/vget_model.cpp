@@ -6,6 +6,8 @@
 #include <tiny_obj_loader.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 // std
 #include <cassert>
@@ -122,6 +124,107 @@ namespace vget
 		);
 
 		vgetDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+	}
+
+	// todo принимать строку std::string и соединять путь с ENGINE_DIR
+	void VgetModel::createTextureImage()
+	{
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load("../textures/khr_vulkan_logo.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		uint32_t pixelCount = texWidth * texHeight;
+		VkDeviceSize imageSize = pixelCount * 4;
+
+		if (!pixels)
+		{
+			throw std::runtime_error("failed to load texture image!");
+		}
+
+		// Создание промежуточного буфера
+		VgetBuffer stagingBuffer
+		{
+			vgetDevice,
+			imageSize,
+			pixelCount,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // буфер используется как источник для операции переноса памяти
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		};
+
+		stagingBuffer.map();
+		stagingBuffer.writeToBuffer((void*)pixels); // запись пикселей в память девайса
+		stbi_image_free(pixels); // очистка изначально прочитанного массива пикселей
+
+		// Создание изображения и выделение памяти под него
+		createImage(texWidth, texHeight,
+			VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			textureImage, textureImageMemory);
+	}
+
+	void VgetModel::createImage(
+		uint32_t width,
+		uint32_t height,
+		VkFormat format,
+		VkImageTiling tiling,
+		VkImageUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		VkImage& image,
+		VkDeviceMemory& imageMemory)
+	{
+		// Создание объекта VkImage
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = width;	   // кол-во текселей по X
+		imageInfo.extent.height = height;  // кол-во текселей по Y
+		imageInfo.extent.depth = 1;		   // кол-во текселей по Z
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = tiling;  // исп. оптимальное расположение текселей, заданное реализацией
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		// VkImage исп. для получения данных из буфера (TRANSFER_DST), а затем для выборки цвета для меша (SAMPLED)
+		imageInfo.usage = usage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;  // изображение исп. только одним семейством очередей
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.flags = 0;	// Optional
+
+		// Выделение памяти под изображение в девайсе
+		vgetDevice.createImageWithInfo(imageInfo, properties, image, imageMemory);
+	}
+
+	// Смена схемы изображения
+	void VgetModel::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	{
+		VkCommandBuffer commandBuffer = vgetDevice.beginSingleTimeCommands();
+
+		// Для смены схемы будет использоваться барьер для памяти изображения
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // для смены семейства очередей у ресурса (не используется)
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		// изображение и его определённая часть, которые затрагивает смена лэйаута
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = 0; // TODO какие операции с данным ресурсом должны произойти перед барьером
+		barrier.dstAccessMask = 0; // TODO какие операции с данным ресурсом должны ожидать на барьере
+
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			0 /* TODO этап пайплайна для выполнения операций перед барьером */, 0 /* TODO этап, на котором операции начнут ожидание */,
+			0,
+			0, nullptr,	  // ссылка на массив барьеров памяти
+			0, nullptr, // массив барьеров памяти буфера
+			1, &barrier  // массив барьеров памяти изображения
+		);
+
+		vgetDevice.endSingleTimeCommands(commandBuffer);
 	}
 
 	void VgetModel::draw(VkCommandBuffer commandBuffer)

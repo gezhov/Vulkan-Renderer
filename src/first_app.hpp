@@ -34,7 +34,7 @@ namespace vget
 		// Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
 		// сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
 		// быть объявлен после девайса.
-		VgetWindow vgetWindow{ WIDTH, HEIGHT, "VGET Engine" };
+		VgetWindow vgetWindow{ WIDTH, HEIGHT, "VgetX Engine" };
 		VgetDevice vgetDevice{ vgetWindow };
 		VgetRenderer vgetRenderer{ vgetWindow, vgetDevice };
 

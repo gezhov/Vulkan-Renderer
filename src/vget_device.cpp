@@ -506,7 +506,8 @@ namespace vget
 		vkBindBufferMemory(device_, buffer, bufferMemory, 0);
 	}
 
-	VkCommandBuffer VgetDevice::beginSingleTimeCommands() {
+	VkCommandBuffer VgetDevice::beginSingleTimeCommands()
+	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -524,7 +525,8 @@ namespace vget
 		return commandBuffer;
 	}
 
-	void VgetDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+	void VgetDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+	{
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -538,7 +540,8 @@ namespace vget
 		vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
 	}
 
-	void VgetDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+	void VgetDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
 		VkBufferCopy copyRegion{};
@@ -578,28 +581,34 @@ namespace vget
 	}
 
 	void VgetDevice::createImageWithInfo(
-		const VkImageCreateInfo &imageInfo,
+		const VkImageCreateInfo& imageInfo,
 		VkMemoryPropertyFlags properties,
-		VkImage &image,
-		VkDeviceMemory &imageMemory)
+		VkImage& image,
+		VkDeviceMemory& imageMemory)
 	{
-		if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+		if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS)
+		{
 			throw std::runtime_error("failed to create image!");
 		}
 
+		// Запрос требований к размещению данного изображения в памяти.
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(device_, image, &memRequirements);
 
+		// Выделение памяти для изображения в соответствии с требованиями
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-		if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+		if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+		{
 			throw std::runtime_error("failed to allocate image memory!");
 		}
 
-		if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS) {
+		// Связывание объектов изображения и памяти девайса
+		if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS)
+		{
 			throw std::runtime_error("failed to bind image memory!");
 		}
 	}
