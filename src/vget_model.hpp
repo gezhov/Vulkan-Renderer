@@ -57,6 +57,9 @@ namespace vget
 		void draw(VkCommandBuffer commandBuffer);
 
 		void createTextureImage();
+		void createTextureImageView();
+		void createTextureSampler();
+		VkDescriptorImageInfo descriptorInfo();
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
@@ -71,7 +74,6 @@ namespace vget
 			VkMemoryPropertyFlags properties,
 			VkImage& image,
 			VkDeviceMemory& imageMemory);
-
 		void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 		VgetDevice& vgetDevice;
@@ -83,8 +85,10 @@ namespace vget
 		std::unique_ptr<VgetBuffer> indexBuffer;
 		uint32_t indexCount;
 
-		// todo сделать абстрацию для VkImage на манер vget_buffer (?)
+		// todo сделать абстрацию для Texture на манер vget_buffer (?)
 		VkImage textureImage;
 		VkDeviceMemory textureImageMemory;
+		VkImageView textureImageView;
+		VkSampler textureSampler;
 	};
 }

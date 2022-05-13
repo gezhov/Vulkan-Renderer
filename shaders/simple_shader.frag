@@ -4,6 +4,7 @@
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
+layout (location = 3) in vec2 fragUv;
 
 layout (location = 0) out vec4 outColor;
 
@@ -20,6 +21,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 	PointLight pointLights[10];
 	int numLights;
 } ubo;
+
+layout(binding = 1) uniform sampler2D texSampler; // Combined Image Sampler дескриптор
 
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
@@ -65,5 +68,10 @@ void main() {
 	}
 
 	// vec4 переменная может конструироваться из vec3 переменной и ещё одного компонента.
-	outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+	//outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+
+	// тест наложения текстуры на фрагмент
+	//outColor = vec4(fragUv, 0.0, 1.0);
+	//outColor = texture(texSampler, fragUv * 2.0);
+	outColor = vec4(fragColor * texture(texSampler, fragUv * 2.0).rgb, 1.0);
 }

@@ -29,6 +29,7 @@ namespace vget
 		globalPool = VgetDescriptorPool::Builder(vgetDevice)
 			.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
+			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.build();
 
 		loadGameObjects();
@@ -53,18 +54,22 @@ namespace vget
 			uboBuffers[i]->map();
 		}
 
-		// Создаётся глобальная схема набора дескрипторов (действует на все шейдеры приложения)
+		// Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
 		auto globalSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.build();
 
 		// Выделение наборов дескрипторов из пула с информацией по Uniform Buffer'ам
 		std::vector<VkDescriptorSet> globalDescriptorSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < globalDescriptorSets.size(); ++i)
 		{
+			auto& imageInfo = gameObjects.at(0).model->descriptorInfo(); // todo рефактор
+
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
 			VgetDescriptorWriter(*globalSetLayout, *globalPool)
 				.writeBuffer(0, &bufferInfo)
+				.writeImage(1, &imageInfo)
 				.build(globalDescriptorSets[i]);
 		}
 
@@ -157,28 +162,56 @@ namespace vget
 
 	void FirstApp::loadGameObjects()
 	{
-		std::shared_ptr<VgetModel> vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");
-		auto flatVase = VgetGameObject::createGameObject();
-		flatVase.model = vgetModel;
-		flatVase.transform.translation = {-.5f, .5f, 0.f}; // в глубину объект двигается внутри ортогонального объёма просмотра, поэтому он не ограничен каноническим диапазоном [0;1]
-		flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
-		gameObjects.emplace(flatVase.getId(), std::move(flatVase));
+		// тестирование работы текстурирования
+		VgetModel::Builder textureModelBuilder{};
+		const std::vector<VgetModel::Vertex> vertices = {
+			{{-0.5f, -0.5f, 0.f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f, 0.f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f, 0.f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
 
-		vgetModel->createTextureImage();
+			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+		};
+		const std::vector<uint32_t> indices = {
+			0, 1, 2, 2, 3, 0,
+			4, 5, 6, 6, 7, 4
+		};
+		textureModelBuilder.vertices = vertices;
+		textureModelBuilder.indices = indices;
+		std::shared_ptr<VgetModel> vgetTextureModel = std::make_unique<VgetModel>(vgetDevice, textureModelBuilder);
+		vgetTextureModel->createTextureImage();
+		vgetTextureModel->createTextureImageView();
+		vgetTextureModel->createTextureSampler();
+		auto textureObject = VgetGameObject::createGameObject();
+		textureObject.model = vgetTextureModel;
+		textureObject.transform.translation = {.0f, -1.0f, 0.f};
+		textureObject.transform.scale = glm::vec3(1.f, 1.f, 1.f);
+		gameObjects.emplace(textureObject.getId(), std::move(textureObject));
 
-		vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
-		auto smoothVase = VgetGameObject::createGameObject();
-		smoothVase.model = vgetModel;
-		smoothVase.transform.translation = {.5f, .5f, 0.f};
-		smoothVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
-		gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
+		// сцена из vget
+		//std::shared_ptr<VgetModel> vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");
+		//auto flatVase = VgetGameObject::createGameObject();
+		//flatVase.model = vgetModel;
+		//flatVase.transform.translation = {-.5f, .5f, 0.f}; // в глубину объект двигается внутри ортогонального объёма просмотра, поэтому он не ограничен каноническим диапазоном [0;1]
+		//flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
+		//gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
-		vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/quad.obj");
-		auto floor = VgetGameObject::createGameObject();
-		floor.model = vgetModel;
-		floor.transform.translation = {0.f, .5f, 0.f};
-		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-		gameObjects.emplace(floor.getId(), std::move(floor));
+		//vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
+		//auto smoothVase = VgetGameObject::createGameObject();
+		//smoothVase.model = vgetModel;
+		//smoothVase.transform.translation = {.5f, .5f, 0.f};
+		//smoothVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
+		//gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
+
+		//vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/quad.obj");
+		//auto floor = VgetGameObject::createGameObject();
+		//floor.model = vgetModel;
+		//floor.transform.translation = {0.f, .5f, 0.f};
+		//floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+		//gameObjects.emplace(floor.getId(), std::move(floor));
 
 		std::vector<glm::vec3> lightColors {
 			{1.f, .1f, .1f},

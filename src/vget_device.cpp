@@ -440,16 +440,22 @@ namespace vget
 		return details;
 	}
 
-	VkFormat VgetDevice::findSupportedFormat(
-		const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-		for (VkFormat format : candidates) {
+	// Поиск первого подходящего формата из переданного списка кандидатов
+	VkFormat VgetDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+	{
+		for (VkFormat format : candidates)
+		{
 			VkFormatProperties props;
 			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
 
-			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+			// Формат проверяется на соответствие нужному типу тайлинга и на наличие нужных фич
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+			{
 				return format;
-			} else if (
-				tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+			}
+			else if (
+				tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+			{
 				return format;
 			}
 		}
@@ -574,9 +580,10 @@ namespace vget
 			commandBuffer,
 			buffer,
 			image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&region);
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // схема, которая исп. в изображении в данный момент
+			1,									  // кол-во VkBufferImageCopy структур для копирования определённых областей
+			&region);							  // непосредственно структуры
+
 		endSingleTimeCommands(commandBuffer);
 	}
 

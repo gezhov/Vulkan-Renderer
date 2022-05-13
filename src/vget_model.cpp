@@ -41,7 +41,15 @@ namespace vget
 		createIndexBuffers(builder.indices);
 	}
 
-	VgetModel::~VgetModel() {}
+	VgetModel::~VgetModel()
+	{
+		/* todo уничтожается два раза из-за того, что очищается указатель на model в first_app, а потом ещё раз при удалении игрового объекта,
+		   т.е. нужно вынести уничтожение в Texture Объект, а тут должно быть пусто */
+		vkDestroySampler(vgetDevice.device(), textureSampler, nullptr);
+		vkDestroyImageView(vgetDevice.device(), textureImageView, nullptr);
+		vkDestroyImage(vgetDevice.device(), textureImage, nullptr);
+		vkFreeMemory(vgetDevice.device(), textureImageMemory, nullptr);
+	}
 
 	std::unique_ptr<VgetModel> VgetModel::createModelFromFile(VgetDevice& device, const std::string& filepath)
 	{
@@ -132,7 +140,8 @@ namespace vget
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load("../textures/khr_vulkan_logo.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		uint32_t pixelCount = texWidth * texHeight;
-		VkDeviceSize imageSize = pixelCount * 4;
+		uint32_t pixelSize = 4;
+		VkDeviceSize imageSize = pixelCount * pixelSize;
 
 		if (!pixels)
 		{
@@ -143,7 +152,7 @@ namespace vget
 		VgetBuffer stagingBuffer
 		{
 			vgetDevice,
-			imageSize,
+			pixelSize,
 			pixelCount,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // буфер используется как источник для операции переноса памяти
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -159,6 +168,12 @@ namespace vget
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			textureImage, textureImageMemory);
+
+		// Копируем буфер с пикселами в изображение текстуры, при этом меняя лэйауты на нужные
+		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		vgetDevice.copyBufferToImage(stagingBuffer.getBuffer(), textureImage,
+			static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
+		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void VgetModel::createImage(
@@ -212,12 +227,36 @@ namespace vget
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		barrier.srcAccessMask = 0; // TODO какие операции с данным ресурсом должны произойти перед барьером
-		barrier.dstAccessMask = 0; // TODO какие операции с данным ресурсом должны ожидать на барьере
+
+		VkPipelineStageFlags sourceStage;
+		VkPipelineStageFlags destinationStage;
+
+		// Описание действий барьера при переходе в лэйаут получения передачи
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;								// какие операции с данным ресурсом должны произойти перед барьером
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;   // какие операции с данным ресурсом должны ожидать на барьере
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;		// этап пайплайна для выполнения операций перед барьером
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;		// этап, на котором операции начнут ожидание
+		}
+		// Описание действий барьера при переходе в лэйаут для чтения шейдером
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else
+		{
+			throw std::invalid_argument("unsupported layout transition!");
+		}
 
 		vkCmdPipelineBarrier(
 			commandBuffer,
-			0 /* TODO этап пайплайна для выполнения операций перед барьером */, 0 /* TODO этап, на котором операции начнут ожидание */,
+			sourceStage, destinationStage,
 			0,
 			0, nullptr,	  // ссылка на массив барьеров памяти
 			0, nullptr, // массив барьеров памяти буфера
@@ -225,6 +264,65 @@ namespace vget
 		);
 
 		vgetDevice.endSingleTimeCommands(commandBuffer);
+	}
+
+	// Создание представления изображения для текстуры
+	void VgetModel::createTextureImageView()
+	{
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = textureImage;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS)
+		{
+		    throw std::runtime_error("failed to create texture image view!");
+		}
+	}
+
+	// Создание выборщика для текстуры (ищет цвет, соответствующий координате)
+	void VgetModel::createTextureSampler()
+	{
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR; // Фильтрация для увеличенных (magnified) текселей. Это случай, когда их больше, чем фрагментов (oversampling)
+		samplerInfo.minFilter = VK_FILTER_LINEAR; // Для уменьшенных (minified) текселей. Это случай, когда их меньше, чем фрагментов (undersampling)
+		// Режим адресации цвета по заданной оси. U, V, W используются вместо X, Y и Z по соглашению для координат пространства текстуры
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // Повторять текстуру, если координата выходит за пределы изображения
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = vgetDevice.properties.limits.maxSamplerAnisotropy; // макс. кол-во текселей для расчёт финального цвета при анизотропной фильтрации
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;	// координаты будут адресоваться в диапазоне [0;1), т.е. они нормализованы для универсального использования
+		samplerInfo.compareEnable = VK_FALSE;			// функция сравнения выбранного текселя с заданным значением отключена (исп. в precentage-closer фильтрации в картах теней)
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		// поля для настройки мипмэппинга
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+
+		if (vkCreateSampler(vgetDevice.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create texture sampler!");
+		}
+	}
+
+	// todo структура с данными по дескриптору изображения. нужно вынести в отдельную функцию текстуры наподобие texture->descriptorInfo()
+	VkDescriptorImageInfo VgetModel::descriptorInfo()
+	{
+		return VkDescriptorImageInfo {
+			textureSampler,
+			textureImageView,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
 	}
 
 	void VgetModel::draw(VkCommandBuffer commandBuffer)
@@ -304,7 +402,7 @@ namespace vget
 			throw std::runtime_error(warn + err);
 		}
 
-		// очистка текщей структуры перед загрузкой новой модели
+		// очистка текущей структуры перед загрузкой новой модели
 		vertices.clear();
 		indices.clear();
 

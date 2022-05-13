@@ -13,13 +13,14 @@ vec2 positions[3] = vec2[] (
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;			// атрибут цвета для данной вершины
 layout(location = 2) in vec3 normal;
-layout(location = 3) in vec2 uv;
+layout(location = 3) in vec2 uv;			// координата текстуры
 
 // Выходные переменные участвуют в дальнейшем интерполировании и передаче в шейдер фрагмента.
 // Они могут повторять индекс местоположения (location) входных переменных, т.к. in и out переменные не имеют связи.
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec3 fragPosWorld;
 layout(location = 2) out vec3 fragNormalWorld;
+layout(location = 3) out vec2 fragUv;
 
 struct PointLight {
 	vec4 position; // w - игнорируется
@@ -66,6 +67,7 @@ void main() {
 	fragNormalWorld = normalize(mat3(push.normalMatrix) * normal);
 	fragPosWorld = positionWorld.xyz;
 	fragColor = color;
+	fragUv = uv;
 
 	// прежние строки
 	//gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0);
