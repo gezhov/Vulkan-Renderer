@@ -168,6 +168,7 @@ namespace vget
 		renderPassInfo.renderArea.extent = vgetSwapChain->getSwapChainExtent();
 
 		// clear values задают начальные значения вложений (attachments) у FrameBuffer
+		// буферы вложений заполняются этими значениями во время операции очистки перед новым проходом рендеринга
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };  // 0 - color attachment, 1 - depth attachment
 		clearValues[1].depthStencil = { 1.0f, 0 };		// порядок присвоения значений зависит от выбранной структуры FrameBuffer'а

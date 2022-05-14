@@ -266,7 +266,7 @@ namespace vget
 	    colorAttachmentRef.attachment = 0; // по указанному индексу привязки будет ссылаться шейдер фрагментов: layout(location = 0) out vec4 outColor
 	    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // Схема VkImage для исп. в подпроходе рендера
 
-        // Описание подрохода с передачей ссылок на привязки буфера кадров, которые он будет использовать
+        // Описание подрохода с передачей ссылок на вложения буфера кадров, которые он будет использовать
 	    VkSubpassDescription subpass = {};
 	    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	    subpass.colorAttachmentCount = 1;

@@ -162,8 +162,20 @@ namespace vget
 
 	void FirstApp::loadGameObjects()
 	{
+		// Viking Room model
+		std::shared_ptr<VgetModel> vikingRoom = VgetModel::createModelFromFile(vgetDevice, "models/viking_room.obj");
+		vikingRoom->createTextureImage();
+		vikingRoom->createTextureImageView();
+		vikingRoom->createTextureSampler();
+		auto vikingRoomObj = VgetGameObject::createGameObject();
+		vikingRoomObj.model = vikingRoom;
+		vikingRoomObj.transform.translation = {.0f, .0f, 0.f};
+		vikingRoomObj.transform.scale = glm::vec3(1.f, 1.f, 1.f);
+		vikingRoomObj.transform.rotation = glm::vec3(1.57f, 2.f, 0.f);
+		gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));
+
 		// тестирование работы текстурирования
-		VgetModel::Builder textureModelBuilder{};
+		/*VgetModel::Builder textureModelBuilder{};
 		const std::vector<VgetModel::Vertex> vertices = {
 			{{-0.5f, -0.5f, 0.f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 			{{0.5f, -0.5f, 0.f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
@@ -189,7 +201,7 @@ namespace vget
 		textureObject.model = vgetTextureModel;
 		textureObject.transform.translation = {.0f, -1.0f, 0.f};
 		textureObject.transform.scale = glm::vec3(1.f, 1.f, 1.f);
-		gameObjects.emplace(textureObject.getId(), std::move(textureObject));
+		gameObjects.emplace(textureObject.getId(), std::move(textureObject));*/
 
 		// сцена из vget
 		//std::shared_ptr<VgetModel> vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");

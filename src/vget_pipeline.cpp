@@ -220,17 +220,19 @@ namespace vget
 		configInfo.colorBlendInfo.blendConstants[2] = 0.0f;  // Optional
 		configInfo.colorBlendInfo.blendConstants[3] = 0.0f;  // Optional
 
-		// Информация для этапа Depth Stencil (трафарет глубины).
-		// На этом этапе происходит обработка значений из Color Buffer и из Depth Buffer итоговой картинки.
-		// Фрагменты изображения затеняются в соответствии с полученным для них значением из Depth Buffer.
+		// Информация для этапа Depth Stencil (проверка глубины и проверка трафарета).
+		// На этапе проверки глубины отбрасываются те фрагменты изображения, которые были перекрыты другим, более близким фрагментом.
+		// Глубина самого близкого фрагмента добавляется в буфер глубины для дальнейших сравнений.
+		// На этапе проверки трафарета фрагменты изображения затеняются в соответствии с полученным для них значением из Depth Buffer.
+		// Проверка трафарета отключена в данный момент.
 		configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
 		configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
-		configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-		configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+		configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;	// Фрагмент ближе, если его значение глубины меньше
+		configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;		// Дополнительная проверка глубины на попадание в диапазон (отключено)
 		configInfo.depthStencilInfo.minDepthBounds = 0.0f;  // Optional
 		configInfo.depthStencilInfo.maxDepthBounds = 1.0f;  // Optional
-		configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
+		configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;			// Проверка трафарета отключена
 		configInfo.depthStencilInfo.front = {};  // Optional
 		configInfo.depthStencilInfo.back = {};   // Optional
 

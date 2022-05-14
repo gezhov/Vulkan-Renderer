@@ -138,7 +138,7 @@ namespace vget
 	void VgetModel::createTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("../textures/khr_vulkan_logo.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load("../textures/viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		uint32_t pixelCount = texWidth * texHeight;
 		uint32_t pixelSize = 4;
 		VkDeviceSize imageSize = pixelCount * pixelSize;
@@ -392,10 +392,10 @@ namespace vget
 	{
 		tinyobj::attrib_t attrib;						// содержит данные позиций, цветов, нормалей и координат текстур
 		std::vector<tinyobj::shape_t> shapes;			// shapes хранит значения индексов для каждого из face элементов
-		std::vector<tinyobj::material_t> materials;		// materials хранит данные материалах
+		std::vector<tinyobj::material_t> materials;		// materials хранит данные о материалах
 		std::string warn, err;
 
-		// После успешного выполнения функции LoadObj() переданные локальные переменный заполнятся
+		// После успешного выполнения функции LoadObj() переданные локальные переменные заполнятся
 		// данными из предоставленного .obj файла
 		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()))
 		{
@@ -448,8 +448,8 @@ namespace vget
 				if (index.texcoord_index >= 0)
 				{
 					vertex.uv = {
-						attrib.texcoords[2 * index.texcoord_index + 0], // u
-						attrib.texcoords[2 * index.texcoord_index + 1], // v
+						attrib.texcoords[2 * index.texcoord_index + 0],		   // u
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1], // v (координата по Y переворачивается для коорд. системы вулкана)
 					};
 				}
 

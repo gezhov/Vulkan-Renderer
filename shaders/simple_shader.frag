@@ -71,7 +71,11 @@ void main() {
 	//outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
 
 	// тест наложения текстуры на фрагмент
-	//outColor = vec4(fragUv, 0.0, 1.0);
-	//outColor = texture(texSampler, fragUv * 2.0);
-	outColor = vec4(fragColor * texture(texSampler, fragUv * 2.0).rgb, 1.0);
+	//outColor = vec4(fragUv, 0.0, 1.0); окрашивание фрагмента значением координаты текстуры
+	//outColor = texture(texSampler, fragUv * 2.0); адресация за пределы размера текстуры
+	//outColor = texture(texSampler, fragUv); просто текстура
+
+	// текстурирование фрагмента по координатам + освещение
+	vec4 sampleTextureColor = texture(texSampler, fragUv);
+	outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
 }
