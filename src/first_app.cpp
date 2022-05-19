@@ -64,12 +64,12 @@ namespace vget
 		std::vector<VkDescriptorSet> globalDescriptorSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < globalDescriptorSets.size(); ++i)
 		{
-			auto& imageInfo = gameObjects.at(0).model->descriptorInfo(); // todo рефактор
+			//auto& imageInfo = gameObjects.at(0).model->descriptorInfo(); // todo рефактор
 
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
 			VgetDescriptorWriter(*globalSetLayout, *globalPool)
 				.writeBuffer(0, &bufferInfo)
-				.writeImage(1, &imageInfo)
+				//.writeImage(1, &imageInfo)
 				.build(globalDescriptorSets[i]);
 		}
 
@@ -163,10 +163,7 @@ namespace vget
 	void FirstApp::loadGameObjects()
 	{
 		// Viking Room model
-		std::shared_ptr<VgetModel> vikingRoom = VgetModel::createModelFromFile(vgetDevice, "models/viking_room.obj");
-		vikingRoom->createTextureImage();
-		vikingRoom->createTextureImageView();
-		vikingRoom->createTextureSampler();
+		std::shared_ptr<VgetModel> vikingRoom = VgetModel::createModelFromFile(vgetDevice, "models/sponza.obj");
 		auto vikingRoomObj = VgetGameObject::createGameObject();
 		vikingRoomObj.model = vikingRoom;
 		vikingRoomObj.transform.translation = {.0f, .0f, 0.f};

@@ -6,8 +6,6 @@
 #include <tiny_obj_loader.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
 // std
 #include <cassert>
@@ -17,6 +15,10 @@
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
+#endif
+
+#ifndef MODELS_DIR
+#define MODELS_DIR "../models/"
 #endif
 
 namespace std
@@ -35,21 +37,14 @@ namespace std
 
 namespace vget
 {
-	VgetModel::VgetModel(VgetDevice& device, const VgetModel::Builder& builder) : vgetDevice{device}
+	VgetModel::VgetModel(VgetDevice& device, const VgetModel::Builder& builder) : vgetDevice{device}, subObjectsInfo{builder.subObjectsInfo}
 	{
 		createVertexBuffers(builder.vertices);
 		createIndexBuffers(builder.indices);
+		createTextures(builder.texturePaths);
 	}
 
-	VgetModel::~VgetModel()
-	{
-		/* todo уничтожается два раза из-за того, что очищается указатель на model в first_app, а потом ещё раз при удалении игрового объекта,
-		   т.е. нужно вынести уничтожение в Texture Объект, а тут должно быть пусто */
-		vkDestroySampler(vgetDevice.device(), textureSampler, nullptr);
-		vkDestroyImageView(vgetDevice.device(), textureImageView, nullptr);
-		vkDestroyImage(vgetDevice.device(), textureImage, nullptr);
-		vkFreeMemory(vgetDevice.device(), textureImageMemory, nullptr);
-	}
+	VgetModel::~VgetModel(){}
 
 	std::unique_ptr<VgetModel> VgetModel::createModelFromFile(VgetDevice& device, const std::string& filepath)
 	{
@@ -134,195 +129,120 @@ namespace vget
 		vgetDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 	}
 
-	// todo принимать строку std::string и соединять путь с ENGINE_DIR
-	void VgetModel::createTextureImage()
+	// "../textures/viking_room.png"
+	void VgetModel::createTextures(const std::vector<std::string>& texturePaths)
 	{
-		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("../textures/viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		uint32_t pixelCount = texWidth * texHeight;
-		uint32_t pixelSize = 4;
-		VkDeviceSize imageSize = pixelCount * pixelSize;
-
-		if (!pixels)
+		for (auto& path : texturePaths)
 		{
-			throw std::runtime_error("failed to load texture image!");
-		}
-
-		// Создание промежуточного буфера
-		VgetBuffer stagingBuffer
-		{
-			vgetDevice,
-			pixelSize,
-			pixelCount,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // буфер используется как источник для операции переноса памяти
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		};
-
-		stagingBuffer.map();
-		stagingBuffer.writeToBuffer((void*)pixels); // запись пикселей в память девайса
-		stbi_image_free(pixels); // очистка изначально прочитанного массива пикселей
-
-		// Создание изображения и выделение памяти под него
-		createImage(texWidth, texHeight,
-			VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			textureImage, textureImageMemory);
-
-		// Копируем буфер с пикселами в изображение текстуры, при этом меняя лэйауты на нужные
-		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		vgetDevice.copyBufferToImage(stagingBuffer.getBuffer(), textureImage,
-			static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
-		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
-
-	void VgetModel::createImage(
-		uint32_t width,
-		uint32_t height,
-		VkFormat format,
-		VkImageTiling tiling,
-		VkImageUsageFlags usage,
-		VkMemoryPropertyFlags properties,
-		VkImage& image,
-		VkDeviceMemory& imageMemory)
-	{
-		// Создание объекта VkImage
-		VkImageCreateInfo imageInfo{};
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = width;	   // кол-во текселей по X
-		imageInfo.extent.height = height;  // кол-во текселей по Y
-		imageInfo.extent.depth = 1;		   // кол-во текселей по Z
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.format = format;
-		imageInfo.tiling = tiling;  // исп. оптимальное расположение текселей, заданное реализацией
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		// VkImage исп. для получения данных из буфера (TRANSFER_DST), а затем для выборки цвета для меша (SAMPLED)
-		imageInfo.usage = usage;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;  // изображение исп. только одним семейством очередей
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.flags = 0;	// Optional
-
-		// Выделение памяти под изображение в девайсе
-		vgetDevice.createImageWithInfo(imageInfo, properties, image, imageMemory);
-	}
-
-	// Смена схемы изображения
-	void VgetModel::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
-	{
-		VkCommandBuffer commandBuffer = vgetDevice.beginSingleTimeCommands();
-
-		// Для смены схемы будет использоваться барьер для памяти изображения
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = oldLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // для смены семейства очередей у ресурса (не используется)
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		// изображение и его определённая часть, которые затрагивает смена лэйаута
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
-
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
-
-		// Описание действий барьера при переходе в лэйаут получения передачи
-		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-		{
-			barrier.srcAccessMask = 0;								// какие операции с данным ресурсом должны произойти перед барьером
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;   // какие операции с данным ресурсом должны ожидать на барьере
-
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;		// этап пайплайна для выполнения операций перед барьером
-			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;		// этап, на котором операции начнут ожидание
-		}
-		// Описание действий барьера при переходе в лэйаут для чтения шейдером
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		{
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		}
-		else
-		{
-			throw std::invalid_argument("unsupported layout transition!");
-		}
-
-		vkCmdPipelineBarrier(
-			commandBuffer,
-			sourceStage, destinationStage,
-			0,
-			0, nullptr,	  // ссылка на массив барьеров памяти
-			0, nullptr, // массив барьеров памяти буфера
-			1, &barrier  // массив барьеров памяти изображения
-		);
-
-		vgetDevice.endSingleTimeCommands(commandBuffer);
-	}
-
-	// Создание представления изображения для текстуры
-	void VgetModel::createTextureImageView()
-	{
-		VkImageViewCreateInfo viewInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = textureImage;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS)
-		{
-		    throw std::runtime_error("failed to create texture image view!");
+			if (path != MODELS_DIR)
+				textures.push_back(std::make_unique<VgetTexture>(path, vgetDevice));
+			else
+				// TEMPORARY(?): если дифиузной структуры не было у материала, то тогда текстура получит nullptr по данному индексу
+				textures.push_back(nullptr);
 		}
 	}
 
-	// Создание выборщика для текстуры (ищет цвет, соответствующий координате)
-	void VgetModel::createTextureSampler()
+	void VgetModel::Builder::loadModel(const std::string& filepath)
 	{
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR; // Фильтрация для увеличенных (magnified) текселей. Это случай, когда их больше, чем фрагментов (oversampling)
-		samplerInfo.minFilter = VK_FILTER_LINEAR; // Для уменьшенных (minified) текселей. Это случай, когда их меньше, чем фрагментов (undersampling)
-		// Режим адресации цвета по заданной оси. U, V, W используются вместо X, Y и Z по соглашению для координат пространства текстуры
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // Повторять текстуру, если координата выходит за пределы изображения
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = vgetDevice.properties.limits.maxSamplerAnisotropy; // макс. кол-во текселей для расчёт финального цвета при анизотропной фильтрации
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;	// координаты будут адресоваться в диапазоне [0;1), т.е. они нормализованы для универсального использования
-		samplerInfo.compareEnable = VK_FALSE;			// функция сравнения выбранного текселя с заданным значением отключена (исп. в precentage-closer фильтрации в картах теней)
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		// поля для настройки мипмэппинга
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
+		tinyobj::attrib_t attrib;						// содержит данные позиций, цветов, нормалей и координат текстур
+		std::vector<tinyobj::shape_t> shapes;			// shapes хранит значения индексов для каждого из face элементов каждой составной фигуры
+		std::vector<tinyobj::material_t> materials;		// materials хранит данные о материалах
+		std::string warn, err;
 
-		if (vkCreateSampler(vgetDevice.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+		// После успешного выполнения функции LoadObj() переданные локальные переменные заполнятся
+		// данными из предоставленного .obj файла
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), MODELS_DIR))
 		{
-			throw std::runtime_error("failed to create texture sampler!");
+			throw std::runtime_error(warn + err);
 		}
-	}
 
-	// todo структура с данными по дескриптору изображения. нужно вынести в отдельную функцию текстуры наподобие texture->descriptorInfo()
-	VkDescriptorImageInfo VgetModel::descriptorInfo()
-	{
-		return VkDescriptorImageInfo {
-			textureSampler,
-			textureImageView,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		};
+		// очистка текущей структуры Builder перед загрузкой новой модели
+		vertices.clear();
+		indices.clear();
+		texturePaths.clear();
+
+		// Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
+		// https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
+		auto textureStart = 0; // first free slot in texture array
+	    uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
+	    auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
+	    //int currentMat = 0; // the current OBJ material being used in face loop
+
+	    for (const auto& mat : materials)
+		{
+			// loads a texture and adds it to the global array. also increments textureIndex.
+			// note: if you are loading multiple textures per material (i.e. diffuse + normal textures), 
+			// you'll need to track this better than just a single index variable. Also, this
+			// method here does not account for materials with no textures, it's work in progress.
+			//loadTexture(baseDir + mat.diffuse_texname, textureIndex);
+	    	texturePaths.push_back(MODELS_DIR + mat.diffuse_texname);
+	    }
+
+		// Мапа хранит уникальные вершины с их индексами. С её помощью составляется буфер индексов.
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+		// Проходимся по каждой фигуре из obj файла (объект может состоять из нескольких фигур)
+		for (const auto &shape : shapes)
+		{
+			indexCount = 0;
+			indexStart = static_cast<uint32_t>(indices.size());
+
+			// Проходимся по всем индексам текущей фигуры
+			for (const auto &index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				if (index.vertex_index >= 0) // отрицательный индекс означает, что позиция не была предоставлена
+				{
+					// с помощью текущего индекса позиции извлекаем из атрибутов позицию вершины
+					vertex.position = {
+						attrib.vertices[3 * index.vertex_index + 0], // x
+						attrib.vertices[3 * index.vertex_index + 1], // y
+						attrib.vertices[3 * index.vertex_index + 2], // z
+					};
+
+					// по таким же индексам из атрибутов извелкается цвет вершины, если он был представлен в файле
+					vertex.color = {
+						attrib.colors[3 * index.vertex_index + 0], // r
+						attrib.colors[3 * index.vertex_index + 1], // g
+						attrib.colors[3 * index.vertex_index + 2], // b
+					};
+				}
+
+				// извлекаем из атрибутов позицию нормали
+				if (index.normal_index >= 0)
+				{
+					vertex.normal = {
+						attrib.normals[3 * index.normal_index + 0], // x
+						attrib.normals[3 * index.normal_index + 1], // y
+						attrib.normals[3 * index.normal_index + 2], // z
+					};
+				}
+
+				// извлекаем из атрибутов координаты текстуры
+				if (index.texcoord_index >= 0)
+				{
+					vertex.uv = {
+						attrib.texcoords[2 * index.texcoord_index + 0],		   // u
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1], // v (координата по Y переворачивается для коорд. системы вулкана)
+					};
+				}
+
+				// Если считанная вершина не найдена в мапе, то она добавляется в неё и получает
+				// свой индекс, а затем добавляется в вектор builder'а
+				if (uniqueVertices.count(vertex) == 0)
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+				indices.push_back(uniqueVertices[vertex]); // Буфер индексов добавляет индекс считанной вершины
+
+				++indexCount;
+			}
+
+			// данной фигуре .obj модели присваивается её начало, кол-во индексов и индекс текстуры из списка текстур
+			subObjectsInfo.push_back(SubObjectInfo{indexCount, indexStart, shape.mesh.material_ids.at(0)});
+		}
 	}
 
 	void VgetModel::draw(VkCommandBuffer commandBuffer)
@@ -387,82 +307,4 @@ namespace vget
 
 		return attributeDescriptions;
 	}
-
-	void VgetModel::Builder::loadModel(const std::string& filepath)
-	{
-		tinyobj::attrib_t attrib;						// содержит данные позиций, цветов, нормалей и координат текстур
-		std::vector<tinyobj::shape_t> shapes;			// shapes хранит значения индексов для каждого из face элементов
-		std::vector<tinyobj::material_t> materials;		// materials хранит данные о материалах
-		std::string warn, err;
-
-		// После успешного выполнения функции LoadObj() переданные локальные переменные заполнятся
-		// данными из предоставленного .obj файла
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()))
-		{
-			throw std::runtime_error(warn + err);
-		}
-
-		// очистка текущей структуры перед загрузкой новой модели
-		vertices.clear();
-		indices.clear();
-
-		// Мапа хранит уникальные вершины с их индексами. С её помощью составляется буфер индексов.
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-		// Проходимся по каждому face элементу модели
-		for (const auto &shape : shapes)
-		{
-			// Проходимся по индексам каждой из вершин примитива
-			for (const auto &index : shape.mesh.indices)
-			{
-				Vertex vertex{};
-
-				if (index.vertex_index >= 0) // отрицательный индекс означает, что позиция не была предоставлена
-				{
-					// с помощью текущего индекса позиции извлекаем из атрибутов позицию вершины
-					vertex.position = {
-						attrib.vertices[3 * index.vertex_index + 0], // x
-						attrib.vertices[3 * index.vertex_index + 1], // y
-						attrib.vertices[3 * index.vertex_index + 2], // z
-					};
-
-					// по таким же индексам из атрибутов извелкается цвет вершины, если он был представлен в файле
-					vertex.color = {
-						attrib.colors[3 * index.vertex_index + 0], // r
-						attrib.colors[3 * index.vertex_index + 1], // g
-						attrib.colors[3 * index.vertex_index + 2], // b
-					};
-				}
-
-				// извлекаем из атрибутов позицию нормали
-				if (index.normal_index >= 0)
-				{
-					vertex.normal = {
-						attrib.normals[3 * index.normal_index + 0], // x
-						attrib.normals[3 * index.normal_index + 1], // y
-						attrib.normals[3 * index.normal_index + 2], // z
-					};
-				}
-
-				// извлекаем из атрибутов координаты текстуры
-				if (index.texcoord_index >= 0)
-				{
-					vertex.uv = {
-						attrib.texcoords[2 * index.texcoord_index + 0],		   // u
-						1.0f - attrib.texcoords[2 * index.texcoord_index + 1], // v (координата по Y переворачивается для коорд. системы вулкана)
-					};
-				}
-
-				// Если считанная вершина не найдена в мапе, то она добавляется в неё и получает
-				// свой индекс, а затем добавляется в вектор builder'а
-				if (uniqueVertices.count(vertex) == 0)
-				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
-				}
-				indices.push_back(uniqueVertices[vertex]); // Буфер индексов добавляет индекс считанной вершины
-			}
-		}
-	}
-
 }

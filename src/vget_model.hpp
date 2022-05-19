@@ -2,6 +2,7 @@
 
 #include "vget_device.hpp"
 #include "vget_buffer.hpp"
+#include "vget_texture.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
@@ -37,11 +38,23 @@ namespace vget
 		// вспомогательная структура, которая хранит в себе буферы вершин и индексов
 		struct Builder
 		{
+			// структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
+			struct SubObjectInfo
+			{
+				uint32_t indexCount;
+				uint32_t indexStart;
+				int textureIndex;
+			};
+
 			std::vector<Vertex> vertices{};
 			std::vector<uint32_t> indices{};
+			std::vector<std::string> texturePaths{};
+			std::vector<SubObjectInfo> subObjectsInfo{};
 
 			void loadModel(const std::string& filepath);
 		};
+
+		
 
 		VgetModel(VgetDevice& device, const VgetModel::Builder& builder);
 		~VgetModel();
@@ -56,25 +69,10 @@ namespace vget
 		void bind(VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 
-		void createTextureImage();
-		void createTextureImageView();
-		void createTextureSampler();
-		VkDescriptorImageInfo descriptorInfo();
-
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
 		void createIndexBuffers(const std::vector<uint32_t>& indices);
-
-		void createImage(
-			uint32_t width,
-			uint32_t height,
-			VkFormat format,
-			VkImageTiling tiling,
-			VkImageUsageFlags usage,
-			VkMemoryPropertyFlags properties,
-			VkImage& image,
-			VkDeviceMemory& imageMemory);
-		void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void createTextures(const std::vector<std::string>& texturePaths);
 
 		VgetDevice& vgetDevice;
 
@@ -85,10 +83,7 @@ namespace vget
 		std::unique_ptr<VgetBuffer> indexBuffer;
 		uint32_t indexCount;
 
-		// todo сделать абстрацию для Texture на манер vget_buffer (?)
-		VkImage textureImage;
-		VkDeviceMemory textureImageMemory;
-		VkImageView textureImageView;
-		VkSampler textureSampler;
+		std::vector<Builder::SubObjectInfo> subObjectsInfo;
+		std::vector<std::unique_ptr<VgetTexture>> textures;
 	};
 }
