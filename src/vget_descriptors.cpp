@@ -182,22 +182,22 @@ namespace vget
 
 	// Добавление записи дескриптора ресурса изображения
 	VgetDescriptorWriter& VgetDescriptorWriter::writeImage(
-		uint32_t binding, VkDescriptorImageInfo* imageInfo)
+		uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count)
 	{
 		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
 		auto& bindingDescription = setLayout.bindings[binding];
 
 		assert(
-			bindingDescription.descriptorCount == 1 &&
-			"Binding single descriptor info, but binding expects multiple");
+			bindingDescription.descriptorCount == count &&
+			"Count of descriptor infos is not equal to layout binding's descriptor count");
 
 		VkWriteDescriptorSet write{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		write.descriptorType = bindingDescription.descriptorType;
 		write.dstBinding = binding;
 		write.pImageInfo = imageInfo; // Единственное отличие от writeBuffer()
-		write.descriptorCount = 1;
+		write.descriptorCount = count;
 
 		writes.push_back(write);
 		return *this;

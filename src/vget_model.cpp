@@ -137,8 +137,11 @@ namespace vget
 			if (path != MODELS_DIR)
 				textures.push_back(std::make_unique<VgetTexture>(path, vgetDevice));
 			else
+			{
 				// TEMPORARY(?): если дифиузной структуры не было у материала, то тогда текстура получит nullptr по данному индексу
 				textures.push_back(nullptr);
+
+			}
 		}
 	}
 
@@ -164,9 +167,11 @@ namespace vget
 		// Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
 		// https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
 		auto textureStart = 0; // first free slot in texture array
-	    uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
-	    auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
-	    //int currentMat = 0; // the current OBJ material being used in face loop
+		uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
+		auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
+		int materialId = 0;
+		//int currentMat = 0; // the current OBJ material being used in face loop
+		SubObjectInfo info{};
 
 	    for (const auto& mat : materials)
 		{
@@ -240,8 +245,15 @@ namespace vget
 				++indexCount;
 			}
 
-			// данной фигуре .obj модели присваивается её начало, кол-во индексов и индекс текстуры из списка текстур
-			subObjectsInfo.push_back(SubObjectInfo{indexCount, indexStart, shape.mesh.material_ids.at(0)});
+			// Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из списка текстур и диффузный цвет
+			materialId = shape.mesh.material_ids.at(0);
+			info = {
+				indexCount,
+				indexStart,
+				materialId,
+				glm::vec3(materials.at(materialId).diffuse[0],materials.at(materialId).diffuse[1],materials.at(materialId).diffuse[2])
+			};
+			subObjectsInfo.push_back(info);
 		}
 	}
 
@@ -257,6 +269,11 @@ namespace vget
 			// Запись команды на отрисовку. (vertexCount вершин, 1 экземпляр, без смещений)
 			vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 		}
+	}
+
+	void VgetModel::drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart)
+	{
+		vkCmdDrawIndexed(commandBuffer, indexCount, 1, indexStart, 0, 0);
 	}
 
 	void VgetModel::bind(VkCommandBuffer commandBuffer)

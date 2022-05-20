@@ -44,6 +44,7 @@ namespace vget
 				uint32_t indexCount;
 				uint32_t indexStart;
 				int textureIndex;
+				glm::vec3 diffuseColor;
 			};
 
 			std::vector<Vertex> vertices{};
@@ -67,7 +68,12 @@ namespace vget
 		static std::unique_ptr<VgetModel> createModelFromFile(VgetDevice& device, const std::string& filepath);
 
 		void bind(VkCommandBuffer commandBuffer);
+		// todo подумать как можно объединить draw и drawIndexed
 		void draw(VkCommandBuffer commandBuffer);
+		void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
+
+		std::vector<Builder::SubObjectInfo>& getSubObjectsInfo() {return subObjectsInfo;}
+		std::vector<std::unique_ptr<VgetTexture>>& getTextures() {return textures;}
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);

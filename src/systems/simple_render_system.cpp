@@ -18,6 +18,9 @@ namespace vget
 	{
 		glm::mat4 modelMatrix{ 1.f }; // такой конструктор создаёт единичную матрицу
 		glm::mat4 normalMatrix{1.f};
+		// далее идёт превышение минимально возможного размера данных для пуш константы => в потенциале нужно исправить этот момент
+		int textureIndex;
+		alignas(16) glm::vec3 diffuseColor{};
 	};
 
 	SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
@@ -99,7 +102,19 @@ namespace vget
 			push.modelMatrix = obj.transform.mat4();
 			push.normalMatrix = obj.transform.normalMatrix();
 
-			vkCmdPushConstants(
+			// Отрисовка каждого подобъекта .obj модели по отдельности с передачей своего индекса текстуры
+			for (auto& info : obj.model->getSubObjectsInfo())
+			{
+				// Передача в пуш константу индекса текстуры. Если её нет у данного подобъекта, то будет передано -1.
+				if (obj.model->getTextures().at(info.textureIndex) != nullptr)
+					push.textureIndex = info.textureIndex;
+				else
+				{
+					push.textureIndex = -1;
+					push.diffuseColor = info.diffuseColor;	
+				}
+
+				vkCmdPushConstants(
 				frameInfo.commandBuffer,
 				pipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -107,10 +122,11 @@ namespace vget
 				sizeof(SimplePushConstantData),
 				&push);
 
-			// прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
-			obj.model->bind(frameInfo.commandBuffer);
-			// отрисовка буфера вершин
-			obj.model->draw(frameInfo.commandBuffer);
+				// прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
+				obj.model->bind(frameInfo.commandBuffer);
+				// отрисовка буфера вершин
+				obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);
+			}
 		}
 	}
 }

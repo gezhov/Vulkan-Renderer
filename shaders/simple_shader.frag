@@ -22,11 +22,13 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 	int numLights;
 } ubo;
 
-layout(binding = 1) uniform sampler2D texSampler; // Combined Image Sampler дескриптор
+layout(binding = 1) uniform sampler2D texSampler[20]; // Combined Image Sampler дескриптор
 
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	int textureIndex;
+	vec3 diffuseColor;
 } push;
 
 void main() {
@@ -73,9 +75,15 @@ void main() {
 	// тест наложения текстуры на фрагмент
 	//outColor = vec4(fragUv, 0.0, 1.0); окрашивание фрагмента значением координаты текстуры
 	//outColor = texture(texSampler, fragUv * 2.0); адресация за пределы размера текстуры
-	//outColor = texture(texSampler, fragUv); просто текстура
 
+	vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
 	// текстурирование фрагмента по координатам + освещение
-	vec4 sampleTextureColor = texture(texSampler, fragUv);
+	if (push.textureIndex != -1) {
+		sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
+	} else {
+		sampleTextureColor = vec4(push.diffuseColor, 1.0);
+	}
+
+	//outColor = sampleTextureColor; // просто текстура
 	outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
 }

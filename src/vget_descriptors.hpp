@@ -109,7 +109,7 @@ namespace vget
 		VgetDescriptorWriter(VgetDescriptorSetLayout& setLayout, VgetDescriptorPool& pool);
 
 		VgetDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-		VgetDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+		VgetDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count = 1);
 
 		bool build(VkDescriptorSet& set);
 		void overwrite(VkDescriptorSet& set);
