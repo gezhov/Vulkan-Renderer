@@ -1,4 +1,5 @@
 #include "simple_render_system.hpp"
+#include "../vget_buffer.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
@@ -10,6 +11,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <array>
+#include <iostream>
 
 namespace vget
 {
@@ -23,9 +25,12 @@ namespace vget
 		alignas(16) glm::vec3 diffuseColor{};
 	};
 
-	SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
+	SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
 		: vgetDevice{device}
 	{
+		createUboBuffers();
+		fillModelsIds(frameInfo.gameObjects);
+		createDescriptorSets(frameInfo);
 		createPipelineLayout(globalSetLayout);
 		createPipeline(renderPass);
 	}
@@ -43,7 +48,8 @@ namespace vget
 		pushConstantRange.offset = 0;
 		pushConstantRange.size = sizeof(SimplePushConstantData);
 
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{globalSetLayout}; // вектор используемых схем для наборов дескрипторов
+		// вектор используемых схем для наборов дескрипторов
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{globalSetLayout, simpleSystemSetLayout->getDescriptorSetLayout()};
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -76,27 +82,115 @@ namespace vget
 			pipelineConfig);
 	}
 
+	void SimpleRenderSystem::createUboBuffers()
+	{
+		for (int i = 0; i < uboBuffers.size(); ++i)
+		{
+			uboBuffers[i] = std::make_unique<VgetBuffer>(
+				vgetDevice,
+				sizeof(SimpleSystemUbo),
+				1,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+				);
+			uboBuffers[i]->map();
+		}
+	}
+
+	int SimpleRenderSystem::fillModelsIds(VgetGameObject::Map& gameObjects)
+	{
+		modelObjectsIds.clear();
+		for (auto& kv : gameObjects)
+		{
+			auto& obj = kv.second; // ссылка на объект из мапы
+			if (obj.model != nullptr) {
+				modelObjectsIds.push_back(kv.first); // в этой системе рендерятся только объекты с моделью
+			}
+		}
+		return static_cast<int>(modelObjectsIds.size());
+	}
+
+	void SimpleRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
+	{
+		int texturesCount = 0;
+		std::vector<VkDescriptorImageInfo> descriptorImageInfos;
+
+		for (auto& id : modelObjectsIds)
+		{
+			texturesCount += frameInfo.gameObjects[id].model->getTextures().size();
+
+			// Заполнение инфорамации по дескрипторам текстур для каждой модели
+			// todo сделать рефактор
+			for (auto& texture : frameInfo.gameObjects.at(id).model->getTextures())
+			{
+				if (texture != nullptr)
+				{
+					auto& imageInfo = texture->descriptorInfo();
+					descriptorImageInfos.push_back(imageInfo);
+				}
+				else
+				{
+					descriptorImageInfos.push_back(frameInfo.gameObjects.at(id).model->getTextures().at(0)->descriptorInfo());
+				}
+			}
+		}
+
+		simpleSystemPool = VgetDescriptorPool::Builder(vgetDevice)
+			.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
+			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
+			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
+			.build();
+
+		simpleSystemSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
+			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount)
+			.build();
+
+		for (int i = 0; i < simpleSystemSets.size(); ++i)
+		{
+			// Запись количества текстур для каждого ubo буфера
+			SimpleSystemUbo ubo{};
+			ubo.texturesCount = texturesCount;
+			uboBuffers[i]->writeToBuffer(&ubo);
+
+			auto bufferInfo = uboBuffers[i]->descriptorInfo();
+
+			VgetDescriptorWriter(*simpleSystemSetLayout, *simpleSystemPool)
+				.writeBuffer(0, &bufferInfo)
+				.writeImage(1, descriptorImageInfos.data(), texturesCount)
+				.build(simpleSystemSets[i]);
+		}
+	}
+
 	void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
-		// render objects
 		vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
-		// привязываем набор дескрипторов к пайплайну
+		// Заполняется вектор id'шников объектов с моделью и
+		// если их кол-во изменилось, то наборы дескрипторов с текстурами для этих
+		// объектов пересоздаётся.
+		if (prevModelCount != fillModelsIds(frameInfo.gameObjects)) {
+			createDescriptorSets(frameInfo);
+		}
+		prevModelCount = modelObjectsIds.size();
+
+		std::vector<VkDescriptorSet> descriptorSets{ frameInfo.globalDescriptorSet, simpleSystemSets[frameInfo.frameIndex] };
+		// Привязываем наборы дескрипторов к пайплайну
 		vkCmdBindDescriptorSets(
 			frameInfo.commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineLayout,
 			0,
-			1,
-			&frameInfo.globalDescriptorSet,
+			2,
+			descriptorSets.data(),
 			0,
 			nullptr
 		);
 
-		for (auto& kv : frameInfo.gameObjects)
+		int textureIndexOffset = 0; // отступ в массиве текстур для текущего объекта
+		for (auto& id : modelObjectsIds)
 		{
-			auto& obj = kv.second; // ссылка на объект из мапы
-			if (obj.model == nullptr) continue; // данная система пропускает объекты без модели
+			auto& obj = frameInfo.gameObjects[id];
 
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
@@ -107,7 +201,7 @@ namespace vget
 			{
 				// Передача в пуш константу индекса текстуры. Если её нет у данного подобъекта, то будет передано -1.
 				if (obj.model->getTextures().at(info.textureIndex) != nullptr)
-					push.textureIndex = info.textureIndex;
+					push.textureIndex = textureIndexOffset + info.textureIndex;
 				else
 				{
 					push.textureIndex = -1;
@@ -127,6 +221,7 @@ namespace vget
 				// отрисовка буфера вершин
 				obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);
 			}
+			textureIndexOffset += obj.model->getTextures().size();
 		}
 	}
 }

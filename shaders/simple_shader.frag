@@ -13,6 +13,13 @@ struct PointLight {
 	vec4 color;    // w - интенсивность цвета
 };
 
+layout(push_constant) uniform Push {
+	mat4 modelMatrix;
+	mat4 normalMatrix;
+	int textureIndex;
+	vec3 diffuseColor;
+} push;
+
 layout(set = 0, binding = 0) uniform GlobalUBO {
 	mat4 projection;
 	mat4 view;
@@ -22,14 +29,14 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 	int numLights;
 } ubo;
 
-layout(binding = 1) uniform sampler2D texSampler[20]; // Combined Image Sampler дескриптор
+layout(set = 1, binding = 0) uniform SimpleSystemUBO {
+	int texturesCount;
+} simpleUbo;
 
-layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-	int textureIndex;
-	vec3 diffuseColor;
-} push;
+layout(set = 1, binding = 1) uniform sampler2D texSampler[1000]; // Combined Image Sampler дескрипторы
+
+// Directional Lighting
+const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
 
 void main() {
 	// Итоговое рассеянное освещение. Инициализируется сразу обвалакивающим освещением
@@ -42,6 +49,9 @@ void main() {
 
 	vec3 cameraPosWorld = ubo.invView[3].xyz; // извлекаем позицию наблюдателя в World Space из обратной матрицы просмотра
 	vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
+
+	// Вклад направленного источника света в рассеянное освещение
+	diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) - 0.0;
 
 	// В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
 	for (int i = 0; i < ubo.numLights; ++i) {
@@ -69,15 +79,11 @@ void main() {
 		specularLight += intensity * blinnTerm;
 	}
 
-	// vec4 переменная может конструироваться из vec3 переменной и ещё одного компонента.
-	//outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+	
 
-	// тест наложения текстуры на фрагмент
-	//outColor = vec4(fragUv, 0.0, 1.0); окрашивание фрагмента значением координаты текстуры
-	//outColor = texture(texSampler, fragUv * 2.0); адресация за пределы размера текстуры
-
+	// Фрагмент получает цвет по координатам текстуры, либо диффузный цвет своего материала, если
+	// для него текструра отсутствует.
 	vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
-	// текстурирование фрагмента по координатам + освещение
 	if (push.textureIndex != -1) {
 		sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
 	} else {

@@ -36,7 +36,7 @@ namespace vget
 		: lveDevice{lveDevice}, bindings{bindings}
 	{
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
-		for (auto kv : bindings)
+		for (auto& kv : bindings)
 		{
 			setLayoutBindings.push_back(kv.second);
 		}
@@ -118,7 +118,7 @@ namespace vget
 
 	// Выделяет именно набор дескрипторов! Выделить отдельный дескриптор из пула нельзя!
 	bool VgetDescriptorPool::allocateDescriptor(
-		const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
+		const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptorSet) const
 	{
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -128,7 +128,7 @@ namespace vget
 
 		// Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		if (vkAllocateDescriptorSets(lveDevice.device(), &allocInfo, &descriptor) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(lveDevice.device(), &allocInfo, &descriptorSet) != VK_SUCCESS)
 		{
 			return false;
 		}

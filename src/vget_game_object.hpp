@@ -39,6 +39,8 @@ namespace vget
 		using id_t = unsigned int; // псевдоним для типа
 		using Map = std::unordered_map<id_t, VgetGameObject>;
 
+		VgetGameObject() = default; // Просит компилятор, хотя такой конструктор не используется
+
 		// статичный метод, который выпускает новый экземпляр игрового объекта
 		static VgetGameObject createGameObject()
 		{

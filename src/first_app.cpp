@@ -29,7 +29,6 @@ namespace vget
 		globalPool = VgetDescriptorPool::Builder(vgetDevice)
 			.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
-			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * 42)
 			.build();
 
 		loadGameObjects();
@@ -57,49 +56,24 @@ namespace vget
 		// Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
 		auto globalSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			//.addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 25)
-			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 42)
 			.build();
 
-		// Выделение наборов дескрипторов из пула с информацией по Uniform Buffer'ам
+		// Выделение наборов дескрипторов из пула
 		std::vector<VkDescriptorSet> globalDescriptorSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < globalDescriptorSets.size(); ++i)
 		{
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
-			
-
-			size_t size = gameObjects.at(0).model->getTextures().size();
-			std::vector<VkDescriptorImageInfo> descriptorImageInfos;
-
-			// todo рефактор
-			for (auto& texture : gameObjects.at(0).model->getTextures())
-			{
-				if (texture != nullptr)
-				{
-					auto& imageInfo = texture->descriptorInfo();
-					descriptorImageInfos.push_back(imageInfo);
-				}
-				else
-				{
-					descriptorImageInfos.push_back(gameObjects.at(0).model->getTextures().at(0)->descriptorInfo());
-					/*VkDescriptorImageInfo {
-						nullptr,
-						nullptr,
-						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-					};*/
-				}
-			}
 
 			VgetDescriptorWriter(*globalSetLayout, *globalPool)
 				.writeBuffer(0, &bufferInfo)
-				.writeImage(1, descriptorImageInfos.data(), size)
 				.build(globalDescriptorSets[i]);
 		}
 
 		SimpleRenderSystem simpleRenderSystem{
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
-			globalSetLayout->getDescriptorSetLayout()
+			globalSetLayout->getDescriptorSetLayout(),
+			FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, gameObjects}
 		};
 		PointLightSystem pointLightSystem{
 			vgetDevice,
@@ -195,19 +169,19 @@ namespace vget
 		gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 		// Sponza model
-		/*std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "models/sponza.obj");
+		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "models/sponza.obj");
 		auto sponzaObj = VgetGameObject::createGameObject();
 		sponzaObj.model = sponza;
 		sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
 		sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
 		sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
+		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 
 		// Living room model
 		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "models/living_room.obj");
 		auto containerObj = VgetGameObject::createGameObject();
 		containerObj.model = container;
-		containerObj.transform.translation = {1.f, 1.0f, 1.f};
+		containerObj.transform.translation = {1.f, 1.0f, 20.f};
 		containerObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
 		containerObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
 		gameObjects.emplace(containerObj.getId(), std::move(containerObj));

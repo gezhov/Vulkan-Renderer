@@ -55,8 +55,6 @@ namespace vget
 			void loadModel(const std::string& filepath);
 		};
 
-		
-
 		VgetModel(VgetDevice& device, const VgetModel::Builder& builder);
 		~VgetModel();
 

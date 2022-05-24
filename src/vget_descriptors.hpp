@@ -17,9 +17,7 @@ namespace vget
 		class Builder
 		{
 		public:
-			Builder(VgetDevice& lveDevice) : lveDevice{lveDevice}
-			{
-			}
+			Builder(VgetDevice& lveDevice) : lveDevice{lveDevice} {}
 
 			// Добавление новой привязки дескрпитора в мапу
 			Builder& addBinding(
@@ -59,9 +57,7 @@ namespace vget
 		class Builder
 		{
 		public:
-			Builder(VgetDevice& lveDevice) : lveDevice{lveDevice}
-			{
-			}
+			Builder(VgetDevice& lveDevice) : lveDevice{ lveDevice } {}
 
 			Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count); // кол-во дескрипторов заданного типа в данном пуле
 			Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);		// флаги настройки поведения пула
