@@ -1,5 +1,6 @@
 #include "first_app.hpp"
 
+#include "vget_imgui.hpp"
 #include "systems/simple_render_system.hpp"
 #include "systems/point_light_system.hpp"
 #include "vget_camera.hpp"
@@ -11,6 +12,9 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE   // GLM будет ожидать интервал нашего буфера глубины от 0 до 1 (например, для OpenGL используется интервал от -1 до 1)
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 // std
 #include <stdexcept>
@@ -69,6 +73,12 @@ namespace vget
 				.build(globalDescriptorSets[i]);
 		}
 
+		VgetImgui lveImgui{
+			vgetWindow,
+			vgetDevice,
+			vgetRenderer.getSwapChainRenderPass(),
+			VgetSwapChain::MAX_FRAMES_IN_FLIGHT
+		};
 		SimpleRenderSystem simpleRenderSystem{
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
@@ -127,6 +137,8 @@ namespace vget
 			// отрисовка кадра
 			if (auto commandBuffer = vgetRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
 			{
+				lveImgui.newFrame(); // tell imgui that we're starting a new frame
+
 				int frameIndex = vgetRenderer.getFrameIndex();
 				FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], gameObjects};
 
@@ -145,10 +157,16 @@ namespace vget
 				   интеграции сразу нескольких проходов рендера (Render passes) для создания отражений,
 				   теней и эффектов пост-процесса. */
 				vgetRenderer.beginSwapChainRenderPass(commandBuffer);
+
 				// Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью SimpleRenderSystem, а
 				// затем полупрозрачные билборды поинт лайтов с помощью PointLightSystem.
 				simpleRenderSystem.renderGameObjects(frameInfo);
 				pointLightSystem.render(frameInfo);
+
+				// example code telling imgui what windows to render, and their contents
+				lveImgui.runExample();
+				lveImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
+
 				vgetRenderer.endSwapChainRenderPass(commandBuffer);
 				vgetRenderer.endFrame();
 			}

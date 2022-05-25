@@ -75,8 +75,16 @@ if (NOT STB_IMAGE_PATH)
   set(STB_IMAGE_PATH external/stb_image)
 endif()
 
+# Если путь до imgui не был указан явно в .env.cmake, то исп. его версию из external директории
+if (NOT IMGUI_PATH)
+  message(STATUS "IMGUI_PATH not specified in .env.cmake, using external/imgui")
+  set(IMGUI_PATH external/imgui)
+endif()
+
 # GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
-file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
+                          ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
+                          ${PROJECT_SOURCE_DIR}/external/imgui/backends/*.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 
@@ -107,6 +115,8 @@ if (WIN32)
     ${GLFW_INCLUDE_DIRS}
     ${GLM_PATH}
     ${STB_IMAGE_PATH}
+    ${IMGUI_PATH}
+    ${IMGUI_PATH}/backends
     )
 
   target_link_directories(${PROJECT_NAME} PUBLIC

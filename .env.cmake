@@ -10,3 +10,6 @@ set(VULKAN_SDK_PATH  D:/Soft/VulkanSDK/1.2.189.0)
 
 # Optional set STB_IMAGE_PATH to target specific version, otherwise defaults to external/stb_image
 # set(STB_IMAGE_PATH X:/dev/Libraries/stb_image)
+
+# Optional set IMGUI_PATH to target specific version, otherwise defaults to external/imgui
+# set(IMGUI_PATH X:/dev/Libraries/imgui)
