@@ -73,7 +73,7 @@ namespace vget
 				.build(globalDescriptorSets[i]);
 		}
 
-		VgetImgui lveImgui{
+		VgetImgui vgetImgui{
 			vgetWindow,
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
@@ -137,13 +137,13 @@ namespace vget
 			// отрисовка кадра
 			if (auto commandBuffer = vgetRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
 			{
-				lveImgui.newFrame(); // tell imgui that we're starting a new frame
+				vgetImgui.newFrame(); // tell imgui that we're starting a new frame
 
 				int frameIndex = vgetRenderer.getFrameIndex();
 				FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], gameObjects};
 
 				// UPDATE SECTION
-				// Обновление данных внутри uniform buffer объекта для текущего кадра
+				// Обновление данных внутри uniform buffer объектов для текущего кадра
 				GlobalUbo ubo{};
 				ubo.projection = camera.getProjection();
 				ubo.view = camera.getView();
@@ -151,6 +151,9 @@ namespace vget
 				pointLightSystem.update(frameInfo, ubo);
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
+				SimpleSystemUbo simpleSystemUbo{};
+				simpleSystemUbo.directionalLightIntensity = vgetImgui.directionalLightIntensity;
+				simpleRenderSystem.update(frameInfo, simpleSystemUbo);
 
 				// RENDER SECTION
 				/* Начало и конец прохода рендера и кадра отделены друг от друга для упрощения в дальнейшем
@@ -164,8 +167,8 @@ namespace vget
 				pointLightSystem.render(frameInfo);
 
 				// example code telling imgui what windows to render, and their contents
-				lveImgui.runExample();
-				lveImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
+				vgetImgui.runExample();
+				vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
 
 				vgetRenderer.endSwapChainRenderPass(commandBuffer);
 				vgetRenderer.endFrame();

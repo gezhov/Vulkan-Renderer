@@ -14,11 +14,6 @@
 
 namespace vget
 {
-	struct SimpleSystemUbo
-	{
-		alignas(16)int texturesCount;
-	};
-
 	class SimpleRenderSystem
 	{
 	public:
@@ -30,6 +25,7 @@ namespace vget
 		SimpleRenderSystem(const SimpleRenderSystem&) = delete;
 		SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
+		void update(FrameInfo& frameInfo, SimpleSystemUbo& ubo);
 		void renderGameObjects(FrameInfo& frameInfo);
 
 	private:

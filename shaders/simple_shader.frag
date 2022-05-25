@@ -31,6 +31,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 
 layout(set = 1, binding = 0) uniform SimpleSystemUBO {
 	int texturesCount;
+	float directionalLightIntensity;
 } simpleUbo;
 
 layout(set = 1, binding = 1) uniform sampler2D texSampler[1000]; // Combined Image Sampler дескрипторы
@@ -51,7 +52,7 @@ void main() {
 	vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
 
 	// Вклад направленного источника света в рассеянное освещение
-	diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) - 0.0;
+	diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + simpleUbo.directionalLightIntensity;
 
 	// В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
 	for (int i = 0; i < ubo.numLights; ++i) {

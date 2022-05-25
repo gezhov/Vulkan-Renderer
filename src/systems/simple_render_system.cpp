@@ -162,6 +162,11 @@ namespace vget
 		}
 	}
 
+	void SimpleRenderSystem::update(FrameInfo& frameInfo, SimpleSystemUbo& ubo)
+	{
+		uboBuffers[frameInfo.frameIndex]->writeToBuffer(&ubo);
+	}
+
 	void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
 		vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
