@@ -73,12 +73,6 @@ namespace vget
 				.build(globalDescriptorSets[i]);
 		}
 
-		VgetImgui vgetImgui{
-			vgetWindow,
-			vgetDevice,
-			vgetRenderer.getSwapChainRenderPass(),
-			VgetSwapChain::MAX_FRAMES_IN_FLIGHT
-		};
 		SimpleRenderSystem simpleRenderSystem{
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
@@ -94,6 +88,13 @@ namespace vget
 		// установка положения "теоретической камеры"
 		//camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
 		//camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
+		VgetImgui vgetImgui{
+			vgetWindow,
+			vgetDevice,
+			vgetRenderer.getSwapChainRenderPass(),
+			VgetSwapChain::MAX_FRAMES_IN_FLIGHT,
+			camera
+		};
 
 		auto viewerObject = VgetGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
 		viewerObject.transform.translation.z = -2.5f; // начальное положение сдвинуто немного назад
@@ -166,8 +167,9 @@ namespace vget
 				simpleRenderSystem.renderGameObjects(frameInfo);
 				pointLightSystem.render(frameInfo);
 
-				// example code telling imgui what windows to render, and their contents
+				// Описание элементов интерфейса ImGUI для отрисовки
 				vgetImgui.runExample();
+				vgetImgui.inspectObject(gameObjects[0]);
 				vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
 
 				vgetRenderer.endSwapChainRenderPass(commandBuffer);

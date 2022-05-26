@@ -81,10 +81,15 @@ if (NOT IMGUI_PATH)
   set(IMGUI_PATH external/imgui)
 endif()
 
+# Если путь до imguizmo не был указан явно в .env.cmake, то исп. его версию из external директории
+if (NOT IMGUIZMO_PATH)
+  message(STATUS "IMGUIZMO_PATH not specified in .env.cmake, using external/imguizmo")
+  set(IMGUIZMO_PATH external/imguizmo)
+endif()
+
 # GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
-                          ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
-                          ${PROJECT_SOURCE_DIR}/external/imgui/backends/*.cpp)
+                          ${PROJECT_SOURCE_DIR}/external/*.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 
@@ -117,6 +122,7 @@ if (WIN32)
     ${STB_IMAGE_PATH}
     ${IMGUI_PATH}
     ${IMGUI_PATH}/backends
+    ${IMGUIZMO_PATH}
     )
 
   target_link_directories(${PROJECT_NAME} PUBLIC

@@ -2,11 +2,14 @@
 
 #include "vget_device.hpp"
 #include "vget_window.hpp"
+#include "vget_game_object.hpp"
+#include "vget_camera.hpp"
 
 // libs
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#include <ImGuizmo.h>
 
 // std
 #include <stdexcept>
@@ -24,7 +27,7 @@ namespace vget {
 
 	class VgetImgui {
 	public:
-		VgetImgui(VgetWindow& window, VgetDevice& device, VkRenderPass renderPass, uint32_t imageCount);
+		VgetImgui(VgetWindow& window, VgetDevice& device, VkRenderPass renderPass, uint32_t imageCount, VgetCamera& camera);
 		~VgetImgui();
 
 		void newFrame();
@@ -32,16 +35,19 @@ namespace vget {
 		void render(VkCommandBuffer commandBuffer);
 
 		// Example state
-		bool show_demo_window = true;
-		bool show_another_window = true;
+		bool show_demo_window = false;
+		bool show_another_window = false;
 		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		void runExample();
+		void inspectObject(VgetGameObject& object);
+		void renderTransformGizmo(TransformComponent& transform);
 
 		// data
-		float directionalLightIntensity;
+		float directionalLightIntensity = .0f;
 
 	private:
 		VgetDevice& vgetDevice;
+		VgetCamera& camera;
 
 		// We haven't yet covered descriptor pools in the tutorial series
 		// so I'm just going to create one for just imgui and store it here for now.

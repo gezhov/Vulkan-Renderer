@@ -7,6 +7,9 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+#define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE   // GLM будет ожидать интервал нашего буфера глубины от 0 до 1 (например, для OpenGL используется интервал от -1 до 1)
+#include <glm/gtc/type_ptr.hpp>
 
 // std
 #include <stdexcept>
@@ -17,8 +20,8 @@ namespace vget {
     // initialize the vulkan and glfw imgui implementations, since that's what our engine is built
     // using.
     VgetImgui::VgetImgui(
-        VgetWindow& window, VgetDevice& device, VkRenderPass renderPass, uint32_t imageCount)
-        : vgetDevice{ device } {
+        VgetWindow& window, VgetDevice& device, VkRenderPass renderPass, uint32_t imageCount, VgetCamera& camera)
+        : vgetDevice{ device }, camera{ camera } {
         // set up a descriptor pool stored on this instance, see header for more comments on this.
         VkDescriptorPoolSize pool_sizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -155,4 +158,86 @@ namespace vget {
         }
     }
 
-}  // namespace lve
+    void VgetImgui::inspectObject(VgetGameObject& object) {
+        if (ImGui::Begin("Inspector")) {
+            /*if (Scene::selectedEntity != nullptr) {
+                Scene::InspectEntity(Scene::selectedEntity);
+            }*/
+
+            //ImGui::InputText("Name", &entity->name);
+            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::DragFloat3("Position", glm::value_ptr(object.transform.translation));
+                ImGui::DragFloat3("Scale", glm::value_ptr(object.transform.scale));
+                ImGui::DragFloat3("Rotation", glm::value_ptr(object.transform.rotation));
+                renderTransformGizmo(object.transform);
+            }
+            /*if (entity->entityType == EntityType::Model) {
+                InspectModel((Model*)entity);
+            }
+            else if (entity->entityType == EntityType::Light) {
+                InspectLight((Light*)entity);
+            }*/
+        }
+        ImGui::End();
+    }
+
+    void VgetImgui::renderTransformGizmo(TransformComponent& transform) {
+        ImGuizmo::BeginFrame();
+        static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::ROTATE;
+        static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
+
+        if (ImGui::IsKeyPressed(GLFW_KEY_1)) {
+            currentGizmoOperation = ImGuizmo::TRANSLATE;
+        }
+        if (ImGui::IsKeyPressed(GLFW_KEY_2)) {
+            currentGizmoOperation = ImGuizmo::ROTATE;
+        }
+        if (ImGui::IsKeyPressed(GLFW_KEY_3)) {
+            currentGizmoOperation = ImGuizmo::SCALE;
+        }
+        if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE)) {
+            currentGizmoOperation = ImGuizmo::TRANSLATE;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE)) {
+            currentGizmoOperation = ImGuizmo::ROTATE;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE)) {
+            currentGizmoOperation = ImGuizmo::SCALE;
+        }
+
+        if (currentGizmoOperation != ImGuizmo::SCALE) {
+            if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL)) {
+                currentGizmoMode = ImGuizmo::LOCAL;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD)) {
+                currentGizmoMode = ImGuizmo::WORLD;
+            }
+        }
+        else {
+            currentGizmoMode = ImGuizmo::LOCAL;
+        }
+        glm::mat4 modelMat = transform.mat4();
+        glm::mat4 guizmoProj(camera.getProjection());
+        guizmoProj[1][1] *= -1;
+
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        ImGuizmo::Manipulate(glm::value_ptr(camera.getView()), glm::value_ptr(guizmoProj), currentGizmoOperation,
+            currentGizmoMode, glm::value_ptr(modelMat), nullptr, nullptr);
+
+        /*if (transform.parent != nullptr) {
+            modelMat = glm::inverse(transform.parent->GetMatrix()) * modelMat;
+        }
+        transform.transform = modelMat;*/
+
+        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMat), glm::value_ptr(transform.translation),
+            glm::value_ptr(transform.rotation), glm::value_ptr(transform.scale));
+
+        // Преобразование градусов в радианы.
+        // todo: поворот дёргается. нужен фикс
+        transform.rotation = glm::radians(transform.rotation);
+    }
+}  // vget
