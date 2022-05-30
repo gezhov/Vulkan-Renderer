@@ -8,6 +8,7 @@
 // std
 #include <memory>
 #include <unordered_map>
+#include <string>
 
 namespace vget
 {
@@ -61,6 +62,7 @@ namespace vget
 		VgetGameObject& operator=(VgetGameObject&&) = default;
 
 		const id_t getId() { return id; }
+		const std::string getName() { return std::string{"stub"}.append(std::to_string(getId())); }
 
 		glm::vec3 color{};
 		TransformComponent transform{};

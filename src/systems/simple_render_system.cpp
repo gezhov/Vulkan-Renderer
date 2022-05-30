@@ -26,7 +26,7 @@ namespace vget
 	};
 
 	SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
-		: vgetDevice{device}
+		: vgetDevice{ device }
 	{
 		createUboBuffers();
 		fillModelsIds(frameInfo.gameObjects);
@@ -130,6 +130,7 @@ namespace vget
 				}
 				else
 				{
+					// todo: добавление объектов не будет работать, пока не будет исправлен этот момент
 					descriptorImageInfos.push_back(frameInfo.gameObjects.at(id).model->getTextures().at(0)->descriptorInfo());
 				}
 			}
@@ -139,11 +140,13 @@ namespace vget
 			.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
+			//.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * 1000)
 			.build();
 
 		simpleSystemSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount)
+			//.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1000)
 			.build();
 
 		for (int i = 0; i < simpleSystemSets.size(); ++i)
@@ -173,7 +176,7 @@ namespace vget
 
 		// Заполняется вектор id'шников объектов с моделью и
 		// если их кол-во изменилось, то наборы дескрипторов с текстурами для этих
-		// объектов пересоздаётся.
+		// объектов пересоздаются.
 		if (prevModelCount != fillModelsIds(frameInfo.gameObjects)) {
 			createDescriptorSets(frameInfo);
 		}

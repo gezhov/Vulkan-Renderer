@@ -153,7 +153,7 @@ namespace vget
 		currentFrameIndex = (currentFrameIndex + 1) % VgetSwapChain::MAX_FRAMES_IN_FLIGHT; // выбираем следующий кадр
 	}
 
-	void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
+	void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors)
 	{
 		assert(isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
 		assert(commandBuffer == getCurrentCommandBuffer() && "Can't begin render pass on command buffer from a different frame");
@@ -170,8 +170,9 @@ namespace vget
 		// clear values задают начальные значения вложений (attachments) у FrameBuffer
 		// буферы вложений заполняются этими значениями во время операции очистки перед новым проходом рендеринга
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };  // 0 - color attachment, 1 - depth attachment
-		clearValues[1].depthStencil = { 1.0f, 0 };		// порядок присвоения значений зависит от выбранной структуры FrameBuffer'а
+		// 0 - color attachment, 1 - depth attachment
+		clearValues[0].color = { clearColors.x, clearColors.y, clearColors.z, 1.0f};
+		clearValues[1].depthStencil = { 1.0f, 0 };    // порядок присвоения значений зависит от выбранной структуры FrameBuffer'а
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
 

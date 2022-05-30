@@ -13,6 +13,12 @@
 
 // std
 #include <stdexcept>
+#include <fstream>
+#include <filesystem>
+
+#ifndef MODELS_DIR
+#define MODELS_DIR "../models/"
+#endif
 
 namespace vget {
 
@@ -20,8 +26,9 @@ namespace vget {
     // initialize the vulkan and glfw imgui implementations, since that's what our engine is built
     // using.
     VgetImgui::VgetImgui(
-        VgetWindow& window, VgetDevice& device, VkRenderPass renderPass, uint32_t imageCount, VgetCamera& camera)
-        : vgetDevice{ device }, camera{ camera } {
+        VgetWindow& window, VgetDevice& device, VkRenderPass renderPass,
+        uint32_t imageCount, VgetCamera& camera, VgetGameObject::Map& gameObjects)
+        : vgetDevice{ device }, camera{ camera }, gameObjects{gameObjects} {
         // set up a descriptor pool stored on this instance, see header for more comments on this.
         VkDescriptorPoolSize pool_sizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -117,25 +124,26 @@ namespace vget {
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named
         // window.
         {
-            static float f = 0.0f;
             static int counter = 0;
 
-            ImGui::Begin("Hello, world!");  // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("Scene Control Panel");  // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text(
-                "This is some useful text.");  // Display some text (you can use a format strings too)
-            ImGui::Checkbox(
-                "Demo Window",
-                &show_demo_window);  // Edit bools storing our window open/close state
+            ImGui::Text( "This is some useful text.");  // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window);  // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
-            ImGui::SliderFloat("float: Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);  // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color",
-                (float*)&clear_color);  // Edit 3 floats representing a color
+            ImGui::Text("Directional Light intensity");
+            ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);
+
+            ImGui::Text("Directional Light Position");
+            ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
+
+            ImGui::Text("Clear Color");
+            ImGui::ColorEdit3("##Clear Color", (float*)&clear_color);
 
             if (ImGui::Button("Button"))  // Buttons return true when clicked (most widgets return true
-                                          // when edited/activated)
-                counter++;
+                counter++;                  // when edited/activated)
+
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
 
@@ -158,30 +166,100 @@ namespace vget {
         }
     }
 
-    void VgetImgui::inspectObject(VgetGameObject& object) {
-        if (ImGui::Begin("Inspector")) {
-            /*if (Scene::selectedEntity != nullptr) {
-                Scene::InspectEntity(Scene::selectedEntity);
-            }*/
+    void VgetImgui::showModelsFromDirectory()
+    {
+        std::string path(MODELS_DIR);
+        std::string ext(".obj");
+        objectsPaths.clear();
+        for (auto& p : std::filesystem::recursive_directory_iterator(path))
+        {
+            if (p.path().extension() == ext)
+            {
+                objectsPaths.push_back(p.path().string());
+            }
+        }
 
-            //ImGui::InputText("Name", &entity->name);
-            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::DragFloat3("Position", glm::value_ptr(object.transform.translation));
-                ImGui::DragFloat3("Scale", glm::value_ptr(object.transform.scale));
-                ImGui::DragFloat3("Rotation", glm::value_ptr(object.transform.rotation));
-                renderTransformGizmo(object.transform);
+        if (ImGui::Begin("Object Loader")) {
+            static int item_current_idx = 0; // Here we store our selection data as an index.
+            ImGui::Text("Available models to add to the scene:");
+            ImGui::Text(selectedObjPath.c_str());
+            if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 5 * ImGui::GetTextLineHeightWithSpacing())))
+            {
+                for (int n = 0; n < objectsPaths.size(); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(objectsPaths[n].c_str(), is_selected)) {
+                        item_current_idx = n;
+                        selectedObjPath = objectsPaths.at(n);
+                    }
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndListBox();
             }
-            /*if (entity->entityType == EntityType::Model) {
-                InspectModel((Model*)entity);
+
+            if (ImGui::Button("Add to the scene")) {
+                std::shared_ptr<VgetModel> model = VgetModel::createModelFromFile(vgetDevice, objectsPaths.at(item_current_idx));
+                auto newObj = VgetGameObject::createGameObject();
+                newObj.model = model;
+                gameObjects.emplace(newObj.getId(), std::move(newObj));
             }
-            else if (entity->entityType == EntityType::Light) {
-                InspectLight((Light*)entity);
-            }*/
         }
         ImGui::End();
     }
 
-    void VgetImgui::renderTransformGizmo(TransformComponent& transform) {
+    void VgetImgui::enumerateObjectsInTheScene(VgetGameObject::Map& objects)
+    {
+        if (ImGui::Begin("All Objects")) {
+            static int item_current_idx = 0; // Here we store our selection data as an index.
+            if (ImGui::BeginListBox("All Objects", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
+            {
+                for (int n = 0; n < objects.size(); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(objects[n].getName().c_str(), is_selected)) {
+                        item_current_idx = n;
+                    }
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndListBox();
+            }
+
+            inspectObject(objects[item_current_idx].transform);
+        }
+        ImGui::End();
+    }
+
+    void VgetImgui::inspectObject(TransformComponent& transform)
+    {
+        if (ImGui::Begin("Inspector")) {
+            /*if (Scene::selectedEntity != nullptr) {
+                Scene::InspectEntity(Scene::selectedEntity);
+            }*/
+            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::DragFloat3("Position", glm::value_ptr(transform.translation), 0.02f);
+                ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.02f);
+                ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.02f);
+            }
+            /*if (entity->entityType == EntityType::Model) {
+                    InspectModel((Model*)entity);
+            }
+            else if (entity->entityType == EntityType::Light) {
+                InspectLight((Light*)entity);
+            }*/
+            renderTransformGizmo(transform);
+        }
+        ImGui::End();
+    }
+
+    void VgetImgui::renderTransformGizmo(TransformComponent& transform)
+    {
         ImGuizmo::BeginFrame();
         static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::ROTATE;
         static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
@@ -219,25 +297,35 @@ namespace vget {
         else {
             currentGizmoMode = ImGuizmo::LOCAL;
         }
+
         glm::mat4 modelMat = transform.mat4();
+        glm::mat4 deltaMat{};
         glm::mat4 guizmoProj(camera.getProjection());
         guizmoProj[1][1] *= -1;
 
         ImGuiIO& io = ImGui::GetIO();
         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
         ImGuizmo::Manipulate(glm::value_ptr(camera.getView()), glm::value_ptr(guizmoProj), currentGizmoOperation,
-            currentGizmoMode, glm::value_ptr(modelMat), nullptr, nullptr);
+            currentGizmoMode, glm::value_ptr(modelMat), glm::value_ptr(deltaMat), nullptr);
 
         /*if (transform.parent != nullptr) {
             modelMat = glm::inverse(transform.parent->GetMatrix()) * modelMat;
         }
         transform.transform = modelMat;*/
 
+        /*glm::vec3 deltaTranslation{};
+        glm::vec3 deltaRotation{};
+        glm::vec3 deltaScale{};*/
+        /*ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMat), glm::value_ptr(deltaTranslation),
+            glm::value_ptr(deltaRotation), glm::value_ptr(deltaScale));*/
+
+        glm::vec3 empty{};
+
         ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMat), glm::value_ptr(transform.translation),
-            glm::value_ptr(transform.rotation), glm::value_ptr(transform.scale));
+            glm::value_ptr(empty), glm::value_ptr(transform.scale));
 
         // Преобразование градусов в радианы.
         // todo: поворот дёргается. нужен фикс
-        transform.rotation = glm::radians(transform.rotation);
+        //transform.rotation = glm::radians(transform.rotation);
     }
 }  // vget

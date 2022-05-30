@@ -188,8 +188,7 @@ namespace vget
 
 		auto& bindingDescription = setLayout.bindings[binding];
 
-		assert(
-			bindingDescription.descriptorCount == count &&
+		assert(bindingDescription.descriptorCount == count &&
 			"Count of descriptor infos is not equal to layout binding's descriptor count");
 
 		VkWriteDescriptorSet write{};

@@ -32,12 +32,13 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 layout(set = 1, binding = 0) uniform SimpleSystemUBO {
 	int texturesCount;
 	float directionalLightIntensity;
+	vec4 directionalLightPosition;
 } simpleUbo;
 
 layout(set = 1, binding = 1) uniform sampler2D texSampler[1000]; // Combined Image Sampler дескрипторы
 
 // Directional Lighting
-const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
+vec3 DIRECTION_TO_LIGHT = normalize(simpleUbo.directionalLightPosition.xyz);
 
 void main() {
 	// Итоговое рассеянное освещение. Инициализируется сразу обвалакивающим освещением

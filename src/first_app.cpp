@@ -77,7 +77,7 @@ namespace vget
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
 			globalSetLayout->getDescriptorSetLayout(),
-			FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, gameObjects}
+			FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, nullptr, nullptr, gameObjects}
 		};
 		PointLightSystem pointLightSystem{
 			vgetDevice,
@@ -93,7 +93,8 @@ namespace vget
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
 			VgetSwapChain::MAX_FRAMES_IN_FLIGHT,
-			camera
+			camera,
+			gameObjects
 		};
 
 		auto viewerObject = VgetGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
@@ -141,7 +142,9 @@ namespace vget
 				vgetImgui.newFrame(); // tell imgui that we're starting a new frame
 
 				int frameIndex = vgetRenderer.getFrameIndex();
-				FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], gameObjects};
+				FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
+					globalDescriptorSets[frameIndex], globalSetLayout->getDescriptorSetLayout(),
+					vgetRenderer.getSwapChainRenderPass(), gameObjects};
 
 				// UPDATE SECTION
 				// Обновление данных внутри uniform buffer объектов для текущего кадра
@@ -154,13 +157,14 @@ namespace vget
 				uboBuffers[frameIndex]->flush();
 				SimpleSystemUbo simpleSystemUbo{};
 				simpleSystemUbo.directionalLightIntensity = vgetImgui.directionalLightIntensity;
+				simpleSystemUbo.directionalLightPosition = vgetImgui.directionalLightPosition;
 				simpleRenderSystem.update(frameInfo, simpleSystemUbo);
 
 				// RENDER SECTION
 				/* Начало и конец прохода рендера и кадра отделены друг от друга для упрощения в дальнейшем
 				   интеграции сразу нескольких проходов рендера (Render passes) для создания отражений,
 				   теней и эффектов пост-процесса. */
-				vgetRenderer.beginSwapChainRenderPass(commandBuffer);
+				vgetRenderer.beginSwapChainRenderPass(commandBuffer, vgetImgui.clear_color);
 
 				// Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью SimpleRenderSystem, а
 				// затем полупрозрачные билборды поинт лайтов с помощью PointLightSystem.
@@ -169,7 +173,8 @@ namespace vget
 
 				// Описание элементов интерфейса ImGUI для отрисовки
 				vgetImgui.runExample();
-				vgetImgui.inspectObject(gameObjects[0]);
+				vgetImgui.showModelsFromDirectory();
+				vgetImgui.enumerateObjectsInTheScene(gameObjects);
 				vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
 
 				vgetRenderer.endSwapChainRenderPass(commandBuffer);

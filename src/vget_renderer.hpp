@@ -3,6 +3,7 @@
 #include "vget_window.hpp"
 #include "vget_swap_chain.hpp"
 #include "vget_device.hpp"
+#include "vget_imgui.hpp"
 
 // std
 #include <cassert>
@@ -41,7 +42,7 @@ namespace vget
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
-		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
 	private:

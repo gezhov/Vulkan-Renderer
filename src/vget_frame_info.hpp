@@ -25,6 +25,8 @@ namespace vget
 		VkCommandBuffer commandBuffer;
 		VgetCamera &camera;
 		VkDescriptorSet globalDescriptorSet;
+		VkDescriptorSetLayout globalSetLayout;
+		VkRenderPass renderPass;
 		VgetGameObject::Map& gameObjects;
 	};
 
@@ -44,5 +46,6 @@ namespace vget
 		//alignas(16)int texturesCount;
 		int texturesCount;
 		float directionalLightIntensity;
+		alignas(16) glm::vec4 directionalLightPosition;
 	};
 }

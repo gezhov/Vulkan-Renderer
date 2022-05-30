@@ -45,7 +45,12 @@
 namespace IMGUIZMO_NAMESPACE
 {
    static const float ZPI = 3.14159265358979323846f;
+#define ROTATION_DEGREES
+#ifdef ROTATION_DEGREES
    static const float RAD2DEG = (180.f / ZPI);
+#else
+   static const float RAD2DEG = 1.f;
+#endif
    static const float DEG2RAD = (ZPI / 180.f);
    const float screenRotateSize = 0.06f;
    // scale a bit so translate axis do not touch when in universal
