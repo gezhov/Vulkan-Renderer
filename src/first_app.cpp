@@ -2,6 +2,7 @@
 
 #include "vget_imgui.hpp"
 #include "systems/simple_render_system.hpp"
+#include "systems/texture_render_system.hpp"
 #include "systems/point_light_system.hpp"
 #include "vget_camera.hpp"
 #include "keyboard_movement_controller.hpp"
@@ -73,7 +74,8 @@ namespace vget
 				.build(globalDescriptorSets[i]);
 		}
 
-		SimpleRenderSystem simpleRenderSystem{
+		SimpleRenderSystem simpleRenderSystem{ vgetDevice, vgetRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+		TextureRenderSystem textureRenderSystem{
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
 			globalSetLayout->getDescriptorSetLayout(),
@@ -154,10 +156,10 @@ namespace vget
 				pointLightSystem.update(frameInfo, ubo);
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
-				SimpleSystemUbo simpleSystemUbo{};
-				simpleSystemUbo.directionalLightIntensity = vgetImgui.directionalLightIntensity;
-				simpleSystemUbo.directionalLightPosition = vgetImgui.directionalLightPosition;
-				simpleRenderSystem.update(frameInfo, simpleSystemUbo);
+				TextureSystemUbo textureSystemUbo{};
+				textureSystemUbo.directionalLightIntensity = vgetImgui.directionalLightIntensity;
+				textureSystemUbo.directionalLightPosition = vgetImgui.directionalLightPosition;
+				textureRenderSystem.update(frameInfo, textureSystemUbo);
 
 				// RENDER SECTION
 				/* Начало и конец прохода рендера и кадра отделены друг от друга для упрощения в дальнейшем
@@ -165,16 +167,17 @@ namespace vget
 				   теней и эффектов пост-процесса. */
 				vgetRenderer.beginSwapChainRenderPass(commandBuffer, vgetImgui.clear_color);
 
-				// Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью SimpleRenderSystem, а
+				// Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью textureRenderSystem, а
 				// затем полупрозрачные билборды поинт лайтов с помощью PointLightSystem.
 				simpleRenderSystem.renderGameObjects(frameInfo);
+				textureRenderSystem.renderGameObjects(frameInfo);
 				pointLightSystem.render(frameInfo);
 
 				// Описание элементов интерфейса ImGUI для отрисовки
 				vgetImgui.runExample();
 				vgetImgui.showPointLightCreator();
 				vgetImgui.showModelsFromDirectory();
-				vgetImgui.enumerateObjectsInTheScene(gameObjects);
+				vgetImgui.enumerateObjectsInTheScene();
 				vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
 
 				vgetRenderer.endSwapChainRenderPass(commandBuffer);
@@ -197,7 +200,7 @@ namespace vget
 		gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 		// Sponza model
-		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "models/sponza.obj");
+		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../models/sponza.obj");
 		auto sponzaObj = VgetGameObject::createGameObject("Sponza");
 		sponzaObj.model = sponza;
 		sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
@@ -206,7 +209,7 @@ namespace vget
 		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 
 		// Living room model
-		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "models/living_room.obj");
+		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
 		auto containerObj = VgetGameObject::createGameObject("LivingRoom");
 		containerObj.model = container;
 		containerObj.transform.translation = {1.f, 1.0f, 20.f};

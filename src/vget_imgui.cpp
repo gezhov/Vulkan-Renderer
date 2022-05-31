@@ -235,29 +235,29 @@ namespace vget {
         ImGui::End();
     }
 
-    void VgetImgui::enumerateObjectsInTheScene(VgetGameObject::Map& objects)
+    void VgetImgui::enumerateObjectsInTheScene()
     {
         if (ImGui::Begin("All Objects")) {
             static int item_current_idx = 0; // Здесь список подобен тому, что есть в Object Loader'е
             if (ImGui::BeginListBox("All Objects", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
             {
-                for (int n = 0; n < objects.size(); n++)
+                for (auto& obj : gameObjects)
                 {
-                    const bool is_selected = (item_current_idx == n);
-                    if (ImGui::Selectable(objects[n].getName().c_str(), is_selected)) {
-                        item_current_idx = n;
+                    const bool is_selected = (item_current_idx == obj.second.getId());
+                    if (ImGui::Selectable(obj.second.getName().c_str(), is_selected)) {
+                        item_current_idx = obj.second.getId();
                     }
 
-                    if (is_selected) ImGui::SetItemDefaultFocus();
+                    if (is_selected) { ImGui::SetItemDefaultFocus(); }
                 }
                 ImGui::EndListBox();
             }
 
-            if (objects[item_current_idx].pointLight != nullptr) {
-                inspectObject(objects[item_current_idx], true);
+            if (gameObjects[item_current_idx].pointLight != nullptr) {
+                inspectObject(gameObjects[item_current_idx], true);
             }
             else {
-                inspectObject(objects[item_current_idx], false);
+                inspectObject(gameObjects[item_current_idx], false);
             }
         }
         ImGui::End();

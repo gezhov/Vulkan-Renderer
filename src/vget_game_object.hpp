@@ -74,7 +74,7 @@ namespace vget
 		std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
 	private:
-		VgetGameObject(id_t objId, std::string name) : id{objId}, name{name} { this->name.append(std::to_string(id)); }
+		VgetGameObject(id_t objId, std::string name) : id{objId}, name{name} { this->name.append(std::to_string(this->id)); }
 
 		id_t id;
 		std::string name;

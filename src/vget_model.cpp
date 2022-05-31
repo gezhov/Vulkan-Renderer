@@ -49,7 +49,7 @@ namespace vget
 	std::unique_ptr<VgetModel> VgetModel::createModelFromFile(VgetDevice& device, const std::string& filepath)
 	{
 		Builder builder{};
-		builder.loadModel(ENGINE_DIR + filepath);
+		builder.loadModel(filepath);
 		std::cout << "Vertex count: " << builder.vertices.size() << "\n";
 		return std::make_unique<VgetModel>(device, builder);
 	}
@@ -138,9 +138,8 @@ namespace vget
 				textures.push_back(std::make_unique<VgetTexture>(path, vgetDevice));
 			else
 			{
-				// TEMPORARY(?): если дифиузной структуры не было у материала, то тогда текстура получит nullptr по данному индексу
+				// TEMPORARY(?): если дифузной текстуры не было у материала, то тогда текстура получит nullptr по данному индексу
 				textures.push_back(nullptr);
-
 			}
 		}
 	}
@@ -245,14 +244,19 @@ namespace vget
 				++indexCount;
 			}
 
-			// Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из списка текстур и диффузный цвет
-			materialId = shape.mesh.material_ids.at(0);
-			info = {
-				indexCount,
-				indexStart,
-				materialId,
-				glm::vec3(materials.at(materialId).diffuse[0],materials.at(materialId).diffuse[1],materials.at(materialId).diffuse[2])
-			};
+			// Условие на наличие материала, позволяет поддерживать .obj модели без текстур и подобъектов
+			if (materials.size() != 0) {
+				// Индекс текстуры для данной фигуры берётся по индексу её материала
+				materialId = shape.mesh.material_ids.at(0);
+
+				// Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из списка текстур и диффузный цвет
+				info = {
+					indexCount,
+					indexStart,
+					materialId, // исп. как textureIndex в структуре подобъекта
+					glm::vec3(materials.at(materialId).diffuse[0],materials.at(materialId).diffuse[1],materials.at(materialId).diffuse[2])
+				};
+			}
 			subObjectsInfo.push_back(info);
 		}
 	}

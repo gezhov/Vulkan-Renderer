@@ -39,7 +39,7 @@ namespace vget
 		int numLights; // кол-во активных точечных источников света
 	};
 
-	struct SimpleSystemUbo
+	struct TextureSystemUbo
 	{
 		//alignas(16)int texturesCount;
 		int texturesCount;

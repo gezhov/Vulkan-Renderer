@@ -16,6 +16,8 @@ struct PointLight {
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	int textureIndex;
+	vec3 diffuseColor;
 } push;
 
 layout(set = 0, binding = 0) uniform GlobalUBO {
@@ -27,8 +29,16 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 	int numLights;
 } ubo;
 
+layout(set = 1, binding = 0) uniform TextureSystemUBO {
+	int texturesCount;
+	float directionalLightIntensity;
+	vec4 directionalLightPosition;
+} textureUbo;
+
+layout(set = 1, binding = 1) uniform sampler2D texSampler[1000]; // Combined Image Sampler дескрипторы
+
 // Directional Lighting
-//vec3 DIRECTION_TO_LIGHT = normalize(textureUbo.directionalLightPosition.xyz);
+vec3 DIRECTION_TO_LIGHT = normalize(textureUbo.directionalLightPosition.xyz);
 
 void main() {
 	// Итоговое рассеянное освещение. Инициализируется сразу обвалакивающим освещением
@@ -43,7 +53,7 @@ void main() {
 	vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
 
 	// Вклад направленного источника света в рассеянное освещение
-	//diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + textureUbo.directionalLightIntensity;
+	diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + textureUbo.directionalLightIntensity;
 
 	// В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
 	for (int i = 0; i < ubo.numLights; ++i) {
@@ -71,5 +81,17 @@ void main() {
 		specularLight += intensity * blinnTerm;
 	}
 
-	outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+	
+
+	// Фрагмент получает цвет по координатам текстуры, либо диффузный цвет своего материала, если
+	// для него текструра отсутствует.
+	vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
+	if (push.textureIndex != -1) {
+		sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
+	} else {
+		sampleTextureColor = vec4(push.diffuseColor, 1.0);
+	}
+
+	//outColor = sampleTextureColor; // просто текстура
+	outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
 }

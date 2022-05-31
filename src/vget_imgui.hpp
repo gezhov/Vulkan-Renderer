@@ -46,7 +46,7 @@ namespace vget {
 		void runExample();
 		void showPointLightCreator();
 		void showModelsFromDirectory();
-		void enumerateObjectsInTheScene(VgetGameObject::Map& objects);
+		void enumerateObjectsInTheScene();
 		void inspectObject(VgetGameObject& object, bool isPointLight);
 		void renderTransformGizmo(TransformComponent& transform);
 
