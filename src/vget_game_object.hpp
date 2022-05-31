@@ -32,6 +32,7 @@ namespace vget
 	struct PointLightComponent
 	{
 		float lightIntensity = 1.0f;
+		bool carouselEnabled = false;
 	};
 
 	class VgetGameObject
@@ -43,10 +44,10 @@ namespace vget
 		VgetGameObject() = default; // Просит компилятор, хотя такой конструктор не используется
 
 		// статичный метод, который выпускает новый экземпляр игрового объекта
-		static VgetGameObject createGameObject()
+		static VgetGameObject createGameObject(std::string name = "Object")
 		{
 			static id_t currentId = 0;
-			return VgetGameObject{ currentId++ };
+			return VgetGameObject{ currentId++, name };
 		}
 
 		// Метод для создания PointLight объекта
@@ -62,7 +63,7 @@ namespace vget
 		VgetGameObject& operator=(VgetGameObject&&) = default;
 
 		const id_t getId() { return id; }
-		const std::string getName() { return std::string{"stub"}.append(std::to_string(getId())); }
+		const std::string getName() { return name; }
 
 		glm::vec3 color{};
 		TransformComponent transform{};
@@ -73,8 +74,9 @@ namespace vget
 		std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
 	private:
-		VgetGameObject(id_t objId) : id{ objId } {}
+		VgetGameObject(id_t objId, std::string name) : id{objId}, name{name} { this->name.append(std::to_string(id)); }
 
 		id_t id;
+		std::string name;
 	};
 }

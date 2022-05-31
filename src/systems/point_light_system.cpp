@@ -94,8 +94,11 @@ namespace vget
 
 			assert(lightIndex < MAX_LIGHTS && "Point Lights exceed maximum specified");
 
-			// обновление позиции PointLight'а в карусели
-			obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+			// todo: IF carouselEnabled == true { обновление позиции }
+
+			// обновление позиции PointLight'а в карусели, если она включена
+			if (obj.pointLight->carouselEnabled == true)
+				obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
 
 			// копируем текущие данные об объекте Point Light'а в Ubo структуру
 			ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);

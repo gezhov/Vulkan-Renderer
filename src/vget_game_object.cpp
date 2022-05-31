@@ -72,7 +72,7 @@ namespace vget
 
 	VgetGameObject VgetGameObject::makePointLight(float intensity, float radius, glm::vec3 color)
 	{
-		VgetGameObject gameObj = VgetGameObject::createGameObject();
+		VgetGameObject gameObj = VgetGameObject::createGameObject("PointLight");
 		gameObj.color = color;
 		gameObj.transform.scale.x = radius;  // радиус видимого билборда сохраняется в X-компоненту scale'а
 		gameObj.pointLight = std::make_unique<PointLightComponent>();

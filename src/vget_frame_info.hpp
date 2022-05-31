@@ -25,8 +25,6 @@ namespace vget
 		VkCommandBuffer commandBuffer;
 		VgetCamera &camera;
 		VkDescriptorSet globalDescriptorSet;
-		VkDescriptorSetLayout globalSetLayout;
-		VkRenderPass renderPass;
 		VgetGameObject::Map& gameObjects;
 	};
 

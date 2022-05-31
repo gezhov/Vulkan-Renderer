@@ -77,7 +77,7 @@ namespace vget
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
 			globalSetLayout->getDescriptorSetLayout(),
-			FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, nullptr, nullptr, gameObjects}
+			FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, gameObjects}
 		};
 		PointLightSystem pointLightSystem{
 			vgetDevice,
@@ -143,8 +143,7 @@ namespace vget
 
 				int frameIndex = vgetRenderer.getFrameIndex();
 				FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
-					globalDescriptorSets[frameIndex], globalSetLayout->getDescriptorSetLayout(),
-					vgetRenderer.getSwapChainRenderPass(), gameObjects};
+					globalDescriptorSets[frameIndex], gameObjects};
 
 				// UPDATE SECTION
 				// Обновление данных внутри uniform buffer объектов для текущего кадра
@@ -173,6 +172,7 @@ namespace vget
 
 				// Описание элементов интерфейса ImGUI для отрисовки
 				vgetImgui.runExample();
+				vgetImgui.showPointLightCreator();
 				vgetImgui.showModelsFromDirectory();
 				vgetImgui.enumerateObjectsInTheScene(gameObjects);
 				vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
@@ -198,7 +198,7 @@ namespace vget
 
 		// Sponza model
 		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "models/sponza.obj");
-		auto sponzaObj = VgetGameObject::createGameObject();
+		auto sponzaObj = VgetGameObject::createGameObject("Sponza");
 		sponzaObj.model = sponza;
 		sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
 		sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
@@ -207,7 +207,7 @@ namespace vget
 
 		// Living room model
 		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "models/living_room.obj");
-		auto containerObj = VgetGameObject::createGameObject();
+		auto containerObj = VgetGameObject::createGameObject("LivingRoom");
 		containerObj.model = container;
 		containerObj.transform.translation = {1.f, 1.0f, 20.f};
 		containerObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);

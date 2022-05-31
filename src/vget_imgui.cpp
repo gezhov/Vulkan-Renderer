@@ -117,18 +117,17 @@ namespace vget {
     }
 
     void VgetImgui::runExample() {
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can
-        // browse its code to learn more about Dear ImGui!).
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
+        // You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named
-        // window.
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
             static int counter = 0;
 
             ImGui::Begin("Scene Control Panel");  // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text( "This is some useful text.");  // Display some text (you can use a format strings too)
+            ImGui::Text("Demo windows for further investigation:");  // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);  // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
@@ -166,6 +165,32 @@ namespace vget {
         }
     }
 
+    void VgetImgui::showPointLightCreator()
+    {
+        if (!ImGui::Begin("Point Light Creator"))
+        {
+            ImGui::End();
+            return;
+        }
+
+        ImGui::Text("Intensity");
+        ImGui::SliderFloat("##Point Light intensity", &pointLightIntensity, .0f, 500.0f);
+
+        ImGui::Text("Radius");
+        ImGui::SliderFloat("##Point Light radius", &pointLightRadius, 0.01f, 10.0f);
+
+        ImGui::Text("Clear Color");
+        ImGui::ColorEdit3("##Point Light color", (float*)&pointLightColor);
+
+        if (ImGui::Button("Add Point Light"))
+        {
+            VgetGameObject pointLight = VgetGameObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
+            gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+        }
+
+        ImGui::End();
+    }
+
     void VgetImgui::showModelsFromDirectory()
     {
         std::string path(MODELS_DIR);
@@ -180,7 +205,7 @@ namespace vget {
         }
 
         if (ImGui::Begin("Object Loader")) {
-            static int item_current_idx = 0; // Here we store our selection data as an index.
+            static int item_current_idx = 0; // В статической переменной функции хранится номер выбранного из списка айтема
             ImGui::Text("Available models to add to the scene:");
             ImGui::Text(selectedObjPath.c_str());
             if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 5 * ImGui::GetTextLineHeightWithSpacing())))
@@ -188,14 +213,14 @@ namespace vget {
                 for (int n = 0; n < objectsPaths.size(); n++)
                 {
                     const bool is_selected = (item_current_idx == n);
+                    // Список заполняется элементами на основе переданных строк
                     if (ImGui::Selectable(objectsPaths[n].c_str(), is_selected)) {
                         item_current_idx = n;
                         selectedObjPath = objectsPaths.at(n);
                     }
 
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
+                    // Установить фокус на выбранный айтем
+                    if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndListBox();
             }
@@ -213,7 +238,7 @@ namespace vget {
     void VgetImgui::enumerateObjectsInTheScene(VgetGameObject::Map& objects)
     {
         if (ImGui::Begin("All Objects")) {
-            static int item_current_idx = 0; // Here we store our selection data as an index.
+            static int item_current_idx = 0; // Здесь список подобен тому, что есть в Object Loader'е
             if (ImGui::BeginListBox("All Objects", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
             {
                 for (int n = 0; n < objects.size(); n++)
@@ -223,29 +248,39 @@ namespace vget {
                         item_current_idx = n;
                     }
 
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
+                    if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndListBox();
             }
 
-            inspectObject(objects[item_current_idx].transform);
+            if (objects[item_current_idx].pointLight != nullptr) {
+                inspectObject(objects[item_current_idx], true);
+            }
+            else {
+                inspectObject(objects[item_current_idx], false);
+            }
         }
         ImGui::End();
     }
 
-    void VgetImgui::inspectObject(TransformComponent& transform)
+    void VgetImgui::inspectObject(VgetGameObject& object, bool isPointLight)
     {
         if (ImGui::Begin("Inspector")) {
             /*if (Scene::selectedEntity != nullptr) {
                 Scene::InspectEntity(Scene::selectedEntity);
             }*/
             if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::DragFloat3("Position", glm::value_ptr(transform.translation), 0.02f);
-                ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.02f);
-                ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.02f);
+                ImGui::DragFloat3("Position", glm::value_ptr(object.transform.translation), 0.02f);
+                ImGui::DragFloat3("Scale", glm::value_ptr(object.transform.scale), 0.02f);
+                ImGui::DragFloat3("Rotation", glm::value_ptr(object.transform.rotation), 0.02f);
+            }
+            renderTransformGizmo(object.transform);
+
+            if (isPointLight) {
+                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 500.0f);
+                ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 10.0f);
+                ImGui::ColorEdit3("Light color", (float*)&object.color);
+                ImGui::Checkbox("Demo Carousel Enabled", &object.pointLight->carouselEnabled);
             }
             /*if (entity->entityType == EntityType::Model) {
                     InspectModel((Model*)entity);
@@ -253,7 +288,7 @@ namespace vget {
             else if (entity->entityType == EntityType::Light) {
                 InspectLight((Light*)entity);
             }*/
-            renderTransformGizmo(transform);
+            
         }
         ImGui::End();
     }

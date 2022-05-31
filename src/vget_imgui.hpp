@@ -44,16 +44,22 @@ namespace vget {
 		bool show_another_window = false;
 		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		void runExample();
+		void showPointLightCreator();
 		void showModelsFromDirectory();
 		void enumerateObjectsInTheScene(VgetGameObject::Map& objects);
-		void inspectObject(TransformComponent& transform);
+		void inspectObject(VgetGameObject& object, bool isPointLight);
 		void renderTransformGizmo(TransformComponent& transform);
 
 		// data
 		float directionalLightIntensity = .0f;
 		glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
+
 		std::vector<std::string> objectsPaths;
 		std::string selectedObjPath = "";
+
+		float pointLightIntensity = .0f;
+		float pointLightRadius = .0f;
+		glm::vec3 pointLightColor{};
 
 	private:
 		VgetDevice& vgetDevice;
