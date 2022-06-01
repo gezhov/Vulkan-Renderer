@@ -66,10 +66,6 @@ namespace vget {
 		VgetCamera& camera;
 		VgetGameObject::Map& gameObjects;
 
-		// We haven't yet covered descriptor pools in the tutorial series
-		// so I'm just going to create one for just imgui and store it here for now.
-		// maybe its preferred to have a separate descriptor pool for imgui anyway,
-		// I haven't looked into imgui best practices at all.
-		VkDescriptorPool descriptorPool;
+		VkDescriptorPool descriptorPool; // ImGui's descriptor pool
 	};
 }  // namespace lve

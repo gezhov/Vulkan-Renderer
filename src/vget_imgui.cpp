@@ -57,12 +57,14 @@ namespace vget {
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
         // Setup Dear ImGui style
         //ImGui::StyleColorsDark();
-         ImGui::StyleColorsClassic();
+        ImGui::StyleColorsClassic();
+        //ImGui::StyleColorsLight();
 
         // Setup Platform/Renderer backends
         // Initialize imgui for vulkan
@@ -269,7 +271,7 @@ namespace vget {
             /*if (Scene::selectedEntity != nullptr) {
                 Scene::InspectEntity(Scene::selectedEntity);
             }*/
-            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::CollapsingHeader("Transform Component", ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::DragFloat3("Position", glm::value_ptr(object.transform.translation), 0.02f);
                 ImGui::DragFloat3("Scale", glm::value_ptr(object.transform.scale), 0.02f);
                 ImGui::DragFloat3("Rotation", glm::value_ptr(object.transform.rotation), 0.02f);
@@ -277,10 +279,12 @@ namespace vget {
             renderTransformGizmo(object.transform);
 
             if (isPointLight) {
-                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 500.0f);
-                ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 10.0f);
-                ImGui::ColorEdit3("Light color", (float*)&object.color);
-                ImGui::Checkbox("Demo Carousel Enabled", &object.pointLight->carouselEnabled);
+                if (ImGui::CollapsingHeader("PointLight Component", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 500.0f);
+                    ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 10.0f);
+                    ImGui::ColorEdit3("Light color", (float*)&object.color);
+                    ImGui::Checkbox("Demo Carousel Enabled", &object.pointLight->carouselEnabled);
+                }
             }
             /*if (entity->entityType == EntityType::Model) {
                     InspectModel((Model*)entity);
