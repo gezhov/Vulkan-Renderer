@@ -71,7 +71,7 @@ namespace vget
 
 		// Функция vkMapMemory проецирует область памяти хоста на память девайса. После выполнения
 		// функции mapped начинает указывать на отображаемое начало области памяти девайса (GPU).
-		// {HOST(CPU}[void* mapped] <===========> [Buffer memory]{DEVICE(GPU)}
+		// {HOST(CPU)}[void* mapped] <===========> [Buffer memory]{DEVICE(GPU)}
 		return vkMapMemory(lveDevice.device(), memory, offset, size, 0, &mapped);
 	}
 

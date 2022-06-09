@@ -23,7 +23,7 @@ namespace vget
 		int frameIndex;
 		float frameTime;
 		VkCommandBuffer commandBuffer;
-		VgetCamera &camera;
+		VgetCamera& camera;
 		VkDescriptorSet globalDescriptorSet;
 		VgetGameObject::Map& gameObjects;
 	};

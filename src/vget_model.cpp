@@ -185,13 +185,13 @@ namespace vget
 		// Мапа хранит уникальные вершины с их индексами. С её помощью составляется буфер индексов.
 		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-		// Проходимся по каждой фигуре из obj файла (объект может состоять из нескольких фигур)
+		// Итерирование по каждой фигуре из obj файла (объект может состоять из нескольких фигур)
 		for (const auto &shape : shapes)
 		{
 			indexCount = 0;
 			indexStart = static_cast<uint32_t>(indices.size());
 
-			// Проходимся по всем индексам текущей фигуры
+			// Итерирование по всем индексам текущей фигуры
 			for (const auto &index : shape.mesh.indices)
 			{
 				Vertex vertex{};

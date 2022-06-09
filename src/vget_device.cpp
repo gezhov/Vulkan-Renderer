@@ -213,7 +213,7 @@ namespace vget
 		QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
 
 		// Пул команд будет предназначен для выделения буферов команд, которые,
-		// в свою очередь, предназначены для отправки в очередь для графических команд.
+		// в свою очередь, собирают и отправляют команды в очередь для графических команд.
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;

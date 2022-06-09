@@ -98,7 +98,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17) # C++ 17 станда
 # Св-во устанавливает рабочий каталог для локального отладчика Visual Studio C++
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
-# Этот блок кода для указания местоположения Include директорий и
+# Это блок кода для указания местоположения Include директорий и
 # связанных библиотек всех внешних зависимостей проекта.
 # Также здесь добавляются Include-заголовки из самого проекта.
 if (WIN32)

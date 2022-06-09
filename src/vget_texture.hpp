@@ -12,8 +12,6 @@ namespace vget
 
 		VkDescriptorImageInfo descriptorInfo();
 
-		//VkImage getTextureImage() const {return textureImage;}
-
 	private:
 		void createImage(
 			uint32_t width,

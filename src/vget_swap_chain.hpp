@@ -17,7 +17,7 @@ namespace vget
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;  // кол-во буферов команд, одновременно находящихся в очереди девайса на выполнение
 
-        VgetSwapChain(VgetDevice &deviceRef, VkExtent2D windowExtent);
+        VgetSwapChain(VgetDevice& deviceRef, VkExtent2D windowExtent);
         VgetSwapChain(VgetDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VgetSwapChain> previous);
         ~VgetSwapChain();
 
@@ -69,12 +69,12 @@ namespace vget
         VkRenderPass renderPass;
 
         std::vector<VkImage> depthImages;
-        std::vector<VkDeviceMemory> depthImageMemorys;
+        std::vector<VkDeviceMemory> depthImageMemories;
         std::vector<VkImageView> depthImageViews;
         std::vector<VkImage> swapChainImages;
         std::vector<VkImageView> swapChainImageViews;
 
-        VgetDevice &device;
+        VgetDevice& device;
         VkExtent2D windowExtent;
 
         VkSwapchainKHR swapChain;

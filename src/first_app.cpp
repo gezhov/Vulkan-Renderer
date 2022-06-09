@@ -217,6 +217,15 @@ namespace vget
 		containerObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
 		gameObjects.emplace(containerObj.getId(), std::move(containerObj));
 
+		// Conference model
+		/*std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../models/conference.obj");
+		auto conferenceObj = VgetGameObject::createGameObject("Conference");
+		conferenceObj.model = conference;
+		conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
+		conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
+		conferenceObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
+		gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));*/
+
 		// тестирование работы текстурирования
 		/*VgetModel::Builder textureModelBuilder{};
 		const std::vector<VgetModel::Vertex> vertices = {

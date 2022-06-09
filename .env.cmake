@@ -15,4 +15,4 @@ set(VULKAN_SDK_PATH  D:/Soft/VulkanSDK/1.2.189.0)
 # set(IMGUI_PATH X:/dev/Libraries/imgui)
 
 # Optional set IMGUIZMO_PATH to target specific version, otherwise defaults to external/imguizmo
-# set(IMGUIZMO_PATH X:/dev/Libraries/imgui)
+# set(IMGUIZMO_PATH X:/dev/Libraries/imguizmo)
