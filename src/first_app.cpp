@@ -86,22 +86,24 @@ namespace vget
 			vgetRenderer.getSwapChainRenderPass(),
 			globalSetLayout->getDescriptorSetLayout()
 		};
+
 		VgetCamera camera{};
 		// установка положения "теоретической камеры"
 		//camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
 		//camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
+
+		auto viewerObject = VgetGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
+		KeyboardMovementController cameraController{};
+
 		VgetImgui vgetImgui{
 			vgetWindow,
 			vgetDevice,
 			vgetRenderer.getSwapChainRenderPass(),
 			VgetSwapChain::MAX_FRAMES_IN_FLIGHT,
 			camera,
+			cameraController,
 			gameObjects
 		};
-
-		auto viewerObject = VgetGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
-		viewerObject.transform.translation.z = -2.5f; // начальное положение сдвинуто немного назад
-		KeyboardMovementController cameraController{};
 
 		auto currentTime = std::chrono::high_resolution_clock::now();
 
@@ -200,13 +202,13 @@ namespace vget
 		gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 		// Sponza model
-		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../models/sponza.obj");
+		/*std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../models/sponza.obj");
 		auto sponzaObj = VgetGameObject::createGameObject("Sponza");
 		sponzaObj.model = sponza;
 		sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
 		sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
 		sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
+		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
 
 		// Living room model
 		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
@@ -218,13 +220,13 @@ namespace vget
 		gameObjects.emplace(containerObj.getId(), std::move(containerObj));
 
 		// Conference model
-		/*std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../models/conference.obj");
-		auto conferenceObj = VgetGameObject::createGameObject("Conference");
-		conferenceObj.model = conference;
-		conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
-		conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
-		conferenceObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-		gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));*/
+		//std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../models/fireplace_room.obj");
+		//auto conferenceObj = VgetGameObject::createGameObject("Conference");
+		//conferenceObj.model = conference;
+		//conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
+		//conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
+		//conferenceObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f); //x: 1.560 (iscv2)
+		//gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));
 
 		// тестирование работы текстурирования
 		/*VgetModel::Builder textureModelBuilder{};
@@ -277,33 +279,33 @@ namespace vget
 		//floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
 		//gameObjects.emplace(floor.getId(), std::move(floor));
 
-		std::vector<glm::vec3> lightColors {
-			{1.f, .1f, .1f},
-			{.1f, .1f, 1.f},
-			{.1f, 1.f, .1f},
-			{1.f, 1.f, .1f},
-			{.1f, 1.f, 1.f},
-			{1.f, 1.f, 1.f}
-		};
+		//std::vector<glm::vec3> lightColors {
+		//	{1.f, .1f, .1f},
+		//	{.1f, .1f, 1.f},
+		//	{.1f, 1.f, .1f},
+		//	{1.f, 1.f, .1f},
+		//	{.1f, 1.f, 1.f},
+		//	{1.f, 1.f, 1.f}
+		//};
 
-		// Создаётся по одному Point Light'у на каждый цвет
-		for (int i = 0; i < lightColors.size(); ++i)
-		{
-			auto pointLight = VgetGameObject::makePointLight(0.2f);
-			pointLight.color = lightColors[i];
+		//// Создаётся по одному Point Light'у на каждый цвет
+		//for (int i = 0; i < lightColors.size(); ++i)
+		//{
+		//	auto pointLight = VgetGameObject::makePointLight(0.2f);
+		//	pointLight.color = lightColors[i];
 
-			// создаётся матрица преобразования для расстановки объектов точечного света по кругу
-			auto rotateLight = glm::rotate(
-				glm::mat4(1.f),	// инициализируем единичную матрицу
-				// каждый PointLight располагается под своим углом, который задан определённой частью от окружности (360 град. == 2*pi)
-				(i * glm::two_pi<float>()) / lightColors.size(),
-				{0.f, -1.f, 0.f} // ось вращения (y == -1, значит объекты будут расставлены вокруг Up-вектора)
-			);
+		//	// создаётся матрица преобразования для расстановки объектов точечного света по кругу
+		//	auto rotateLight = glm::rotate(
+		//		glm::mat4(1.f),	// инициализируем единичную матрицу
+		//		// каждый PointLight располагается под своим углом, который задан определённой частью от окружности (360 град. == 2*pi)
+		//		(i * glm::two_pi<float>()) / lightColors.size(),
+		//		{0.f, -1.f, 0.f} // ось вращения (y == -1, значит объекты будут расставлены вокруг Up-вектора)
+		//	);
 
-			pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
-			// само вращение реализовано в функции update() системы PointLightSystem
+		//	pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+		//	// само вращение реализовано в функции update() системы PointLightSystem
 
-			gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-		}
+		//	gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+		//}
 	}
 }

@@ -27,8 +27,8 @@ namespace vget {
     // using.
     VgetImgui::VgetImgui(
         VgetWindow& window, VgetDevice& device, VkRenderPass renderPass,
-        uint32_t imageCount, VgetCamera& camera, VgetGameObject::Map& gameObjects)
-        : vgetDevice{ device }, camera{ camera }, gameObjects{gameObjects} {
+        uint32_t imageCount, VgetCamera& camera, KeyboardMovementController& kmc, VgetGameObject::Map& gameObjects)
+        : vgetDevice{ device }, camera{ camera }, kmc{ kmc }, gameObjects{ gameObjects } {
         // set up a descriptor pool stored on this instance, see header for more comments on this.
         VkDescriptorPoolSize pool_sizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -125,9 +125,8 @@ namespace vget {
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
-            static int counter = 0;
-
             ImGui::Begin("Scene Control Panel");  // Create a window called "Hello, world!" and append into it.
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
 
             ImGui::Text("Demo windows for further investigation:");  // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);  // Edit bools storing our window open/close state
@@ -142,11 +141,11 @@ namespace vget {
             ImGui::Text("Clear Color");
             ImGui::ColorEdit3("##Clear Color", (float*)&clear_color);
 
-            if (ImGui::Button("Button"))  // Buttons return true when clicked (most widgets return true
-                counter++;                  // when edited/activated)
-
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);
+            ImGui::Text("Camera Move and Rotate Speed");
+            ImGui::DragFloat("##MoveSpeed", &kmc.moveSpeed, .01f);
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+            ImGui::DragFloat("##RotateSpeed", &kmc.lookSpeed, .01f);
 
             ImGui::Text(
                 "Application average %.3f ms/frame (%.1f FPS)",
@@ -174,6 +173,7 @@ namespace vget {
             ImGui::End();
             return;
         }
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
 
         ImGui::Text("Intensity");
         ImGui::SliderFloat("##Point Light intensity", &pointLightIntensity, .0f, 500.0f);

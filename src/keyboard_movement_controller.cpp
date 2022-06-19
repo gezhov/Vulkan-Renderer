@@ -12,6 +12,21 @@ namespace vget
 		if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
 		if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
+		if (glfwGetMouseButton(window, keys.mouseCamera) == GLFW_PRESS) {
+			auto vgetWindow = reinterpret_cast<VgetWindow*>(glfwGetWindowUserPointer(window));
+			halfWidth = static_cast<double>(vgetWindow->getExtent().width);
+			halfHeight = static_cast<double>(vgetWindow->getExtent().height);
+
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			glfwGetCursorPos(window, &xpos, &ypos);
+			glfwSetCursorPos(window, halfWidth, halfHeight);
+			rotate.y -= halfWidth - xpos;
+			rotate.x += halfHeight - ypos;
+		}
+		else {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
+
 		// Проверка на то, чтобы вектора введённого поворота был больше нуля, так как
 		// если он равен нулю, то не удастся осуществить нормализацию вектора, потому что
 		// там будет браться квадратный корень из нуля.

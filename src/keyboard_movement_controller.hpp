@@ -20,13 +20,18 @@ namespace vget
 		    int lookRight = GLFW_KEY_RIGHT;
 		    int lookUp = GLFW_KEY_UP;
 		    int lookDown = GLFW_KEY_DOWN;
+			int mouseCamera = GLFW_MOUSE_BUTTON_RIGHT;
 		};
 
 		// gameObject - ссылка на контроллируемый объект
 		void moveInPlaneXZ(GLFWwindow* window, float dt, VgetGameObject& gameObject);
 
 		KeyMappings keys{};
-		float moveSpeed{3.f};	// для настройки скорости перемещения
-		float lookSpeed{1.5f};  // для настройки скорости поворота
+		double halfWidth;
+		double halfHeight;
+		double xpos;
+		double ypos;
+		float moveSpeed{5.f};	// для настройки скорости перемещения
+		float lookSpeed{2.f};  // для настройки скорости поворота
 	};
 }

@@ -4,6 +4,7 @@
 #include "vget_window.hpp"
 #include "vget_game_object.hpp"
 #include "vget_camera.hpp"
+#include "keyboard_movement_controller.hpp"
 
 // libs
 #include <imgui.h>
@@ -29,7 +30,7 @@ namespace vget {
 	class VgetImgui {
 	public:
 		VgetImgui(VgetWindow& window, VgetDevice& device, VkRenderPass renderPass,
-			uint32_t imageCount, VgetCamera& camera, VgetGameObject::Map& gameObjects);
+			uint32_t imageCount, VgetCamera& camera, KeyboardMovementController& kmc, VgetGameObject::Map& gameObjects);
 		~VgetImgui();
 
 		VgetImgui() = default;
@@ -64,6 +65,7 @@ namespace vget {
 	private:
 		VgetDevice& vgetDevice;
 		VgetCamera& camera;
+		KeyboardMovementController& kmc;
 		VgetGameObject::Map& gameObjects;
 
 		VkDescriptorPool descriptorPool; // ImGui's descriptor pool
