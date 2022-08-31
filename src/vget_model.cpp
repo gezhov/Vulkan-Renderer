@@ -14,11 +14,11 @@
 #include <unordered_map>
 
 #ifndef ENGINE_DIR
-#define ENGINE_DIR "../"
+#define ENGINE_DIR "../../../"
 #endif
 
 #ifndef MODELS_DIR
-#define MODELS_DIR "../models/"
+#define MODELS_DIR "../../../models/"
 #endif
 
 namespace std
@@ -134,10 +134,11 @@ namespace vget
 	{
 		for (auto& path : texturePaths)
 		{
-			if (path != MODELS_DIR)
+			if (path != MODELS_DIR) {
 				textures.push_back(std::make_unique<VgetTexture>(path, vgetDevice));
-			else
-			{
+				hasTextures = true;
+			}
+			else {
 				// TEMPORARY(?): если дифузной текстуры не было у материала, то тогда текстура получит nullptr по данному индексу
 				textures.push_back(nullptr);
 			}

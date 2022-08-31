@@ -18,6 +18,7 @@ namespace vget
 	{
 		glm::mat4 modelMatrix{ 1.f }; // такой конструктор создаёт единичную матрицу
 		glm::mat4 normalMatrix{ 1.f };
+		alignas(16) glm::vec3 diffuseColor{};
 	};
 
 	SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
@@ -95,24 +96,45 @@ namespace vget
 			auto& obj = kv.second; // ссылка на объект из мапы
 
 			// В данной системе рендерятся только объекты с моделями без материала (и, соответственно, текстур)
-			if (obj.model == nullptr || obj.model->getTextures().size() != 0) continue;
+			if (obj.model == nullptr || obj.model->hasTextures == true) continue;
 
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
 			push.normalMatrix = obj.transform.normalMatrix();
 
-			vkCmdPushConstants(
-				frameInfo.commandBuffer,
-				pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(SimplePushConstantData),
-				&push);
+			for (auto& info : obj.model->getSubObjectsInfo())
+			{
+				push.diffuseColor = info.diffuseColor;
 
-			// прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
-			obj.model->bind(frameInfo.commandBuffer);
-			// отрисовка буфера вершин
-			obj.model->draw(frameInfo.commandBuffer);
+				vkCmdPushConstants(
+					frameInfo.commandBuffer,
+					pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(SimplePushConstantData),
+					&push);
+
+				// прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
+				obj.model->bind(frameInfo.commandBuffer);
+				// отрисовка буфера вершин
+				obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);
+			}
+
+			// для простейших obj без подобъектов
+			if (obj.model->getSubObjectsInfo().size() == 1) {
+				push.diffuseColor = {1.f, 1.f, 1.f};
+
+				vkCmdPushConstants(
+					frameInfo.commandBuffer,
+					pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(SimplePushConstantData),
+					&push);
+
+				obj.model->bind(frameInfo.commandBuffer);
+				obj.model->draw(frameInfo.commandBuffer);
+			}
 		}
 	}
 }

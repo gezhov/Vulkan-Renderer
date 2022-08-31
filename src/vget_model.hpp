@@ -73,6 +73,8 @@ namespace vget
 		std::vector<Builder::SubObjectInfo>& getSubObjectsInfo() {return subObjectsInfo;}
 		std::vector<std::unique_ptr<VgetTexture>>& getTextures() {return textures;}
 
+		bool hasTextures = false;
+
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
 		void createIndexBuffers(const std::vector<uint32_t>& indices);

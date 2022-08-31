@@ -77,8 +77,8 @@ namespace vget
 
 		vgetPipeline = std::make_unique<VgetPipeline>(
 			vgetDevice,
-			"./shaders/texture_shader.vert.spv",
-			"./shaders/texture_shader.frag.spv",
+			"shaders/texture_shader.vert.spv",
+			"shaders/texture_shader.frag.spv",
 			pipelineConfig);
 	}
 
@@ -103,7 +103,7 @@ namespace vget
 		for (auto& kv : gameObjects)
 		{
 			auto& obj = kv.second; // ссылка на объект из мапы
-			if (obj.model != nullptr && obj.model->getTextures().size() != 0) {
+			if (obj.model != nullptr && obj.model->hasTextures == true) {
 				modelObjectsIds.push_back(kv.first); // в этой системе рендерятся только объекты с текстурами
 			}
 		}

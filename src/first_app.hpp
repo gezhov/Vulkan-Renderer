@@ -15,8 +15,8 @@ namespace vget
 	class FirstApp
 	{
 	public:
-		static constexpr int WIDTH = 1280;
-		static constexpr int HEIGHT = 960;
+		static constexpr int WIDTH = 1600;
+		static constexpr int HEIGHT = 1000;
 
 		FirstApp();
 		~FirstApp();

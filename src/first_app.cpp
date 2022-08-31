@@ -202,30 +202,30 @@ namespace vget
 		gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 		// Sponza model
-		/*std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../models/sponza.obj");
+		std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../../../models/sponza.obj");
 		auto sponzaObj = VgetGameObject::createGameObject("Sponza");
 		sponzaObj.model = sponza;
 		sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
 		sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
 		sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
+		gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 
 		// Living room model
-		std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
+		/*std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
 		auto containerObj = VgetGameObject::createGameObject("LivingRoom");
 		containerObj.model = container;
 		containerObj.transform.translation = {1.f, 1.0f, 20.f};
 		containerObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
 		containerObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-		gameObjects.emplace(containerObj.getId(), std::move(containerObj));
+		gameObjects.emplace(containerObj.getId(), std::move(containerObj));*/
 
 		// Conference model
-		//std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../models/fireplace_room.obj");
-		//auto conferenceObj = VgetGameObject::createGameObject("Conference");
+		//std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../../../models/iscv2.obj");
+		//auto conferenceObj = VgetGameObject::createGameObject("Room");
 		//conferenceObj.model = conference;
 		//conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
 		//conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
-		//conferenceObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f); //x: 1.560 (iscv2)
+		//conferenceObj.transform.rotation = glm::vec3(1.560f, 0.f, 0.f); //x: 1.560 (iscv2)
 		//gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));
 
 		// тестирование работы текстурирования

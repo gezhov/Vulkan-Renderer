@@ -16,6 +16,7 @@ struct PointLight {
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	vec3 diffuseColor;
 } push;
 
 layout(set = 0, binding = 0) uniform GlobalUBO {

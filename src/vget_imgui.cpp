@@ -17,7 +17,7 @@
 #include <filesystem>
 
 #ifndef MODELS_DIR
-#define MODELS_DIR "../models/"
+#define MODELS_DIR "../../../models/"
 #endif
 
 namespace vget {
