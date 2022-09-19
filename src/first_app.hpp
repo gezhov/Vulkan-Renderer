@@ -12,33 +12,33 @@
 
 namespace vget
 {
-	class FirstApp
-	{
-	public:
-		static constexpr int WIDTH = 1600;
-		static constexpr int HEIGHT = 1000;
+    class FirstApp
+    {
+    public:
+        static constexpr int WIDTH = 1600;
+        static constexpr int HEIGHT = 1000;
 
-		FirstApp();
-		~FirstApp();
+        FirstApp();
+        ~FirstApp();
 
-		// Избавляемся от copy operator и copy constrcutor, т.к. FirstApp хранит в себе указатели
-		// на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
-		FirstApp(const FirstApp&) = delete;
-		FirstApp& operator=(const FirstApp&) = delete;
+        // Избавляемся от copy operator и copy constrcutor, т.к. FirstApp хранит в себе указатели
+        // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
+        FirstApp(const FirstApp&) = delete;
+        FirstApp& operator=(const FirstApp&) = delete;
 
-		void run();
+        void run();
 
-	private:
-		void loadGameObjects();
+    private:
+        void loadGameObjects();
 
-		// Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
-		// сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
-		// быть объявлен после девайса.
-		VgetWindow vgetWindow{ WIDTH, HEIGHT, "VgetX Engine" };
-		VgetDevice vgetDevice{ vgetWindow };
-		VgetRenderer vgetRenderer{ vgetWindow, vgetDevice };
+        // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
+        // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
+        // быть объявлен после девайса.
+        VgetWindow vgetWindow{ WIDTH, HEIGHT, "VgetX Engine" };
+        VgetDevice vgetDevice{ vgetWindow };
+        VgetRenderer vgetRenderer{ vgetWindow, vgetDevice };
 
-		std::unique_ptr<VgetDescriptorPool> globalPool{};
-		VgetGameObject::Map gameObjects;
-	};
+        std::unique_ptr<VgetDescriptorPool> globalPool{};
+        VgetGameObject::Map gameObjects;
+    };
 }
