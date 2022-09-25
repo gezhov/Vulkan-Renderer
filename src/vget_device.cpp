@@ -10,11 +10,13 @@ namespace vget
 {
     // Отладочная callback-функция, которая исп. отладочным мессенджером.
     // Её прототип соответствует требуемому типу PFN_vkDebugUtilsMessengerCallbackEXT.
+    /* Чтобы увидеть вызов, который стриггерил callback, можно добавить точку останова на
+       эту функцию и посмотреть на стек вызовов. */
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData)
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData)
     {
         switch (messageSeverity) {
             case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -50,29 +52,31 @@ namespace vget
     }
 
     // Функция, которая находит указатель на функцию vkCreateDebugUtilsMessengerEXT(),
-    // а затем вызывает её создавая дескриптор для VkDebugUtilsMessengerEXT
+    // а затем вызывает её создавая дескриптор для отлад. мессенджера VkDebugUtilsMessengerEXT
     VkResult CreateDebugUtilsMessengerEXT(
         VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-        const VkAllocationCallbacks *pAllocator,
-        VkDebugUtilsMessengerEXT *pDebugMessenger)
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDebugUtilsMessengerEXT* pDebugMessenger)
     {
+        // ищем указатель на функцию создания отладочного мессенджера в расширении экземпляра
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             instance,
             "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr) {
+            // создаём отладочный мессенджер, вызвав найденную функцию
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
         } else {
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
     }
 
-    // Функция для уничтожения объекта отладочного мессенджера при помощи функции
+    // Функция для уничтожения дескриптора отладочного мессенджера при помощи функции
     // vkDestroyDebugUtilsMessengerEXT(), указатель на которую сначала ищется через экземпляр.
     void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
-        const VkAllocationCallbacks *pAllocator)
+        const VkAllocationCallbacks* pAllocator)
     {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             instance,
@@ -87,7 +91,7 @@ namespace vget
     VgetDevice::VgetDevice(VgetWindow& window) : window{window}
     {
         createInstance();      // инициализация Vulkan API
-        setupDebugMessenger(); // настройка отладочного мессенджера для вывода сообщений от слоя проверки в ходе отладки
+        setupDebugMessenger(); // настройка отладочного мессенджера для контроля вывода сообщений от слоя проверки в ходе отладки
         createSurface();       // создание surface объекта для связи окна от GLFW и выводимого изображения от Vulkan
         pickPhysicalDevice();  // выбор физического девайса (GPU)
         createLogicalDevice(); // создание логического девайса (выбор технических особенностей GPU для работы с ними)
@@ -133,11 +137,15 @@ namespace vget
         createInfo.ppEnabledExtensionNames = extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-        if (enableValidationLayers)
+        if (enableValidationLayers) // включение слоёв проверок
         {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
+            // Передача структуры для создания отладочного мессенджера через pNext автоматически
+            // создаст этот мессенджер для его работы во время создания и уничтожения экземпляра Vulkan
+            // через vkCreateInstance() и vkDestroyInstance() соответственно. Он не мешает работе основного
+            // отладочного мессенджера и будет очищен вместе с экземпляром.
             populateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
         }
@@ -277,6 +285,7 @@ namespace vget
         return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
     }
 
+    // Настройка и создание отладочного мессенджера
     void VgetDevice::setupDebugMessenger()
     {
         if (!enableValidationLayers) return;
@@ -284,7 +293,7 @@ namespace vget
         populateDebugMessengerCreateInfo(createInfo);
         if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to set up debug messenger!");
+            throw std::runtime_error("Failed to set up debug messenger!");
         }
     }
 
@@ -293,13 +302,16 @@ namespace vget
     {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        // messageSeverity задаёт виды серьёзности сообщения от valid. layer для отлова мессенджером
+        // Функция обратного вызова выполняется только для указанных видов. (не указаны INFO и VERBOSE).
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        // messageType таким же образом фильтрует сообщения по их типу (сейчас указаны все типы)
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-        createInfo.pUserData = nullptr;  // Optional
+        createInfo.pfnUserCallback = debugCallback; // указатель на саму функцию обратного вызова
+        createInfo.pUserData = nullptr;  // любой указатель для передачи данных в callback-функцию (Optional)
     }
 
     // Проверка есть ли требуемые слои проверки в списке доступных слоёв экземпляра.
