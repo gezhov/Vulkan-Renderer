@@ -5,6 +5,7 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace vget
 {
@@ -19,11 +20,10 @@ namespace vget
     // Структура, хранящая индексы нужных для рендерера семейств очередей
     struct QueueFamilyIndices
     {
-        uint32_t graphicsFamily;
-        uint32_t presentFamily;
-        bool graphicsFamilyHasValue = false;
-        bool presentFamilyHasValue = false;
-        bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
     };
 
     class VgetDevice
@@ -51,7 +51,7 @@ namespace vget
         VkQueue presentQueue() { return presentQueue_; }
         VkInstance getInstance() { return instance; }
         VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
-        uint32_t getGraphicsQueueFamily() { return findPhysicalQueueFamilies().graphicsFamily; }
+        uint32_t getGraphicsQueueFamily() { return findPhysicalQueueFamilies().graphicsFamily.value(); }
 
         SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);

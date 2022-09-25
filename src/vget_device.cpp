@@ -167,7 +167,7 @@ namespace vget
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         if (deviceCount == 0)
         {
-            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+            throw std::runtime_error("Failed to find GPUs with Vulkan support!");
         }
         std::cout << "Device count: " << deviceCount << std::endl;
         std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -175,20 +175,77 @@ namespace vget
 
         for (const auto &device : devices)
         {
-            if (isDeviceSuitable(device))
-            {
+            if (isDeviceSuitable(device)) {
                 physicalDevice = device;
                 break;
             }
         }
 
-        if (physicalDevice == VK_NULL_HANDLE)
-        {
-            throw std::runtime_error("failed to find a suitable GPU!");
+        if (physicalDevice == VK_NULL_HANDLE) {
+            throw std::runtime_error("Failed to find a suitable GPU!");
         }
 
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-        std::cout << "physical device: " << properties.deviceName << std::endl;
+        std::cout << "Picked physical device: " << properties.deviceName << std::endl;
+    }
+
+    // Проверка пригодности переданного физического ус-ва для исп. движком.
+    bool VgetDevice::isDeviceSuitable(VkPhysicalDevice device)
+    {
+        QueueFamilyIndices indices = findQueueFamilies(device);
+
+        bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+        bool swapChainAdequate = false;
+        if (extensionsSupported)
+        {
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        }
+
+        // запрос поддерживаемого функционала данного GPU
+        VkPhysicalDeviceFeatures supportedFeatures;
+        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    }
+
+    // Функция для заполнения структуры, которая хранит индексы нужных нам семейств очередей.
+    QueueFamilyIndices VgetDevice::findQueueFamilies(VkPhysicalDevice device)
+    {
+        QueueFamilyIndices indices;
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies)
+        {
+            // Добавление индекса семейства очереди, которое поддерживает графические команды
+            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
+                indices.graphicsFamily = i;
+            }
+
+            // Добавление индекса семейства очереди, которое поддерживает команды отображения
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
+            if (queueFamily.queueCount > 0 && presentSupport)
+            {
+                indices.presentFamily = i;
+            }
+
+            // Выходим из цикла/функции, если структура уже заполнилась
+            if (indices.isComplete())
+                break;
+
+            i++;
+        }
+
+        return indices;
     }
 
     void VgetDevice::createLogicalDevice()
@@ -196,15 +253,15 @@ namespace vget
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
+        std::set<std::optional<uint32_t>> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
 
         // Заполнение QueueCreateInfo для каждого из нужных семейств очередей
         float queuePriority = 1.0f;
-        for (uint32_t queueFamily : uniqueQueueFamilies)
+        for (std::optional<uint32_t> queueFamily : uniqueQueueFamilies)
         {
             VkDeviceQueueCreateInfo queueCreateInfo = {};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueFamilyIndex = queueFamily.value();
             queueCreateInfo.queueCount = 1; // создать только одну очередь из данного семейства
             queueCreateInfo.pQueuePriorities = &queuePriority;
             queueCreateInfos.push_back(queueCreateInfo);
@@ -241,8 +298,8 @@ namespace vget
         }
 
         // Получение дескрипторов для созданных вместе с девайсом очередей
-        vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
-        vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
+        vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
+        vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
     }
 
     // Создание пула комманд, из которого выделяются буферы команд
@@ -254,7 +311,7 @@ namespace vget
         // в свою очередь, собирают и отправляют команды в очередь для графических команд.
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
         // Флаги говорят, что буфер команд будет перезаписываться часто и в индивидуальном порядке
         poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
@@ -265,25 +322,6 @@ namespace vget
     }
 
     void VgetDevice::createSurface() { window.createWindowSurface(instance, &surface_); }
-
-    bool VgetDevice::isDeviceSuitable(VkPhysicalDevice device)
-    {
-        QueueFamilyIndices indices = findQueueFamilies(device);
-
-        bool extensionsSupported = checkDeviceExtensionSupport(device);
-
-        bool swapChainAdequate = false;
-        if (extensionsSupported)
-        {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-        }
-
-        VkPhysicalDeviceFeatures supportedFeatures;
-        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
-        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
-    }
 
     // Настройка и создание отладочного мессенджера
     void VgetDevice::setupDebugMessenger()
@@ -412,46 +450,6 @@ namespace vget
         }
 
         return requiredExtensions.empty();
-    }
-
-    // Функция для заполнения структуры, которая хранит индексы нужных нам семейств очередей
-    QueueFamilyIndices VgetDevice::findQueueFamilies(VkPhysicalDevice device)
-    {
-        QueueFamilyIndices indices;
-
-        uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-        int i = 0;
-        for (const auto &queueFamily : queueFamilies)
-        {
-            // Добавление индекса семейства, которое поддерживает графические команды
-            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            {
-                indices.graphicsFamily = i;
-                indices.graphicsFamilyHasValue = true;
-            }
-
-            // Добавление индекса семейства, которое поддерживает команды отображения
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
-            if (queueFamily.queueCount > 0 && presentSupport)
-            {
-                indices.presentFamily = i;
-                indices.presentFamilyHasValue = true;
-            }
-
-            // Выходим из цикла/функции, если структура уже заполнилась
-            if (indices.isComplete())
-                break;
-
-            i++;
-        }
-
-        return indices;
     }
 
     // Заполнение структуры деталей поддержки цепи обмена

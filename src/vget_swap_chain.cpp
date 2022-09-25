@@ -169,7 +169,7 @@ namespace vget
 
         // Описание используемых семейств очередей
 	    QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
-	    uint32_t queueFamilyIndices[] = {indices.graphicsFamily, indices.presentFamily};
+	    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 	    if (indices.graphicsFamily != indices.presentFamily)
 	    {
 		    createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
