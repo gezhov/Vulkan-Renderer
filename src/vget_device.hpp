@@ -50,12 +50,12 @@ namespace vget
         VkQueue graphicsQueue() { return graphicsQueue_; }
         VkQueue presentQueue() { return presentQueue_; }
         VkInstance getInstance() { return instance; }
-        VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
+        VkPhysicalDevice getPhysicalDevice() { return physicalDevice_; }
         uint32_t getGraphicsQueueFamily() { return findPhysicalQueueFamilies().graphicsFamily.value(); }
 
-        SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
+        SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice_); }
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
+        QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice_); }
         VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
         // Buffer Helper Functions
@@ -97,10 +97,10 @@ namespace vget
         bool checkDeviceExtensionSupport(VkPhysicalDevice device);
         SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
+        VgetWindow& window;
         VkInstance instance;
         VkDebugUtilsMessengerEXT debugMessenger;
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-        VgetWindow& window;
+        VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
         VkCommandPool commandPool;
 
         VkDevice device_;

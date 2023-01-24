@@ -161,6 +161,56 @@ namespace vget
         }
     }
 
+    // Проверка доступны ли Vulkan расширения, требуемые для работы движка.
+    void VgetDevice::hasEngineRequiredInstanceExtensions()
+    {
+        // Ищем и выводим все доступные расширения экземпляра
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+        std::cout << "Available Vulkan instance extensions:" << std::endl;
+        std::unordered_set<std::string> available;
+        for (const auto& extension : extensions)
+        {
+            std::cout << "\t" << extension.extensionName << ": version " << extension.specVersion << std::endl;
+            available.insert(extension.extensionName);
+        }
+
+        // Выводим требуемые расширения экземпляра и выбрасываем исключение, если
+        // какого-то расширения не хватает для работы движка.
+        std::cout << "Required extensions:" << std::endl;
+        auto requiredExtensions = getRequiredExtensions();
+        for (const auto& required : requiredExtensions)
+        {
+            std::cout << "\t" << required << std::endl;
+            if (available.find(required) == available.end())
+            {
+                throw std::runtime_error("Missing required GLFW or Vulkan debug extension.");
+            }
+        }
+    }
+
+    // Формирование и возврат вектора расширений, требуемых для работы движка.
+    std::vector<const char*> VgetDevice::getRequiredExtensions()
+    {
+        // Встроенная в GLFW функция создаёт массив с расширениями, которые должен 
+        // использовать Vulkan для взаимодействия с оконной системой (как минимум "VK_KHR_surface").
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions;
+        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+        // Добавление расширения для отладочного мессенджера (он обрабатывает вывод слоёв проверки)
+        if (enableValidationLayers) {
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); // extension to set up debug messanger
+        }
+
+        return extensions;
+    }
+
     void VgetDevice::pickPhysicalDevice()
     {
         uint32_t deviceCount = 0;
@@ -170,69 +220,69 @@ namespace vget
             throw std::runtime_error("Failed to find GPUs with Vulkan support!");
         }
         std::cout << "Device count: " << deviceCount << std::endl;
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
 
-        for (const auto &device : devices)
+        for (const auto & physicalDevice : physicalDevices)
         {
-            if (isDeviceSuitable(device)) {
-                physicalDevice = device;
+            if (isDeviceSuitable(physicalDevice)) {
+                physicalDevice_ = physicalDevice;
                 break;
             }
         }
 
-        if (physicalDevice == VK_NULL_HANDLE) {
+        if (physicalDevice_ == VK_NULL_HANDLE) {
             throw std::runtime_error("Failed to find a suitable GPU!");
         }
 
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+        vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
         std::cout << "Picked physical device: " << properties.deviceName << std::endl;
     }
 
     // Проверка пригодности переданного физического ус-ва для исп. движком.
-    bool VgetDevice::isDeviceSuitable(VkPhysicalDevice device)
+    bool VgetDevice::isDeviceSuitable(VkPhysicalDevice physicalDevice)
     {
-        QueueFamilyIndices indices = findQueueFamilies(device);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-        bool extensionsSupported = checkDeviceExtensionSupport(device);
+        bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice);
 
-        bool swapChainAdequate = false;
+        bool isSwapChainAdequate = false;
         if (extensionsSupported)
         {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+            isSwapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
         // запрос поддерживаемого функционала данного GPU
         VkPhysicalDeviceFeatures supportedFeatures;
-        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+        vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
-        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        return indices.isComplete() && extensionsSupported && isSwapChainAdequate && supportedFeatures.samplerAnisotropy;
     }
 
     // Функция для заполнения структуры, которая хранит индексы нужных нам семейств очередей.
-    QueueFamilyIndices VgetDevice::findQueueFamilies(VkPhysicalDevice device)
+    QueueFamilyIndices VgetDevice::findQueueFamilies(VkPhysicalDevice physicalDevice)
     {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-        int i = 0;
+        int i = 0; // индекс рассматриваемого семейства очередей
         for (const auto& queueFamily : queueFamilies)
         {
-            // Добавление индекса семейства очереди, которое поддерживает графические команды
+            // Добавление индекса семейства очередей, которое поддерживает графические команды
             if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
                 indices.graphicsFamily = i;
             }
 
-            // Добавление индекса семейства очереди, которое поддерживает команды отображения
+            // Добавление индекса семейства очередей, которое поддерживает команды отображения
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface_, &presentSupport);
             if (queueFamily.queueCount > 0 && presentSupport)
             {
                 indices.presentFamily = i;
@@ -250,7 +300,7 @@ namespace vget
 
     void VgetDevice::createLogicalDevice()
     {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice_);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<std::optional<uint32_t>> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
@@ -292,9 +342,9 @@ namespace vget
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device_) != VK_SUCCESS)
+        if (vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create logical device!");
+            throw std::runtime_error("Failed to create logical device!");
         }
 
         // Получение дескрипторов для созданных вместе с девайсом очередей
@@ -383,64 +433,14 @@ namespace vget
         return true;
     }
 
-    // Формирование и возврат вектора требуемых для работы нашего движка расширений.
-    std::vector<const char*> VgetDevice::getRequiredExtensions()
-    {
-        // Встроенная в GLFW функция создаёт массив с расширениями, которые должен 
-        // использовать Vulkan для взаимодействия с оконной системой (как минимум "VK_KHR_surface").
-        uint32_t glfwExtensionCount = 0;
-        const char **glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-        // Добавление расширения для отладочного мессенджера (он обрабатывает вывод слоёв проверки)
-        if (enableValidationLayers) {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); // extension to set up debug messanger
-        }
-
-        return extensions;
-    }
-
-    // Проверка доступны ли Vulkan расширения, требуемые для работы движка.
-    void VgetDevice::hasEngineRequiredInstanceExtensions()
-    {
-        // Ищем и выводим все доступные расширения экземпляра
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> extensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-        std::cout << "Available Vulkan instance extensions:" << std::endl;
-        std::unordered_set<std::string> available;
-        for (const auto &extension : extensions)
-        {
-            std::cout << "\t" << extension.extensionName << ": version " << extension.specVersion << std::endl;
-            available.insert(extension.extensionName);
-        }
-
-        // Выводим требуемые расширения экземпляра и выбрасываем исключение, если
-        // какого-то расширения не хватает для работы движка.
-        std::cout << "Required extensions:" << std::endl;
-        auto requiredExtensions = getRequiredExtensions();
-        for (const auto &required : requiredExtensions)
-        {
-            std::cout << "\t" << required << std::endl;
-            if (available.find(required) == available.end())
-            {
-                throw std::runtime_error("Missing required GLFW or Vulkan debug extension.");
-            }
-        }
-    }
-
     // Проверка поддерживаются ли требуемые расширения данным физическим девайсом
-    bool VgetDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
+    bool VgetDevice::checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
     {
         uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
 
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
 
         std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -453,26 +453,26 @@ namespace vget
     }
 
     // Заполнение структуры деталей поддержки цепи обмена
-    SwapChainSupportDetails VgetDevice::querySwapChainSupport(VkPhysicalDevice device)
+    SwapChainSupportDetails VgetDevice::querySwapChainSupport(VkPhysicalDevice physicalDevice)
     {
         SwapChainSupportDetails details;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface_, &details.capabilities);
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface_, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface_, &formatCount, nullptr);
         if (formatCount != 0)
         {
             details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface_, &formatCount, details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface_, &formatCount, details.formats.data());
         }
 
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface_, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface_, &presentModeCount, nullptr);
         if (presentModeCount != 0)
         {
             details.presentModes.resize(presentModeCount);
             vkGetPhysicalDeviceSurfacePresentModesKHR(
-                device,
+                physicalDevice,
                 surface_,
                 &presentModeCount,
                 details.presentModes.data());
@@ -486,7 +486,7 @@ namespace vget
         for (VkFormat format : candidates)
         {
             VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+            vkGetPhysicalDeviceFormatProperties(physicalDevice_, format, &props);
 
             // Формат проверяется на соответствие нужному типу тайлинга и на наличие нужных фич
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
@@ -504,7 +504,7 @@ namespace vget
 
     uint32_t VgetDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
         VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
             if ((typeFilter & (1 << i)) &&
                 (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
