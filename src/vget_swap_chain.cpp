@@ -7,19 +7,20 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <algorithm>
 #include <set>
 #include <stdexcept>
 
 namespace vget
 {
-    VgetSwapChain::VgetSwapChain(VgetDevice& deviceRef, VkExtent2D extent)
-        : device{deviceRef}, windowExtent{extent}
+    VgetSwapChain::VgetSwapChain(VgetDevice& device, VgetWindow& window)
+        : vgetDevice{device}, vgetWindow{window}
     {
         init();
     }
 
-    VgetSwapChain::VgetSwapChain(VgetDevice& deviceRef, VkExtent2D extent, std::shared_ptr<VgetSwapChain> previous)
-        : device{deviceRef}, windowExtent{extent}, oldSwapChain{previous}
+    VgetSwapChain::VgetSwapChain(VgetDevice& device, VgetWindow& window, std::shared_ptr<VgetSwapChain> previous)
+        : vgetDevice{device}, vgetWindow{window}, oldSwapChain{previous}
     {
         init();
 
@@ -40,46 +41,46 @@ namespace vget
     VgetSwapChain::~VgetSwapChain()
     {
         for (auto imageView : swapChainImageViews) {
-            vkDestroyImageView(device.device(), imageView, nullptr);
+            vkDestroyImageView(vgetDevice.device(), imageView, nullptr);
         }
         swapChainImageViews.clear();
 
         if (swapChain != nullptr) {
-            vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
+            vkDestroySwapchainKHR(vgetDevice.device(), swapChain, nullptr);
             swapChain = nullptr;
         }
 
         for (int i = 0; i < depthImages.size(); i++) {
-            vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
-            vkDestroyImage(device.device(), depthImages[i], nullptr);
-            vkFreeMemory(device.device(), depthImageMemories[i], nullptr);
+            vkDestroyImageView(vgetDevice.device(), depthImageViews[i], nullptr);
+            vkDestroyImage(vgetDevice.device(), depthImages[i], nullptr);
+            vkFreeMemory(vgetDevice.device(), depthImageMemories[i], nullptr);
         }
 
         for (auto framebuffer : swapChainFramebuffers) {
-            vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+            vkDestroyFramebuffer(vgetDevice.device(), framebuffer, nullptr);
         }
 
-        vkDestroyRenderPass(device.device(), renderPass, nullptr);
+        vkDestroyRenderPass(vgetDevice.device(), renderPass, nullptr);
 
         // cleanup synchronization objects
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device.device(), inFlightFences[i], nullptr);
+            vkDestroySemaphore(vgetDevice.device(), renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(vgetDevice.device(), imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(vgetDevice.device(), inFlightFences[i], nullptr);
         }
     }
 
     VkResult VgetSwapChain::acquireNextImage(uint32_t* imageIndex)
     {
         vkWaitForFences(
-            device.device(),
+            vgetDevice.device(),
             1,
             &inFlightFences[currentFrame],
             VK_TRUE,
             std::numeric_limits<uint64_t>::max());
 
         VkResult result = vkAcquireNextImageKHR(
-            device.device(),
+            vgetDevice.device(),
             swapChain,
             std::numeric_limits<uint64_t>::max(),
             imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
@@ -93,7 +94,7 @@ namespace vget
         const VkCommandBuffer* buffers, uint32_t* imageIndex)
     {
         if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-            vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+            vkWaitForFences(vgetDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
         }
         imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
@@ -113,8 +114,8 @@ namespace vget
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-        if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
+        vkResetFences(vgetDevice.device(), 1, &inFlightFences[currentFrame]);
+        if (vkQueueSubmit(vgetDevice.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
             VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
@@ -131,7 +132,7 @@ namespace vget
 
         presentInfo.pImageIndices = imageIndex;
 
-        auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
+        auto result = vkQueuePresentKHR(vgetDevice.presentQueue(), &presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -140,7 +141,7 @@ namespace vget
 
     void VgetSwapChain::createSwapChain()
     {
-        SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
+        SwapChainSupportDetails swapChainSupport = vgetDevice.getSwapChainSupport();
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -157,7 +158,7 @@ namespace vget
 
         VkSwapchainCreateInfoKHR createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = device.surface();
+        createInfo.surface = vgetDevice.surface();
         // детали по хранящимся в SwapChain изображениям
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
@@ -168,7 +169,7 @@ namespace vget
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         // Описание используемых семейств очередей
-        QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
+        QueueFamilyIndices indices = vgetDevice.findPhysicalQueueFamilies();
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
         if (indices.graphicsFamily != indices.presentFamily)
         {
@@ -191,7 +192,7 @@ namespace vget
 
         createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
-        if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+        if (vkCreateSwapchainKHR(vgetDevice.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create swap chain!");
         }
@@ -199,9 +200,9 @@ namespace vget
         // В структуре создания цепи обмена мы указали минимальное кол-во изображений в цепи, но
         // реализация Vulkan может создать число изображений больше, чем указано в структуре,
         // поэтому первым вызовом vkGetSwapchainImagesKHR() получаем реальное кол-во изображений.
-        vkGetSwapchainImagesKHR(device.device(), swapChain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(vgetDevice.device(), swapChain, &imageCount, nullptr);
         swapChainImages.resize(imageCount);
-        vkGetSwapchainImagesKHR(device.device(), swapChain, &imageCount, swapChainImages.data());
+        vkGetSwapchainImagesKHR(vgetDevice.device(), swapChain, &imageCount, swapChainImages.data());
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
@@ -223,7 +224,7 @@ namespace vget
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
-            if (vkCreateImageView(device.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
+            if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
                 VK_SUCCESS) {
                 throw std::runtime_error("failed to create image views in swapchain!");
             }
@@ -293,7 +294,7 @@ namespace vget
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+        if (vkCreateRenderPass(vgetDevice.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create render pass!");
         }
@@ -322,7 +323,7 @@ namespace vget
             framebufferInfo.layers = 1;
 
             if (vkCreateFramebuffer(
-                device.device(),
+                vgetDevice.device(),
                 &framebufferInfo,
                 nullptr,
                 &swapChainFramebuffers[i]) != VK_SUCCESS)
@@ -361,7 +362,7 @@ namespace vget
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             imageInfo.flags = 0;
 
-            device.createImageWithInfo(
+            vgetDevice.createImageWithInfo(
                 imageInfo,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthImages[i],
@@ -378,7 +379,7 @@ namespace vget
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
-            if (vkCreateImageView(device.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
+            if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to create texture image view!");
             }
@@ -400,11 +401,11 @@ namespace vget
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
+            if (vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
                 VK_SUCCESS ||
-                vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
+                vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
                 VK_SUCCESS ||
-                vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+                vkCreateFence(vgetDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
         }
@@ -449,27 +450,26 @@ namespace vget
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    // Выбор площади (разрешения) для кадров в цепи обмена
+    // Выбор размера (разрешения) для кадров в цепи обмена
     VkExtent2D VgetSwapChain::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
     {
         // Если текущая ширина поверхности отлична от uint32_t max, то это значит, что в качестве
-        // размерностей используются значения совпадающие с координатами окна.
-        // uint32_t max - это спец. значение для индикации несовпадения размеров окна и размеров кадра в SwapChain.
+        // размерностей для кадров используются значения совпадающие с координатами окна.
+        // uint32_t max - это спец. значение для индикации несоответствия размеров окна и размеров кадра в SwapChain.
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         {
             return capabilities.currentExtent;
         }
-        // В противном случае, мы "зажимаем" текущий реальный размер окна в допустимых
-        // для поверхности пределах, чтобы размеры окна и поверхности совпадали.
+        // В противном случае, мы "зажимаем" в допустимых для поверхности пределах текущий реальный размер
+        // окна (его буфера кадра) в пикселях и возвращаем его в качестве размера кадра для SwapChain.
         else
         {
-            VkExtent2D actualExtent = windowExtent;
-            actualExtent.width = std::max(
-                capabilities.minImageExtent.width,
-                std::min(capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = std::max(
-                capabilities.minImageExtent.height,
-                std::min(capabilities.maxImageExtent.height, actualExtent.height));
+            int width, height;
+            glfwGetFramebufferSize(vgetWindow.getGLFWwindow(), &width, &height);
+
+            VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+            actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
             return actualExtent;
         }
@@ -479,7 +479,7 @@ namespace vget
     VkFormat VgetSwapChain::findDepthFormat()
     {
         // поиск поддерживаемого формата с компоненотом глубины и поддержкой использования в качестве depth stencil аттачмента
-        return device.findSupportedFormat(
+        return vgetDevice.findSupportedFormat(
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);

@@ -17,8 +17,8 @@ namespace vget
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;  // кол-во буферов команд, одновременно находящихся в очереди девайса на выполнение
 
-        VgetSwapChain(VgetDevice& deviceRef, VkExtent2D windowExtent);
-        VgetSwapChain(VgetDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VgetSwapChain> previous);
+        VgetSwapChain(VgetDevice& device, VgetWindow& window);
+        VgetSwapChain(VgetDevice& device, VgetWindow& window, std::shared_ptr<VgetSwapChain> previous);
         ~VgetSwapChain();
 
         VgetSwapChain(const VgetSwapChain&) = delete;
@@ -74,8 +74,8 @@ namespace vget
         std::vector<VkImage> swapChainImages;
         std::vector<VkImageView> swapChainImageViews;
 
-        VgetDevice& device;
-        VkExtent2D windowExtent;
+        VgetDevice& vgetDevice;
+        VgetWindow& vgetWindow;
 
         VkSwapchainKHR swapChain;
         std::shared_ptr<VgetSwapChain> oldSwapChain;
