@@ -244,7 +244,7 @@ namespace vget
     {
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-        bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice);
+        bool extensionsSupported = checkDeviceExtensionsSupport(physicalDevice);
 
         bool isSwapChainAdequate = false;
         if (extensionsSupported)
@@ -434,7 +434,7 @@ namespace vget
     }
 
     // Проверка поддерживаются ли требуемые расширения данным физическим девайсом
-    bool VgetDevice::checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
+    bool VgetDevice::checkDeviceExtensionsSupport(VkPhysicalDevice physicalDevice)
     {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);

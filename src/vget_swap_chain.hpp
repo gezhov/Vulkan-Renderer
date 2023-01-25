@@ -21,8 +21,8 @@ namespace vget
         VgetSwapChain(VgetDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VgetSwapChain> previous);
         ~VgetSwapChain();
 
-        VgetSwapChain(const VgetSwapChain &) = delete;
-        VgetSwapChain& operator=(const VgetSwapChain &) = delete;
+        VgetSwapChain(const VgetSwapChain&) = delete;
+        VgetSwapChain& operator=(const VgetSwapChain&) = delete;
 
         VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
         VkRenderPass getRenderPass() { return renderPass; }
@@ -39,8 +39,8 @@ namespace vget
         }
         VkFormat findDepthFormat();
 
-        VkResult acquireNextImage(uint32_t *imageIndex);
-        VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+        VkResult acquireNextImage(uint32_t* imageIndex);
+        VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 
         bool compareSwapFormats(const VgetSwapChain& swapChain) const
         {
@@ -57,9 +57,9 @@ namespace vget
         void createSyncObjects();
 
         // Helper functions
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        VkExtent2D chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
         VkFormat swapChainImageFormat;
         VkFormat swapChainDepthFormat;

@@ -9,7 +9,7 @@
 
 namespace vget
 {
-    // Структура, хранящая детали поддерживаемой цепи обмена
+    // Структура, хранящая детали поддержки цепи обмена
     struct SwapChainSupportDetails
     {
         VkSurfaceCapabilitiesKHR capabilities;
@@ -94,7 +94,7 @@ namespace vget
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
         void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
         void hasEngineRequiredInstanceExtensions();
-        bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+        bool checkDeviceExtensionsSupport(VkPhysicalDevice device);
         SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
         VgetWindow& window;
