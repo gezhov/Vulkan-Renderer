@@ -31,7 +31,7 @@ namespace vget
     void VgetSwapChain::init()
     {
         createSwapChain();       // создание SwapChain объекта
-        createImageViews();
+        createImageViews();      // создание VkImageView представлений для изображений SwapChain'а
         createRenderPass();
         createDepthResources();
         createFramebuffers();
@@ -143,8 +143,8 @@ namespace vget
     {
         SwapChainSupportDetails swapChainSupport = vgetDevice.getSwapChainSupport();
 
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+        VkSurfaceFormatKHR surfaceFormat = chooseSwapChainSurfaceFormat(swapChainSupport.formats);
+        VkPresentModeKHR presentMode = chooseSwapChainPresentMode(swapChainSupport.presentModes);
         VkExtent2D extent = chooseSwapChainExtent(swapChainSupport.capabilities);
 
         // Минимальное кол-во изображений в цепи: min + 1 = triple buffering
@@ -168,33 +168,33 @@ namespace vget
         // изображения цепи обмена исп. как color attachment, значит рендер будет вестись прямо в них
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        // Описание используемых семейств очередей
+        // Указание режима использования изображений цепи обмена очередями
         QueueFamilyIndices indices = vgetDevice.findPhysicalQueueFamilies();
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-        if (indices.graphicsFamily != indices.presentFamily)
+        if (indices.graphicsFamily != indices.presentFamily) // параллельный режим, если очереди из разных семейств
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
         }
-        else
+        else // исключительный режим, если очереди из одного семейства
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
             createInfo.queueFamilyIndexCount = 0; // Optional
             createInfo.pQueueFamilyIndices = nullptr; // Optional
         }
 
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        createInfo.preTransform = swapChainSupport.capabilities.currentTransform; // преобразование для изображения по умолчанию
+        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // использование alpha канала для смешивания пикселей с другими окнами
 
         createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
+        createInfo.clipped = VK_TRUE; // отсечение перекрытых пикселей окна из swapchain изображений
 
         createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
         if (vkCreateSwapchainKHR(vgetDevice.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create swap chain!");
+            throw std::runtime_error("Failed to create swap chain!");
         }
 
         // В структуре создания цепи обмена мы указали минимальное кол-во изображений в цепи, но
@@ -210,7 +210,7 @@ namespace vget
 
     void VgetSwapChain::createImageViews()
     {
-        swapChainImageViews.resize(swapChainImages.size());
+        swapChainImageViews.resize(swapChainImages.size()); // ресайз вектора под кол-во изображений
         for (size_t i = 0; i < swapChainImages.size(); i++)
         {
             VkImageViewCreateInfo viewInfo{};
@@ -218,6 +218,10 @@ namespace vget
             viewInfo.image = swapChainImages[i];
             viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
             viewInfo.format = swapChainImageFormat;
+            viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY; // маппинг цветовых каналов
+            viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY; // к определённым значениям
+            viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY; // IDENTITY - дефолтный маппинг
+            viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             viewInfo.subresourceRange.baseMipLevel = 0;
             viewInfo.subresourceRange.levelCount = 1;
@@ -225,8 +229,9 @@ namespace vget
             viewInfo.subresourceRange.layerCount = 1;
 
             if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
-                VK_SUCCESS) {
-                throw std::runtime_error("failed to create image views in swapchain!");
+                VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create image views in swapchain!");
             }
         }
     }
@@ -412,7 +417,7 @@ namespace vget
     }
 
     // Функция выбора формата поверхности для цепи обмена
-    VkSurfaceFormatKHR VgetSwapChain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    VkSurfaceFormatKHR VgetSwapChain::chooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
     {
         for (const auto& availableFormat : availableFormats)
         {
@@ -425,7 +430,7 @@ namespace vget
     }
 
     // Функция выбора режима показа кадров
-    VkPresentModeKHR VgetSwapChain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+    VkPresentModeKHR VgetSwapChain::chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
     {
         // Если поддерживается Mailbox, то возвращается именно он.
         for (const auto& availablePresentMode : availablePresentModes) {

@@ -47,7 +47,7 @@ namespace vget
             std::shared_ptr<VgetSwapChain> oldSwapChain = std::move(vgetSwapChain);
             vgetSwapChain = std::make_unique<VgetSwapChain>(vgetDevice, vgetWindow, oldSwapChain);
 
-            if (!oldSwapChain->compareSwapFormats(*vgetSwapChain.get()))
+            if (!oldSwapChain->compareSwapChainFormats(*vgetSwapChain.get()))
             {
                 throw std::runtime_error("Swap chain image (or depth) format has changed!");
             }

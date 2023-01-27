@@ -42,7 +42,7 @@ namespace vget
         VkResult acquireNextImage(uint32_t* imageIndex);
         VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 
-        bool compareSwapFormats(const VgetSwapChain& swapChain) const
+        bool compareSwapChainFormats(const VgetSwapChain& swapChain) const
         {
             return swapChain.swapChainDepthFormat == swapChainDepthFormat && swapChain.swapChainImageFormat == swapChainImageFormat;
         }
@@ -56,9 +56,9 @@ namespace vget
         void createFramebuffers();
         void createSyncObjects();
 
-        // Helper functions
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        // Helper functions that looks for necessary details for swap chain creation
+        VkSurfaceFormatKHR chooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         VkExtent2D chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
         VkFormat swapChainImageFormat;
