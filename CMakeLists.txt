@@ -31,9 +31,9 @@ else()
   message(STATUS "Found Vulkan: $ENV{VULKAN_SDK}")
 endif()
 if (NOT Vulkan_FOUND)
-	message(FATAL_ERROR "Could not find Vulkan library!")
+    message(FATAL_ERROR "Could not find Vulkan library!")
 else()
-	message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
+    message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
 endif()
 
 
@@ -56,9 +56,9 @@ else()
   message(STATUS "Found GLFW")
 endif()
 if (NOT GLFW_LIB)
-	message(FATAL_ERROR "Could not find glfw library!")
+    message(FATAL_ERROR "Could not find glfw library!")
 else()
-	message(STATUS "Using glfw lib at: ${GLFW_LIB}")
+    message(STATUS "Using glfw lib at: ${GLFW_LIB}")
 endif()
 
 include_directories(external) # включить в сборку директории с заголовками
