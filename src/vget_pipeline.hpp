@@ -29,9 +29,9 @@ namespace vget
         VkPipelineColorBlendStateCreateInfo colorBlendInfo;
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
         std::vector<VkDynamicState> dynamicStateEnables;
-        VkPipelineDynamicStateCreateInfo dynamicStateInfo;
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo;         // изменяемые св-ва конвейера
         VkPipelineLayout pipelineLayout = nullptr;
-        VkRenderPass renderPass = nullptr;				// определяет структуру Frame Buffer (состав его вложений (attachments))
+        VkRenderPass renderPass = nullptr;				// определяет структуру подпроходов рендера (их вложения (attachments))
         uint32_t subpass = 0;
     };
 
@@ -63,8 +63,6 @@ namespace vget
         void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
         VgetDevice& vgetDevice;				// девайс
-        VkPipeline graphicsPipeline;		// Vulkan Graphics Pipeline (это указатель, т.к. тип создан через typedef)
-        VkShaderModule vertShaderModule;	// шейдерный модуль для шейдера вершины (это указатель, т.к. тип создан через typedef)
-        VkShaderModule fragShaderModule;	// шейдерный модуль для шейдера фрагмента (это указатель, т.к. тип создан через typedef)
+        VkPipeline graphicsPipeline;		// Vulkan Graphics Pipeline (это указатель, сам тип определён через typedef)
     };
 } // namespace vget

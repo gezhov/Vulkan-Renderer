@@ -25,8 +25,6 @@ namespace vget
 
     VgetPipeline::~VgetPipeline()
     {
-        vkDestroyShaderModule(vgetDevice.device(), vertShaderModule, nullptr);
-        vkDestroyShaderModule(vgetDevice.device(), fragShaderModule, nullptr);
         vkDestroyPipeline(vgetDevice.device(), graphicsPipeline, nullptr);
     }
 
@@ -38,7 +36,9 @@ namespace vget
         std::ifstream file(enginePath, std::ios::ate | std::ios::binary);
 
         if (!file.is_open())
-            throw std::runtime_error("failed to open file: " + enginePath);
+        {
+            throw std::runtime_error("Failed to open file: " + enginePath);
+        }
 
         size_t fileSize = static_cast<size_t>(file.tellg());
         std::vector<char> buffer(fileSize);
@@ -67,6 +67,8 @@ namespace vget
         std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n'; // можно удалить
 
         // создание шейдерных модулей
+        VkShaderModule vertShaderModule;	// шейдерный модуль для шейдера вершины
+        VkShaderModule fragShaderModule;	// для шейдера фрагмента
         createShaderModule(vertCode, &vertShaderModule);
         createShaderModule(fragCode, &fragShaderModule);
 
@@ -78,7 +80,7 @@ namespace vget
         shaderStages[0].pName = "main";						 // название входной функции шейдерной программы
         shaderStages[0].flags = 0;
         shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;		 // SpecializationInfo - механизм настройки функциональности шейдера
+        shaderStages[0].pSpecializationInfo = nullptr;		 // VkSpecializationInfo - механизм конфигурирования шейдера, путём изменения его констант
 
         // Информация для шейдера фрагментов
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -107,7 +109,7 @@ namespace vget
         pipelineInfo.stageCount = 2;							// количество программируемых этапов
         pipelineInfo.pStages = shaderStages;					// указатель на массив CreateInfo-структур для программируемых этапов
         // далее идёт прикрепление всех CreateInfo-структур всех остальных этапов пайплайна
-        pipelineInfo.pVertexInputState = &vertexInputInfo;		
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;  // некоторые фиксированные этапы описаны в PiplineConfigInfo и берутся оттуда
         pipelineInfo.pViewportState = &configInfo.viewportInfo;
         pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
@@ -136,6 +138,10 @@ namespace vget
         {
             throw std::runtime_error("failed to create graphics pipeline");
         }
+
+        // Шейдерные модули можно освободить сразу после создания пайплайна, т.к. шейдеры уже скомпилированы
+        vkDestroyShaderModule(vgetDevice.device(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(vgetDevice.device(), fragShaderModule, nullptr);
     }
 
     void VgetPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
@@ -163,11 +169,19 @@ namespace vget
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
+        // Конфигурация динамического состояния (изменяемого этапа пайплайна).
+        // Включение динамического состояния требует передачи конфигурации для него уже в процессе отрисовки через соответствующие команды (сейчас это делается в рендерере при старте рендер пасса).
+        configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };  // флаги включения динамич. объектов - частей этого динамич. этапа
+        configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
+        configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
+        configInfo.dynamicStateInfo.flags = 0;
+
         // Объедиение объектов Viewport и Scissor в информацию об области просмотра viewportInfo.
         // С активацией специальных возможностей GPU можно использовать несколько viewport и scissor объектов.
         configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         configInfo.viewportInfo.viewportCount = 1;
-        configInfo.viewportInfo.pViewports = nullptr;
+        configInfo.viewportInfo.pViewports = nullptr; // nullptr, т.к. исп. dynamic state
         configInfo.viewportInfo.scissorCount = 1;
         configInfo.viewportInfo.pScissors = nullptr;
 
@@ -175,16 +189,16 @@ namespace vget
         configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;		  // зажатие z-компоненты gl_Position между 0 и 1 (VK_FALSE = отключено)
         configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;  // сбрасывать примитивы перед этапом растеризации (VK_TRUE отключит любой вывод в буфер кадра)
-        configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;  // режим генерации фрагментов для полигонов (углы, края или весь треугольник)
+        configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;  // режим генерации фрагментов для полигонов (вершины, края или весь треугольник)
         configInfo.rasterizationInfo.lineWidth = 1.0f;					  // ширина линии
-        configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;		  // режим отбраковки треугольников (можно отбрасывать треугольники, которые отображаются задней стороной и т.п.)
-        configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE; // определение winding order (порядка намотки) вершин треугольника, который будет использоваться для отображения его лицевой стороны
-        configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;		  // смещение глубины (VK_FALSE = отключено)
+        configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;	  // режим отбраковки треугольников (можно отбрасывать треугольники, которые отображаются задней стороной и т.п.)
+        configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // определение winding order (порядка намотки) вершин треугольника, который будет использоваться для определения его лицевой стороны
+        configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;		  // смещение значения глубины (VK_FALSE = отключено)
         configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional. Множитель смещения глубины
-        configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional. Тиски для зажима смещения глубины.
-        configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional. Множитель для смещения глубины для фрагмента в наклоне.
+        configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional. Тиски для зажима смещения глубины
+        configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional. Множитель смещения глубины для фрагмента в наклоне
 
-        // Информация для этапа мультисемплирования (обработка краёв треугольника во время растеризации)
+        // Информация для этапа мультисемплирования (обработка краёв полигонов во время растеризации ради антиэлиасинга)
         configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
         configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -193,13 +207,15 @@ namespace vget
         configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE;  // Optional
         configInfo.multisampleInfo.alphaToOneEnable = VK_FALSE;       // Optional
 
-        // Настройка привязки этапа смешивания цветов к фреймбуферу
+        // Настройка ColorBlend состояния для этапа смешивания цветов Color Attachment'а в подпроходе рендера (subpass)
         configInfo.colorBlendAttachment.colorWriteMask =
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
             VK_COLOR_COMPONENT_A_BIT;
-        configInfo.colorBlendAttachment.blendEnable = VK_FALSE;
-        configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-        configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+        configInfo.colorBlendAttachment.blendEnable = VK_TRUE;  // Включена
+        // finalColor.rgb = newAlpha.a * newColor.rgb + (1 - newAlpha.a) * oldColor.rgb;
+        // finalColor.a = newAlpha.a;
+        configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;   // Optional
+        configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;  // Optional
         configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
         configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
         configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
@@ -213,10 +229,10 @@ namespace vget
         configInfo.colorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
         configInfo.colorBlendInfo.attachmentCount = 1;
         configInfo.colorBlendInfo.pAttachments = &configInfo.colorBlendAttachment;
-        configInfo.colorBlendInfo.blendConstants[0] = 0.0f;  // Optional
-        configInfo.colorBlendInfo.blendConstants[1] = 0.0f;  // Optional
-        configInfo.colorBlendInfo.blendConstants[2] = 0.0f;  // Optional
-        configInfo.colorBlendInfo.blendConstants[3] = 0.0f;  // Optional
+        configInfo.colorBlendInfo.blendConstants[0] = 1.0f;  // Optional
+        configInfo.colorBlendInfo.blendConstants[1] = 1.0f;  // Optional
+        configInfo.colorBlendInfo.blendConstants[2] = 1.0f;  // Optional
+        configInfo.colorBlendInfo.blendConstants[3] = 1.0f;  // Optional
 
         // Информация для этапа Depth Stencil (проверка глубины и проверка трафарета).
         // На этапе проверки глубины отбрасываются те фрагменты изображения, которые были перекрыты другим, более близким фрагментом.
@@ -233,14 +249,6 @@ namespace vget
         configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;			// Проверка трафарета отключена
         configInfo.depthStencilInfo.front = {};  // Optional
         configInfo.depthStencilInfo.back = {};   // Optional
-
-        // Конфигурация динамических этапов Области просмотра (Viewport) и Ножниц (Scissor) для графич. пайплайна.
-        // Включение динамических этапов требует передачи конфигурации для них уже в процессе отрисовки через соответствующие команды.
-        configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };  // флаги включения динамич. объектов
-        configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
-        configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
-        configInfo.dynamicStateInfo.flags = 0;
 
         // дефолт значения для массивов привязок и атрибутов
         configInfo.bindingDescriptions = VgetModel::Vertex::getBindingDescriptions();

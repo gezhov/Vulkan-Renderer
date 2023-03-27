@@ -2,10 +2,10 @@
 
 #include "vget_device.hpp"
 
-// vulkan headers
+// vulkan
 #include <vulkan/vulkan.h>
 
-// std lib headers
+// std
 #include <memory>
 #include <string>
 #include <vector>
@@ -86,5 +86,4 @@ namespace vget
         std::vector<VkFence> imagesInFlight;
         size_t currentFrame = 0;
     };
-
 }  // namespace vget

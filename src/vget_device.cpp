@@ -355,7 +355,7 @@ namespace vget
     // Создание пула комманд, из которого выделяются буферы команд
     void VgetDevice::createCommandPool()
     {
-        QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
+        QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
 
         // Пул команд будет предназначен для выделения буферов команд, которые,
         // в свою очередь, собирают и отправляют команды в очередь для графических команд.
@@ -493,13 +493,12 @@ namespace vget
             {
                 return format;
             }
-            else if (
-                tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+            else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
             {
                 return format;
             }
         }
-        throw std::runtime_error("failed to find supported format!");
+        throw std::runtime_error("Failed to find supported format!");
     }
 
     uint32_t VgetDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {

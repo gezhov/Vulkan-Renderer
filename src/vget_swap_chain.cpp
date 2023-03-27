@@ -32,7 +32,7 @@ namespace vget
     {
         createSwapChain();       // создание SwapChain объекта
         createImageViews();      // создание VkImageView представлений для изображений SwapChain'а
-        createRenderPass();
+        createRenderPass();      // subpass с его привязками и дальнейшее создание RenderPassa'а
         createDepthResources();
         createFramebuffers();
         createSyncObjects();
@@ -165,11 +165,11 @@ namespace vget
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
-        // изображения цепи обмена исп. как color attachment, значит рендер будет вестись прямо в них
+        // изображения цепи обмена исп. как color attachment subpass'а, значит рендер будет вестись прямо в них
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         // Указание режима использования изображений цепи обмена очередями
-        QueueFamilyIndices indices = vgetDevice.findPhysicalQueueFamilies();
+        QueueFamilyIndices indices = vgetDevice.getQueueFamilies();
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
         if (indices.graphicsFamily != indices.presentFamily) // параллельный режим, если очереди из разных семейств
         {
@@ -238,7 +238,25 @@ namespace vget
 
     void VgetSwapChain::createRenderPass()
     {
-        // Описание depthBuffer привязки для буфера кадра
+        // Описание colorBuffer привязки для подпрохода
+        VkAttachmentDescription colorAttachment = {};
+        colorAttachment.format = getSwapChainImageFormat();     // формат привязки цвета должен совпадать с форматом изображения из цепи обмена
+        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;   // colorBuffer очищается перед отрисовкой нового кадра
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // отрисованное содержимое сохраняется в памяти
+        // stencilBuffer не используется, поэтому операции загрузки и хранения не имеют значения
+        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        // Изначальная схема VkImage ресурса для color буфера не имеет значения, но выходная схема должна поддерживать отображение в SwapChain'е
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // переходит в present image цепи обмена в конце рендер пасса
+
+        // Ссылка на привязку под индексом 0 (ColorBuffer)
+        VkAttachmentReference colorAttachmentRef = {};
+        colorAttachmentRef.attachment = 0; // по указанному индексу на привязку будет ссылаться шейдер фрагментов: layout(location = 0) out vec4 outColor
+        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // Схема VkImage для исп. в подпроходе рендера
+
+        // Описание depthBuffer привязки для подпрохода
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = findDepthFormat();
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -254,27 +272,9 @@ namespace vget
         depthAttachmentRef.attachment = 1;
         depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        // Описание colorBuffer привязки для буфера кадра
-        VkAttachmentDescription colorAttachment = {};
-        colorAttachment.format = getSwapChainImageFormat();  // формат привязки цвета должен совпадать с форматом изображения из цепи обмена
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // colorBuffer очищается перед отрисовкой нового кадра
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // отрисованное содержимое сохраняется в памяти
-        // stencilBuffer не используется, поэтому результы загрузки и хранения не имеют значения
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        // Изначальная схема VkImage ресурса для фреймбуфера не имеет значения, но выходная схема должна поддерживать отображение в SwapChain'е
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        // Ссылка на привязку под индексом 0 (ColorBuffer)
-        VkAttachmentReference colorAttachmentRef = {};
-        colorAttachmentRef.attachment = 0; // по указанному индексу привязки будет ссылаться шейдер фрагментов: layout(location = 0) out vec4 outColor
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // Схема VkImage для исп. в подпроходе рендера
-
-        // Описание подрохода с передачей ссылок на вложения буфера кадров, которые он будет использовать
+        // Описание подпрохода с передачей ссылок на вложения буфера кадра, которые он будет использовать
         VkSubpassDescription subpass = {};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // сабпасс для графич. пайплайна
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
@@ -289,7 +289,9 @@ namespace vget
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
+        // указанные в reference'ах индексы вложений относятся именно к этому массиву
         std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+
         VkRenderPassCreateInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -301,7 +303,7 @@ namespace vget
 
         if (vkCreateRenderPass(vgetDevice.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create render pass!");
+            throw std::runtime_error("Failed to create render pass!");
         }
     }
 
@@ -451,7 +453,7 @@ namespace vget
 
         // В случае отсутствия поддержки выбранного выше режима показа, включается
         // режим FIFO (стандартный V-Sync).
-        std::cout << "Present mode: V-Sync" << std::endl;
+        std::cout << "Present mode: FIFO" << std::endl;
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -489,5 +491,4 @@ namespace vget
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
-
 }  // namespace vget

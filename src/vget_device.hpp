@@ -51,11 +51,11 @@ namespace vget
         VkQueue presentQueue() { return presentQueue_; }
         VkInstance getInstance() { return instance; }
         VkPhysicalDevice getPhysicalDevice() { return physicalDevice_; }
-        uint32_t getGraphicsQueueFamily() { return findPhysicalQueueFamilies().graphicsFamily.value(); }
+        uint32_t getGraphicsQueueFamily() { return getQueueFamilies().graphicsFamily.value(); }
 
         SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice_); }
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice_); }
+        QueueFamilyIndices getQueueFamilies() { return findQueueFamilies(physicalDevice_); }
         VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
         // Buffer Helper Functions
