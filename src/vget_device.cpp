@@ -357,8 +357,6 @@ namespace vget
     {
         QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
 
-        // Пул команд будет предназначен для выделения буферов команд, которые,
-        // в свою очередь, собирают и отправляют команды в очередь для графических команд.
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
@@ -367,7 +365,7 @@ namespace vget
 
         if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create command pool!");
+            throw std::runtime_error("Failed to create command pool!");
         }
     }
 
@@ -529,7 +527,7 @@ namespace vget
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         if (vkCreateBuffer(device_, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create vertex buffer!");
+            throw std::runtime_error("failed to create vertex buffer!"); // maybe just "buffer" and not "vertex buffer"?
         }
 
         // Запрос требований к размещению данного буфера в памяти.

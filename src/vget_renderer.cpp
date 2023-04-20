@@ -54,11 +54,11 @@ namespace vget
         }
     }
 
-    // Создание буферов команд.
+    // Создание буферов команд
     void VgetRenderer::createCommandBuffers()
     {
-        // Размер вектора буферов команд становится равным количеству FrameBuffer'ов в SwapChain'е
-        // (2 или 3 в зависимости от поддерживаемого типа буферизации). Каждый буфер команд будет отрисовывать свой буфер кадра.
+        // Размер массива буферов команд равен константе, определённой в цепи обмена.
+        // Кол-во буферов команд в таком случае может отличаться от количества framebuffer'ов в цепи.
         commandBuffers.resize(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
@@ -69,7 +69,7 @@ namespace vget
 
         if (vkAllocateCommandBuffers(vgetDevice.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to allocate command buffers!");
+            throw std::runtime_error("Failed to allocate command buffers!");
         }
     }
 
@@ -88,7 +88,7 @@ namespace vget
 
     VkCommandBuffer VgetRenderer::beginFrame()
     {
-        assert(!isFrameStarted && "Can't call beginFrame while already in progress");
+        assert(!isFrameStarted && "Can't call beginFrame while already in progress.");
 
         // функция возврашает в currentImageIndex номер следующего FrameBuffer'а для рендеринга
         auto result = vgetSwapChain->acquireNextImage(&currentImageIndex);
@@ -103,20 +103,22 @@ namespace vget
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            throw std::runtime_error("failed to acquire swap chain image!");
+            throw std::runtime_error("Failed to acquire swap chain image!");
         }
 
-        // Начинаем создание кадра со старта записи в текущем буфере команд
+        // Начинаем создание кадра в текущем буфере команд
         isFrameStarted = true;
 
         auto commandBuffer = getCurrentCommandBuffer();
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;                  // Optional
+        beginInfo.pInheritanceInfo = nullptr; // Optional
 
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to begin recording command buffer!");
+            throw std::runtime_error("Failed to begin recording command buffer!");
         }
 
         return commandBuffer;
@@ -124,12 +126,12 @@ namespace vget
 
     void VgetRenderer::endFrame()
     {
-        assert(isFrameStarted && "Can't call endFrame while frame is not in progress");
+        assert(isFrameStarted && "Can't call endFrame while frame is not in progress.");
         auto commandBuffer = getCurrentCommandBuffer();
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to record command buffer!");
+            throw std::runtime_error("Failed to record command buffer!");
         }
 
         // Отправка буфера команд для соответствующего кадра в очередь на выполнение девайсом (с учётом синхронизации работы CPU и GPU).
@@ -146,13 +148,13 @@ namespace vget
         }
         else if (result != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to present swap chain image!");
+            throw std::runtime_error("Failed to present swap chain image!");
         }
 
         isFrameStarted = false;
         currentFrameIndex = (currentFrameIndex + 1) % VgetSwapChain::MAX_FRAMES_IN_FLIGHT; // выбираем следующий кадр
     }
-
+    
     void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors)
     {
         assert(isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
@@ -168,7 +170,7 @@ namespace vget
         renderPassInfo.renderArea.extent = vgetSwapChain->getSwapChainExtent();
 
         // clear values задают начальные значения вложений (attachments) у FrameBuffer
-        // буферы вложений заполняются этими значениями во время операции очистки перед новым проходом рендеринга
+        // буферы вложений заполняются этими значениями во время операции очистки перед новым проходом рендера
         std::array<VkClearValue, 2> clearValues{};
         // 0 - color attachment, 1 - depth attachment
         clearValues[0].color = { clearColors.x, clearColors.y, clearColors.z, 1.0f};
@@ -194,15 +196,15 @@ namespace vget
         // Scissor (ножницы) - обрезка выводимых пикселей вне заданного Scissor Rectangle
         VkRect2D scissor{ {0, 0}, vgetSwapChain->getSwapChainExtent() };
 
-        // Запись различных команд
+        // Запись команд
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);  // установка viewport объекта
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);    // установка scissor объекта
     }
 
     void VgetRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
     {
-        assert(isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
-        assert(commandBuffer == getCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame");
+        assert(isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress.");
+        assert(commandBuffer == getCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame.");
 
         vkCmdEndRenderPass(commandBuffer); // завершаем проход рендера
     }

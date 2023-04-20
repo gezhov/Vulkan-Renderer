@@ -82,8 +82,8 @@ namespace vget
 
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
-        std::vector<VkFence> inFlightFences;
+        std::vector<VkFence> inFlightFences; // fences to control command buffer recording (only after successful execution in the queue)
         std::vector<VkFence> imagesInFlight;
         size_t currentFrame = 0;
     };
-}  // namespace vget
+}  // vget namespace

@@ -107,8 +107,8 @@ namespace vget
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;							// количество программируемых этапов
-        pipelineInfo.pStages = shaderStages;					// указатель на массив CreateInfo-структур для программируемых этапов
-        // далее идёт прикрепление всех CreateInfo-структур всех остальных этапов пайплайна
+        pipelineInfo.pStages = shaderStages;					// указатель на CreateInfo-структуры для программируемых этапов
+        // далее идёт прикрепление всех CreateInfo-структур для фиксированных этапов пайплайна
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;  // некоторые фиксированные этапы описаны в PiplineConfigInfo и берутся оттуда
         pipelineInfo.pViewportState = &configInfo.viewportInfo;
@@ -120,15 +120,16 @@ namespace vget
         // например, область просмотра (Viewport) или толщину линий для отрисовки.
         pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
         
-        // pipelineLayout создаётся в RenderSystem, а renderpass в SwapChain'е
+        // pipelineLayout создаётся в RenderSystem, а renderPass в SwapChain'е
         pipelineInfo.layout = configInfo.pipelineLayout;
         pipelineInfo.renderPass = configInfo.renderPass;
-        pipelineInfo.subpass = configInfo.subpass;			// пайплайн будет применятся в данном подпроходе рендера
+        pipelineInfo.subpass = configInfo.subpass;			// пайплайн будет применятся в указанном подпроходе рендера
 
-        // Эти два параметра будут применятся для оптимизации производительности, путём
-        // включения возможности создания нового пайплайна на основе другого пайплайна.
+        // Эти два параметра будут применятся для оптимизации производительности,
+        // путём создания нового пайплайна на основе другого пайплайна
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.flags = 0; // два поля выше исп., если задать флаг VK_PIPELINE_CREATE_DERIVATIVE_BIT
 
         if (vkCreateGraphicsPipelines(vgetDevice.device(),
             VK_NULL_HANDLE,
@@ -136,7 +137,7 @@ namespace vget
             nullptr,
             &graphicsPipeline) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create graphics pipeline");
+            throw std::runtime_error("Failed to create graphics pipeline");
         }
 
         // Шейдерные модули можно освободить сразу после создания пайплайна, т.к. шейдеры уже скомпилированы
@@ -146,14 +147,13 @@ namespace vget
 
     void VgetPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
     {
-        // создаётся структура, содержащая информацию о модуле шейдера
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
         if (vkCreateShaderModule(vgetDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
-            throw std::runtime_error("failed to create shader module");
+            throw std::runtime_error("Failed to create shader module");
     }
 
     void VgetPipeline::bind(VkCommandBuffer commandBuffer)

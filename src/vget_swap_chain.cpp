@@ -72,12 +72,13 @@ namespace vget
 
     VkResult VgetSwapChain::acquireNextImage(uint32_t* imageIndex)
     {
+        // Wait for fence signal when N'th frames command buffer has executed
         vkWaitForFences(
             vgetDevice.device(),
             1,
             &inFlightFences[currentFrame],
             VK_TRUE,
-            std::numeric_limits<uint64_t>::max());
+            std::numeric_limits<uint64_t>::max()); // big timeout number to wait till end
 
         VkResult result = vkAcquireNextImageKHR(
             vgetDevice.device(),
@@ -90,8 +91,7 @@ namespace vget
         return result;
     }
 
-    VkResult VgetSwapChain::submitCommandBuffers(
-        const VkCommandBuffer* buffers, uint32_t* imageIndex)
+    VkResult VgetSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
     {
         if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(vgetDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -101,6 +101,8 @@ namespace vget
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+        // Wait on writing colors to the image until it become available.
+        // Each waiting stage corresponds to the semaphore with the same index.
         VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
@@ -109,29 +111,36 @@ namespace vget
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = buffers;
-
+        
+        // specifying which semaphores to signal once command buffer(s) has finished execution
         VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
+        // Resetting N'th frame fence for further successful waiting
         vkResetFences(vgetDevice.device(), 1, &inFlightFences[currentFrame]);
-        if (vkQueueSubmit(vgetDevice.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
-            VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
+
+        // Command buffer is submitting to graphics queue.
+        // The passed fence will be signaled once command buffer(s) has finished execution.
+        if (vkQueueSubmit(vgetDevice.graphicsQueue(), 1, &submitInfo,
+            inFlightFences[currentFrame]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to submit draw command buffer!");
         }
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
+        // wait until renderFinishedSemaphore is signaled before presenting image
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = {swapChain};
+        VkSwapchainKHR swapChains[] = {swapChain}; // swapchain and image to present
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
-
         presentInfo.pImageIndices = imageIndex;
+        presentInfo.pResults = nullptr; // optional
 
+        // Image is queueing for presentation
         auto result = vkQueuePresentKHR(vgetDevice.presentQueue(), &presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -155,6 +164,7 @@ namespace vget
         {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
+        std::cout << "Number of swap chain images: " << imageCount << std::endl;
 
         VkSwapchainCreateInfoKHR createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -279,15 +289,19 @@ namespace vget
         subpass.pColorAttachments = &colorAttachmentRef;
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+        // Subpass dependencies are specifying transition properties between subpasses.
+        // Even if we have only one subpass we need to describe dependencies for implicit starter and ending subpasses.
+        // This dependency will prevent the image transition from happening until we actually want to write to it.
         VkSubpassDependency dependency = {};
-        dependency.dstSubpass = 0;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.srcAccessMask = 0;
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // implicit starter subpass
+        dependency.dstSubpass = 0;                   // 0 means our subpass
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages to wait until
+        dependency.srcAccessMask = 0;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages to activate operations
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // operations to perform on these stages
 
         // указанные в reference'ах индексы вложений относятся именно к этому массиву
         std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
@@ -314,6 +328,7 @@ namespace vget
         // Создание буфера кадров для каждого из изображений в цепи обмена
         for (size_t i = 0; i < imageCount(); i++)
         {
+            // swapChainImageViews для colorAttachment'ов, depthImageViews для depthAttachment'ов
             std::array<VkImageView, 2> attachments = {swapChainImageViews[i], depthImageViews[i]};
 
             VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -324,7 +339,7 @@ namespace vget
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
+            framebufferInfo.pAttachments = attachments.data(); // данные ImageViews будут связываться с соответствующими VkAttachmentReference сабпасса
             framebufferInfo.width = swapChainExtent.width;
             framebufferInfo.height = swapChainExtent.height;
             framebufferInfo.layers = 1;
@@ -335,7 +350,7 @@ namespace vget
                 nullptr,
                 &swapChainFramebuffers[i]) != VK_SUCCESS)
             {
-                throw std::runtime_error("failed to create framebuffer!");
+                throw std::runtime_error("Failed to create framebuffer!");
             }
         }
     }
@@ -407,13 +422,13 @@ namespace vget
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
-                VK_SUCCESS ||
-                vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
-                VK_SUCCESS ||
-                vkCreateFence(vgetDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            if (vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(vgetDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create synchronization objects for a frame!");
             }
         }
     }
