@@ -50,6 +50,8 @@ namespace vget
         void freeCommandBuffers();
         void recreateSwapChain();
 
+        std::string getTimeStampStr(); // todo: take out to standalone logging system
+
         VgetWindow& vgetWindow;
         VgetDevice& vgetDevice;
         std::unique_ptr<VgetSwapChain> vgetSwapChain;

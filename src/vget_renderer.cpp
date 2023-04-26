@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <cassert>
 #include <array>
+#include <iostream>
+#include <chrono>
+#include <ctime>
 
 namespace vget
 {
@@ -25,23 +28,24 @@ namespace vget
 
         // Если ширина или высота окна не имеют размера, то поток выполнения пристанавливается функцией glfwWaitEvents()
         // и ждёт пока не появится какое-либо событие на обработку. С появлением события размеры окна перепроверяются, и
-        // так, пока окно не приобретёт какую-то двумерную размерность. Этот цикл полезен например для случая минимизации
-        // (сворачивания) окна.
+        // так, пока окно не приобретёт какую-то двумерную размерность.
+        // Этот цикл полезен, например, для случая минимизации (сворачивания) окна.
         while (extent.width == 0 || extent.height == 0)
         {
             extent = vgetWindow.getExtent();
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(vgetDevice.device()); // ожидание, пока старый SwapChain не перестанет использоваться девайсом
-
         if (vgetSwapChain == nullptr)
         {
-            // Стандартное создание цепи обмена
+            std::cout << "Creating SwapChain for the first time." << std::endl;
+            // Стандартное создание цепи обмена в первый раз
             vgetSwapChain = std::make_unique<VgetSwapChain>(vgetDevice, vgetWindow);
         }
         else
         {
+            std::cout << getTimeStampStr() << "Recreating SwapChain." << std::endl;
+            
             // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
             // std::move() перемещает уникальный указатель в данный shared указатель.
             std::shared_ptr<VgetSwapChain> oldSwapChain = std::move(vgetSwapChain);
@@ -53,7 +57,7 @@ namespace vget
             }
         }
     }
-
+    
     // Создание буферов команд
     void VgetRenderer::createCommandBuffers()
     {
@@ -94,7 +98,7 @@ namespace vget
         auto result = vgetSwapChain->acquireNextImage(&currentImageIndex);
 
         // Если result получил ошибку OUT_OF_DATE, значит свойства поверхности, на которую выводятся кадры, изменились.
-        // Например, она возникает при изменении размера окна. В этом случае приложение должно пересоздать свой SwapChain для новых размеров.
+        // Например, изменился размер окна. В этом случае swapchain пересоздаётся для новых размеров.
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             recreateSwapChain();
@@ -139,7 +143,7 @@ namespace vget
         auto result = vgetSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
 
         /* Проверка изменения размеров окна, сброс флага, пересоздание цепи обмена.
-           Результат SUBOPTIMAL_KHR позволяет отловить случаи, когда свойства поверхности изменились, но SwapChain
+           Результат SUBOPTIMAL_KHR указывает на случай, когда свойства поверхности изменились, но SwapChain
            по прежнему может продолжать вывод изображения. Здесь мы избавляемся от таких ситуаций тоже. */
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vgetWindow.wasWindowResized())
         {
@@ -207,5 +211,12 @@ namespace vget
         assert(commandBuffer == getCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame.");
 
         vkCmdEndRenderPass(commandBuffer); // завершаем проход рендера
+    }
+
+    std::string VgetRenderer::getTimeStampStr()
+    {
+        auto timePoint = std::chrono::system_clock::now();
+        std::time_t timeStamp = std::chrono::system_clock::to_time_t(timePoint);
+        return std::string(std::ctime(&timeStamp));
     }
 }

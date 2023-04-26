@@ -24,8 +24,8 @@ namespace vget
     {
         init();
 
-        // oldSwapChain используется только во время инициализации, поэтому теперь его можно "отпустить"
-        oldSwapChain = nullptr;
+        vkDeviceWaitIdle(vgetDevice.device()); // ожидание, пока старый SwapChain не перестанет использоваться девайсом
+        oldSwapChain = nullptr; // избавляемся от старого свапчейна
     }
 
     void VgetSwapChain::init()
@@ -325,7 +325,7 @@ namespace vget
     {
         swapChainFramebuffers.resize(imageCount());
 
-        // Создание буфера кадров для каждого из изображений в цепи обмена
+        // Создание буфера кадра для каждого из изображений в цепи обмена
         for (size_t i = 0; i < imageCount(); i++)
         {
             // swapChainImageViews для colorAttachment'ов, depthImageViews для depthAttachment'ов

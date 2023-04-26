@@ -35,14 +35,14 @@ namespace vget
 
         // Создание окна и его контекста.
         window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);  // Сопряжение указателя GLFWwindow* и указателя на текущий экземпляр VgetWindow*.
+        glfwSetWindowUserPointer(window, this);  // Связывание указателя GLFWwindow* и указателя на текущий экземпляр VgetWindow*.
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);  // Установка callback функции на изменение размера окна (буфера кадра)
     }
 
     void VgetWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
-        /* Используя приведение reinterpret_cast(), получаем из указателя на окно GLFWwindow*
-           указатель на пользовательский тип окна VgetWindow*, которые были сопряжены ранее функцией */
+        // Используя приведение reinterpret_cast(), получаем из указателя на окно GLFWwindow*
+        // связанный с ним указатель на пользовательский тип окна VgetWindow*
         auto vgetWindow = reinterpret_cast<VgetWindow*>(glfwGetWindowUserPointer(window));
 
         vgetWindow->framebufferResized = true;
