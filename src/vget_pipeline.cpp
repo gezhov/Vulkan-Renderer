@@ -250,7 +250,7 @@ namespace vget
         configInfo.depthStencilInfo.front = {};  // Optional
         configInfo.depthStencilInfo.back = {};   // Optional
 
-        // дефолт значения для массивов привязок и атрибутов
+        // дефолт значения для массивов привязок и атрибутов буфера вершин
         configInfo.bindingDescriptions = VgetModel::Vertex::getBindingDescriptions();
         configInfo.attributeDescriptions = VgetModel::Vertex::getAttributeDescriptions();
     }

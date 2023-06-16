@@ -76,7 +76,6 @@ namespace vget
 
     void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
     {
-        // render objects
         vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
         // привязываем набор дескрипторов к пайплайну

@@ -499,17 +499,20 @@ namespace vget
         throw std::runtime_error("Failed to find supported format!");
     }
 
-    uint32_t VgetDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    uint32_t VgetDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties) {
+        // getting available memory types and heaps on this device
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) &&
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            // checking appropriate memory type existence among the device ones
+            if ((memoryTypeFilter & (1 << i)) &&
                 (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
                 return i;
             }
         }
 
-        throw std::runtime_error("failed to find suitable memory type!");
+        throw std::runtime_error("Failed to find suitable memory type!");
     }
 
     void VgetDevice::createBuffer(
@@ -517,36 +520,37 @@ namespace vget
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
         VkBuffer &buffer,
-        VkDeviceMemory &bufferMemory)
+        VkDeviceMemory &deviceMemoryForBuffer)
     {
-        // Создание буфера
+        // buffer creation
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = size;
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        bufferInfo.flags = 0; // can be used to configure sparse buffer memory
 
         if (vkCreateBuffer(device_, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create vertex buffer!"); // maybe just "buffer" and not "vertex buffer"?
+            throw std::runtime_error("Failed to create buffer!");
         }
 
-        // Запрос требований к размещению данного буфера в памяти.
-        // Требования будут включать в себя нужные размеры занимаемой памяти.
+        // getting memory requirements for this buffer to allocate memory for it further
         VkMemoryRequirements memRequirements;
         vkGetBufferMemoryRequirements(device_, buffer, &memRequirements);
 
-        // Размещение памяти в соответствии с полученными требованиями и заданными свойствами.
+        // Filling in memory allocation structure.
+        // Using size from requirements and choosing the appropriate type of memory.
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate vertex buffer memory!");
+        if (vkAllocateMemory(device_, &allocInfo, nullptr, &deviceMemoryForBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate vertex buffer memory!");
         }
 
-        // Связывание объектов буфера и памяти девайса.
-        vkBindBufferMemory(device_, buffer, bufferMemory, 0);
+        // associating buffer with allocated memory
+        vkBindBufferMemory(device_, buffer, deviceMemoryForBuffer, 0);
     }
 
     VkCommandBuffer VgetDevice::beginSingleTimeCommands()

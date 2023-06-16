@@ -286,8 +286,9 @@ namespace vget
         VkBuffer buffers[] = { vertexBuffer->getBuffer() };
         VkDeviceSize offsets[] = { 0 };
 
-        // Запись команды в буфер команд о создании привязки буфера вершин к пайплайну.
-        // После выполнения данная команда создаст Binding[0] для одного буфера вершин из buffers с отступом offsets внутри этого буфера.
+        // This command create association between given vertex buffers and their bindings
+        // in graphics pipeline which was set up earlier in getBindingDescriptions().
+        // So in this particular case vertexBuffer will be binded to the 0s VertexInputBinding.
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
         if (hasIndexBuffer)
@@ -299,30 +300,31 @@ namespace vget
         }
     }
 
-    // Возвращает описания привязок для буфера вершин
+    // Returning binding descriptions for the vertex buffer
     std::vector<VkVertexInputBindingDescription> VgetModel::Vertex::getBindingDescriptions()
     {
+        // there are only one binding in vector for now, cause for now all of vertex data is packed into one array
         std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-        bindingDescriptions[0].binding = 0;										// индекс описываемой привязки
+        bindingDescriptions[0].binding = 0;										// this bindings' index
         bindingDescriptions[0].stride = sizeof(Vertex);							// вершины расположены с шагом в sizeof(Vertex) байт
-        bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;         // load data per vertex
         return bindingDescriptions;
     }
 
-    // Возвращает описания атрибутов для буфера вершин
+    // Returning attribute descriptions for the vertex buffer
     std::vector<VkVertexInputAttributeDescription> VgetModel::Vertex::getAttributeDescriptions()
     {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
         
         // position attribute
         VkVertexInputAttributeDescription attribDescription{};
-        attribDescription.binding = 0;								// атрибут расположен в привязке с индексом 0
-        attribDescription.location = 0;								// Номер location'а в шейдере вершин для заданного атрибута
-        attribDescription.format = VK_FORMAT_R32G32B32_SFLOAT;		// Тип данных данного атрибута
-        attribDescription.offset = offsetof(Vertex, position);		// Отступ от начала буфера до данного атрибута
+        attribDescription.location = 0;								// input data location index for this attribute in vertex shader
+        attribDescription.binding = 0;								// from which binding this attribute will be taken
+        attribDescription.format = VK_FORMAT_R32G32B32_SFLOAT;		// attribute data type 
+        attribDescription.offset = offsetof(Vertex, position);		// offset from start of per-vertex data to this attribute 
         attributeDescriptions.push_back(attribDescription);
 
-        // Иницизализация оставшихся описаний атрибутов представлена в сжатой форме
+        // initialization of the rest attributes
         attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
         attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)});
         attributeDescriptions.push_back({3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)});

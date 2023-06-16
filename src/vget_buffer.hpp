@@ -44,7 +44,7 @@ namespace vget
     private:
         static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 
-        VgetDevice& lveDevice;
+        VgetDevice& vgetDevice;
         void* mapped = nullptr;
         VkBuffer buffer = VK_NULL_HANDLE;			// В Vulkan буфер и присвоенная ему память - два отдельных объекта.
         VkDeviceMemory memory = VK_NULL_HANDLE;		// Это позволяет получить полный контроль над управлением памятью.

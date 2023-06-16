@@ -38,7 +38,7 @@ namespace vget
         VkBufferUsageFlags usageFlags,
         VkMemoryPropertyFlags memoryPropertyFlags,
         VkDeviceSize minOffsetAlignment)
-        : lveDevice{device},
+        : vgetDevice{device},
           instanceSize{instanceSize},
           instanceCount{instanceCount},
           usageFlags{usageFlags},
@@ -52,8 +52,8 @@ namespace vget
     VgetBuffer::~VgetBuffer()
     {
         unmap();
-        vkDestroyBuffer(lveDevice.device(), buffer, nullptr);
-        vkFreeMemory(lveDevice.device(), memory, nullptr);
+        vkDestroyBuffer(vgetDevice.device(), buffer, nullptr);
+        vkFreeMemory(vgetDevice.device(), memory, nullptr);
     }
 
     /**
@@ -67,24 +67,24 @@ namespace vget
      */
     VkResult VgetBuffer::map(VkDeviceSize size, VkDeviceSize offset)
     {
-        assert(buffer && memory && "Called map on buffer before create");
+        assert(buffer && memory && "Called map on buffer before its creation");
 
         // Функция vkMapMemory проецирует область памяти хоста на память девайса. После выполнения
         // функции mapped начинает указывать на отображаемое начало области памяти девайса (GPU).
         // {HOST(CPU)}[void* mapped] <===========> [Buffer memory]{DEVICE(GPU)}
-        return vkMapMemory(lveDevice.device(), memory, offset, size, 0, &mapped);
+        return vkMapMemory(vgetDevice.device(), memory, offset, size, 0, &mapped);
     }
 
     /**
      * Unmap a mapped memory range
      *
-     * @note Does not return a result as vkUnmapMemory can't fail
+     * @note Does not return a result as vkUnmapMemory() can't fail
      */
     void VgetBuffer::unmap()
     {
         if (mapped)
         {
-            vkUnmapMemory(lveDevice.device(), memory);
+            vkUnmapMemory(vgetDevice.device(), memory);
             mapped = nullptr;
         }
     }
@@ -96,11 +96,10 @@ namespace vget
      * @param size (Optional) Size of the data to copy. Pass VK_WHOLE_SIZE to flush the complete buffer
      * range.
      * @param offset (Optional) Byte offset from beginning of mapped region
-     *
      */
     void VgetBuffer::writeToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset)
     {
-        assert(mapped && "Cannot copy to unmapped buffer");
+        assert(mapped && "Cannot copy to unmapped buffer.");
 
         if (size == VK_WHOLE_SIZE)
         {
@@ -136,7 +135,7 @@ namespace vget
         mappedRange.memory = memory;
         mappedRange.offset = offset;
         mappedRange.size = size;
-        return vkFlushMappedMemoryRanges(lveDevice.device(), 1, &mappedRange);
+        return vkFlushMappedMemoryRanges(vgetDevice.device(), 1, &mappedRange);
     }
 
     /**
@@ -157,7 +156,7 @@ namespace vget
         mappedRange.memory = memory;
         mappedRange.offset = offset;
         mappedRange.size = size;
-        return vkInvalidateMappedMemoryRanges(lveDevice.device(), 1, &mappedRange);
+        return vkInvalidateMappedMemoryRanges(vgetDevice.device(), 1, &mappedRange);
     }
 
     /**
