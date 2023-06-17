@@ -67,7 +67,7 @@ namespace vget
      */
     VkResult VgetBuffer::map(VkDeviceSize size, VkDeviceSize offset)
     {
-        assert(buffer && memory && "Called map on buffer before its creation");
+        assert(buffer && memory && "Called map on buffer before its creation.");
 
         // Функция vkMapMemory проецирует область памяти хоста на память девайса. После выполнения
         // функции mapped начинает указывать на отображаемое начало области памяти девайса (GPU).

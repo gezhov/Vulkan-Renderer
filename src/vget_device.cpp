@@ -352,7 +352,7 @@ namespace vget
         vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
     }
 
-    // Создание пула комманд, из которого выделяются буферы команд
+    // Создание пула команд, из которого выделяются буферы команд
     void VgetDevice::createCommandPool()
     {
         QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
@@ -555,6 +555,8 @@ namespace vget
 
     VkCommandBuffer VgetDevice::beginSingleTimeCommands()
     {
+        /* todo: [possible improvement] using distinct commandPool for
+           transient command buffers like this one */
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -581,14 +583,23 @@ namespace vget
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
+        // Вместо vkQueueWaitIdle(), тут можно использовать VkFence и несколько vkQueueSubmit'ов,
+        // только я не понял чем это будет отличаться от записи нескольких команд на копирование
+        // с дальнейшей их отправкой через один vkQueueSubmit().
         vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(graphicsQueue_);
 
         vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
     }
 
+    /*!
+     * @brief Copying srcbuffer to dstBuffer on device through vulkan command.
+              This required to HOST_VISIBLE memory to optimal DEVICE_LOCAL memory,
+              like its done in stagingBuffer to vertexBuffer transfer.
+    */
     void VgetDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
     {
+        // allocating commandBuffer to perform this single copying operation
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};

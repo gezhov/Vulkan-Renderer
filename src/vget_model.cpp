@@ -61,7 +61,8 @@ namespace vget
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
         uint32_t vertexSize = sizeof(vertices[0]);
 
-        // Создание промежуточного буфера
+        // Создание промежуточного буфера с данными вершин, который виден на хосте.
+        // Буфер представлен локальной переменной, поэтому очиститься, после окончания функции.
         VgetBuffer stagingBuffer
         {
             vgetDevice,
@@ -89,8 +90,7 @@ namespace vget
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-        // Функция, записывающая команду копирования в командный буфер,
-        // который сразу же отправляется в очередь на выполнение.
+        // copying buffer memory at the device itself through command submitting
         vgetDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
     }
 
