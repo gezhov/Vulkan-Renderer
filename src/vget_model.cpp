@@ -62,7 +62,7 @@ namespace vget
         uint32_t vertexSize = sizeof(vertices[0]);
 
         // Создание промежуточного буфера с данными вершин, который виден на хосте.
-        // Буфер представлен локальной переменной, поэтому очиститься, после окончания функции.
+        // Буфер представлен локальной переменной, поэтому он очистится, после окончания функции.
         VgetBuffer stagingBuffer
         {
             vgetDevice,
@@ -129,7 +129,6 @@ namespace vget
         vgetDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
     }
 
-    // "../textures/viking_room.png"
     void VgetModel::createTextures(const std::vector<std::string>& texturePaths)
     {
         for (auto& path : texturePaths)
@@ -281,6 +280,7 @@ namespace vget
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, indexStart, 0, 0);
     }
 
+    // Binding vertexBuffers and indexBuffer to graphics pipeline
     void VgetModel::bind(VkCommandBuffer commandBuffer)
     {
         VkBuffer buffers[] = { vertexBuffer->getBuffer() };
@@ -295,7 +295,7 @@ namespace vget
         {
             // Команда создания привязки буфера индексов (если он есть) к пайплайну.
             // Тип индекса должен совпадать с типом данных в самом буфере и может выбираться
-            // поменьше для экономии памяти при использовании простых моделей объектов.
+            // меньше для экономии памяти при использовании простых моделей объектов.
             vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
         }
     }
