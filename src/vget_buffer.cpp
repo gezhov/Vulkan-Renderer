@@ -70,7 +70,7 @@ namespace vget
         assert(buffer && memory && "Called map on buffer before its creation.");
 
         // Функция vkMapMemory проецирует область памяти хоста на память девайса. После выполнения
-        // функции mapped начинает указывать на отображаемое начало области памяти девайса (GPU).
+        // функции указатель mapped указывает на отображаемое начало области памяти девайса (GPU).
         // {HOST(CPU)}[void* mapped] <===========> [Buffer memory]{DEVICE(GPU)}
         return vkMapMemory(vgetDevice.device(), memory, offset, size, 0, &mapped);
     }
@@ -160,7 +160,7 @@ namespace vget
     }
 
     /**
-     * Create a buffer info descriptor
+     * Create a descriptor buffer info
      *
      * @param size (Optional) Size of the memory range of the descriptor
      * @param offset (Optional) Byte offset from beginning
@@ -169,7 +169,7 @@ namespace vget
      */
     VkDescriptorBufferInfo VgetBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset)
     {
-        return VkDescriptorBufferInfo{
+        return VkDescriptorBufferInfo {
             buffer,
             offset,
             size,

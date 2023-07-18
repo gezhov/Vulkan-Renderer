@@ -17,7 +17,7 @@ namespace vget
         class Builder
         {
         public:
-            Builder(VgetDevice& lveDevice) : lveDevice{lveDevice} {}
+            Builder(VgetDevice& vgetDevice) : vgetDevice{vgetDevice} {}
 
             // Добавление новой привязки дескрпитора в мапу
             Builder& addBinding(
@@ -29,12 +29,12 @@ namespace vget
             std::unique_ptr<VgetDescriptorSetLayout> build() const;
 
         private:
-            VgetDevice& lveDevice;
+            VgetDevice& vgetDevice;
             // Мапа с информацией по каждой привязке. На основе этой мапы строится VgetDescriptorSetLayout
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
         };
 
-        VgetDescriptorSetLayout(VgetDevice& lveDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+        VgetDescriptorSetLayout(VgetDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
         ~VgetDescriptorSetLayout();
         VgetDescriptorSetLayout(const VgetDescriptorSetLayout&) = delete;
         VgetDescriptorSetLayout& operator=(const VgetDescriptorSetLayout&) = delete;
@@ -42,7 +42,7 @@ namespace vget
         VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
     private:
-        VgetDevice& lveDevice;
+        VgetDevice& vgetDevice;
         VkDescriptorSetLayout descriptorSetLayout;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
@@ -57,7 +57,7 @@ namespace vget
         class Builder
         {
         public:
-            Builder(VgetDevice& lveDevice) : lveDevice{ lveDevice } {}
+            Builder(VgetDevice& vgetDevice) : vgetDevice{vgetDevice} {}
 
             Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count); // кол-во дескрипторов заданного типа в данном пуле
             Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);		// флаги настройки поведения пула
@@ -66,14 +66,14 @@ namespace vget
             std::unique_ptr<VgetDescriptorPool> build() const;
 
         private:
-            VgetDevice& lveDevice;
+            VgetDevice& vgetDevice;
             std::vector<VkDescriptorPoolSize> poolSizes{};
             uint32_t maxSets = 1000;
             VkDescriptorPoolCreateFlags poolFlags = 0;
         };
 
         VgetDescriptorPool(
-            VgetDevice& lveDevice,
+            VgetDevice& vgetDevice,
             uint32_t maxSets,
             VkDescriptorPoolCreateFlags poolFlags,
             const std::vector<VkDescriptorPoolSize>& poolSizes);
@@ -82,7 +82,7 @@ namespace vget
         VgetDescriptorPool& operator=(const VgetDescriptorPool&) = delete;
 
         // Выделение набора дескрипторов из пула
-        bool allocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+        bool allocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
 
         // Освобождение дескрипторов из пула
         void freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
@@ -91,28 +91,32 @@ namespace vget
         void resetPool();
 
     private:
-        VgetDevice& lveDevice;
+        VgetDevice& vgetDevice;
         VkDescriptorPool descriptorPool;
 
         friend class VgetDescriptorWriter;
     };
 
-    // Класс для лёгкого создания самих дескрипторов. Он выделяет набор дескрипторов
-    // из пула и записывет необходимую информацию для каждого из дескрипторов набора.
+    // Класс для конфигурирования и создания наборов дескрипторов. Он выделяет набор
+    // дескрипторов из пула и записывает необходимую информацию для дескрипторов набора.
     class VgetDescriptorWriter
     {
     public:
         VgetDescriptorWriter(VgetDescriptorSetLayout& setLayout, VgetDescriptorPool& pool);
 
+        // Готовит запись для информации о буфере дескриптора
         VgetDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
+        // Готовт запись для информации о ресурсе-изображении дескрипторов
         VgetDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count = 1);
 
+        // Выделяет набор из пула в переданный VkDescriptorSet
+        // и конфигурирует его VkWriteDescriptorSet записями
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);
 
     private:
         VgetDescriptorSetLayout& setLayout;
         VgetDescriptorPool& pool;
-        std::vector<VkWriteDescriptorSet> writes;
+        std::vector<VkWriteDescriptorSet> writes; // структуры-записи для обновления информации о ресурсах дескрипторов
     };
 }

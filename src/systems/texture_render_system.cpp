@@ -53,11 +53,8 @@ namespace vget
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        // DescriptorSetLayout объекты используются для передачи данных, отличных от данных о вершинах, в шейдеры.
-        // Это могут быть текстуры или Uniform Buffer объекты.
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
-        // PushConstant'ы используются для передачи в шейдерные программы небольшого количества данных.
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(vgetDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)

@@ -21,10 +21,10 @@ namespace vget
         alignas(16) glm::vec3 diffuseColor{};
     };
 
-    SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
-        : vgetDevice{ device }
+    SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass,
+        VkDescriptorSetLayout globalDescriptorSetLayout) : vgetDevice{ device }
     {
-        createPipelineLayout(globalSetLayout);
+        createPipelineLayout(globalDescriptorSetLayout);
         createPipeline(renderPass);
     }
 
@@ -33,7 +33,7 @@ namespace vget
         vkDestroyPipelineLayout(vgetDevice.device(), pipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+    void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalDescriptorSetLayout)
     {
         // описание диапазона пуш-констант
         VkPushConstantRange pushConstantRange{};
@@ -41,12 +41,15 @@ namespace vget
         pushConstantRange.offset = 0;
         pushConstantRange.size = sizeof(SimplePushConstantData);
 
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout }; // вектор используемых схем для наборов дескрипторов
+        // используемые схемы наборов дескрипторов
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{globalDescriptorSetLayout};
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        // DescriptorSetLayout объекты используются для передачи данных, отличных от данных о вершинах, в шейдеры.
-        // Это могут быть текстуры или Uniform Buffer объекты.
+        // DescriptorSetLayout объекты наборы дескрипторов, которые будут использоваться в шейдере.
+        // Дескрипторы используются для передачи доп. данных в шейдеры (текстуры или Uniform Buffer объекты).
+        // По одной и той же привязке в шейдер может быть передано сразу несколько сетов,
+        // если в массиве pSetLayouts будет несколько соответствующих лэйаутов для этих сэтов.
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
         // PushConstant'ы используются для передачи в шейдерные программы небольшого количества данных.
@@ -79,16 +82,8 @@ namespace vget
         vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
         // привязываем набор дескрипторов к пайплайну
-        vkCmdBindDescriptorSets(
-            frameInfo.commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipelineLayout,
-            0,
-            1,
-            &frameInfo.globalDescriptorSet,
-            0,
-            nullptr
-        );
+        vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout, 0, 1, &frameInfo.globalDescriptorSet, 0, nullptr);
 
         for (auto& kv : frameInfo.gameObjects)
         {

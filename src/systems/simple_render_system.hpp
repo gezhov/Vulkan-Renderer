@@ -18,8 +18,6 @@ namespace vget
         SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
         ~SimpleRenderSystem();
 
-        // Избавляемся от copy operator и copy constrcutor, т.к. SimpleRenderSystem хранит в себе указатели
-        // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
         SimpleRenderSystem(const SimpleRenderSystem&) = delete;
         SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 

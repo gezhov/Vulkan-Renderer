@@ -59,32 +59,36 @@ namespace vget
         }
 
         // Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
-        auto globalSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
-            .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        auto globalDescriptorSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1)
             .build();
 
-        // Выделение наборов дескрипторов из пула
+        // Выделение наборов дескрипторов из пула (по одному сету на кадр)
         std::vector<VkDescriptorSet> globalDescriptorSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < globalDescriptorSets.size(); ++i)
         {
-            auto bufferInfo = uboBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo bufferInfo = uboBuffers[i]->descriptorInfo(); // инфа о буфере для дескриптора
 
-            VgetDescriptorWriter(*globalSetLayout, *globalPool)
+            VgetDescriptorWriter(*globalDescriptorSetLayout, *globalPool)
                 .writeBuffer(0, &bufferInfo)
                 .build(globalDescriptorSets[i]);
         }
 
-        SimpleRenderSystem simpleRenderSystem{ vgetDevice, vgetRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+        SimpleRenderSystem simpleRenderSystem{
+            vgetDevice,
+            vgetRenderer.getSwapChainRenderPass(),
+            globalDescriptorSetLayout->getDescriptorSetLayout()
+        };
         TextureRenderSystem textureRenderSystem{
             vgetDevice,
             vgetRenderer.getSwapChainRenderPass(),
-            globalSetLayout->getDescriptorSetLayout(),
+            globalDescriptorSetLayout->getDescriptorSetLayout(),
             FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, gameObjects}
         };
         PointLightSystem pointLightSystem{
             vgetDevice,
             vgetRenderer.getSwapChainRenderPass(),
-            globalSetLayout->getDescriptorSetLayout()
+            globalDescriptorSetLayout->getDescriptorSetLayout()
         };
 
         VgetCamera camera{};

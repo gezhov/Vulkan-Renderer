@@ -15,7 +15,6 @@ namespace vget
     class VgetRenderer
     {
     public:
-
         VgetRenderer(VgetWindow& window, VgetDevice& device);
         ~VgetRenderer();
 
