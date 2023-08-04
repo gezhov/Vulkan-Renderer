@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "vget_device.hpp"
-#include "vget_window.hpp"
-#include "vget_game_object.hpp"
-#include "vget_camera.hpp"
+#include "device.hpp"
+#include "window.hpp"
+#include "game_object.hpp"
+#include "camera.hpp"
 #include "keyboard_movement_controller.hpp"
 
 // libs

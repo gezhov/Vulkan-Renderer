@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../vget_pipeline.hpp"
-#include "../vget_device.hpp"
-#include "../vget_game_object.hpp"
-#include "../vget_camera.hpp"
-#include "../vget_frame_info.hpp"
-#include "../vget_swap_chain.hpp"
-#include "../vget_descriptors.hpp"
+#include "../pipeline.hpp"
+#include "../device.hpp"
+#include "../game_object.hpp"
+#include "../camera.hpp"
+#include "../frame_info.hpp"
+#include "../swap_chain.hpp"
+#include "../descriptors.hpp"
 
 // std
 #include <memory>

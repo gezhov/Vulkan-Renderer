@@ -1,5 +1,5 @@
 // ReSharper disable CppMemberFunctionMayBeStatic
-#include "vget_swap_chain.hpp"
+#include "swap_chain.hpp"
 
 // std
 #include <array>

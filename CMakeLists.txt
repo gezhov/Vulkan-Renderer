@@ -3,7 +3,7 @@ message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
 cmake_minimum_required(VERSION 3.11.0)
 
-set(NAME VgetX_Engine) # Название выходного exe файла
+set(NAME VkGraphicsEngine) # Название выходного exe файла
 
 # Пути до MinGW компиляторов, если генератор будет использовать эту среду
 message(STATUS "using ${CMAKE_GENERATOR}")

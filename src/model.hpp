@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vget_device.hpp"
-#include "vget_buffer.hpp"
-#include "vget_texture.hpp"
+#include "device.hpp"
+#include "buffer.hpp"
+#include "texture.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами

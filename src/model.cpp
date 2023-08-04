@@ -1,5 +1,5 @@
-#include "vget_model.hpp"
-#include "vget_utils.hpp"
+#include "model.hpp"
+#include "utils.hpp"
 
 // libs
 #define TINYOBJLOADER_IMPLEMENTATION

@@ -1,5 +1,5 @@
 #include "texture_render_system.hpp"
-#include "../vget_buffer.hpp"
+#include "../buffer.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами

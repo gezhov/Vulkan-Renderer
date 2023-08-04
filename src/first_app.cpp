@@ -1,12 +1,12 @@
 #include "first_app.hpp"
 
-#include "vget_imgui.hpp"
+#include "imgui.hpp"
 #include "systems/simple_render_system.hpp"
 #include "systems/texture_render_system.hpp"
 #include "systems/point_light_system.hpp"
-#include "vget_camera.hpp"
+#include "camera.hpp"
 #include "keyboard_movement_controller.hpp"
-#include "vget_buffer.hpp"
+#include "buffer.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами

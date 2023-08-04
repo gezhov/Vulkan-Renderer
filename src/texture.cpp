@@ -1,5 +1,5 @@
-﻿#include "vget_texture.hpp"
-#include "vget_buffer.hpp"
+﻿#include "texture.hpp"
+#include "buffer.hpp"
 
 // libs
 #define STB_IMAGE_IMPLEMENTATION

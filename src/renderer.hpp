@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vget_window.hpp"
-#include "vget_swap_chain.hpp"
-#include "vget_device.hpp"
-#include "vget_imgui.hpp"
+#include "window.hpp"
+#include "swap_chain.hpp"
+#include "device.hpp"
+#include "imgui.hpp"
 
 // std
 #include <cassert>

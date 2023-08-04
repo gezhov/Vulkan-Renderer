@@ -1,4 +1,4 @@
-#include "vget_renderer.hpp"
+#include "renderer.hpp"
 
 // std
 #include <stdexcept>

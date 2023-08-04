@@ -1,6 +1,6 @@
-#include "vget_pipeline.hpp"
+#include "pipeline.hpp"
 
-#include "vget_model.hpp"
+#include "model.hpp"
 
 // std
 #include <fstream>

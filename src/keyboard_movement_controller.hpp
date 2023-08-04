@@ -1,7 +1,7 @@
 #pragma once
 
-#include "vget_game_object.hpp"
-#include "vget_window.hpp"
+#include "game_object.hpp"
+#include "window.hpp"
 
 namespace vget
 {

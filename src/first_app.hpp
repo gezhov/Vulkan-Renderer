@@ -1,10 +1,10 @@
 #pragma once
 
-#include "vget_window.hpp"
-#include "vget_device.hpp"
-#include "vget_game_object.hpp"
-#include "vget_renderer.hpp"
-#include "vget_descriptors.hpp"
+#include "window.hpp"
+#include "device.hpp"
+#include "game_object.hpp"
+#include "renderer.hpp"
+#include "descriptors.hpp"
 
 // std
 #include <memory>
@@ -34,7 +34,7 @@ namespace vget
         // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
         // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
         // быть объявлен после девайса.
-        VgetWindow vgetWindow{ WIDTH, HEIGHT, "VgetX Engine" };
+        VgetWindow vgetWindow{ WIDTH, HEIGHT, "Vulkan Graphics Engine" };
         VgetDevice vgetDevice{ vgetWindow };
         VgetRenderer vgetRenderer{ vgetWindow, vgetDevice };
 

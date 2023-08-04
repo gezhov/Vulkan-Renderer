@@ -1,7 +1,7 @@
-﻿#include "vget_imgui.hpp"
+﻿#include "imgui.hpp"
 
-#include "vget_device.hpp"
-#include "vget_window.hpp"
+#include "device.hpp"
+#include "window.hpp"
 
 // libs
 #include <imgui.h>
