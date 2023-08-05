@@ -16,58 +16,59 @@
 #include <stdexcept>
 #include <string>
 
+ENGINE_BEGIN
+
+static void check_vk_result(VkResult err) {
+	if (err == 0) return;
+	fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+	if (err < 0) abort();
+}
+
 // This whole class is only necessary right now because it needs to manage the descriptor pool
 // because we haven't set one up anywhere else in the application, and we manage the
 // example state, otherwise all the functions could just be static helper functions if you prefered
-namespace vget {
+class VgetImgui {
+public:
+	VgetImgui(VgetWindow& window, VgetDevice& device, VkRenderPass renderPass,
+		uint32_t imageCount, VgetCamera& camera, KeyboardMovementController& kmc, VgetGameObject::Map& gameObjects);
+	~VgetImgui();
 
-    static void check_vk_result(VkResult err) {
-        if (err == 0) return;
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-        if (err < 0) abort();
-    }
+	VgetImgui() = default;
+	VgetImgui& operator=(VgetImgui& imgui) { return imgui; }
 
-    class VgetImgui {
-    public:
-        VgetImgui(VgetWindow& window, VgetDevice& device, VkRenderPass renderPass,
-            uint32_t imageCount, VgetCamera& camera, KeyboardMovementController& kmc, VgetGameObject::Map& gameObjects);
-        ~VgetImgui();
+	void newFrame();
 
-        VgetImgui() = default;
-        VgetImgui& operator=(VgetImgui& imgui) { return imgui; }
+	void render(VkCommandBuffer commandBuffer);
 
-        void newFrame();
+	// Example state
+	bool show_demo_window = false;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	void runExample();
+	void showPointLightCreator();
+	void showModelsFromDirectory();
+	void enumerateObjectsInTheScene();
+	void inspectObject(VgetGameObject& object, bool isPointLight);
+	void renderTransformGizmo(TransformComponent& transform);
 
-        void render(VkCommandBuffer commandBuffer);
+	// data
+	float directionalLightIntensity = .0f;
+	glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
 
-        // Example state
-        bool show_demo_window = false;
-        bool show_another_window = false;
-        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-        void runExample();
-        void showPointLightCreator();
-        void showModelsFromDirectory();
-        void enumerateObjectsInTheScene();
-        void inspectObject(VgetGameObject& object, bool isPointLight);
-        void renderTransformGizmo(TransformComponent& transform);
+	std::vector<std::string> objectsPaths;
+	std::string selectedObjPath = "";
 
-        // data
-        float directionalLightIntensity = .0f;
-        glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
+	float pointLightIntensity = .0f;
+	float pointLightRadius = .0f;
+	glm::vec3 pointLightColor{};
 
-        std::vector<std::string> objectsPaths;
-        std::string selectedObjPath = "";
+private:
+	VgetDevice& vgetDevice;
+	VgetCamera& camera;
+	KeyboardMovementController& kmc;
+	VgetGameObject::Map& gameObjects;
 
-        float pointLightIntensity = .0f;
-        float pointLightRadius = .0f;
-        glm::vec3 pointLightColor{};
+	VkDescriptorPool descriptorPool; // ImGui's descriptor pool
+};
 
-    private:
-        VgetDevice& vgetDevice;
-        VgetCamera& camera;
-        KeyboardMovementController& kmc;
-        VgetGameObject::Map& gameObjects;
-
-        VkDescriptorPool descriptorPool; // ImGui's descriptor pool
-    };
-}  // namespace lve
+ENGINE_END

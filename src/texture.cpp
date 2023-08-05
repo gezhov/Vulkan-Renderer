@@ -10,8 +10,8 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace vget
-{
+ENGINE_BEGIN
+
     VgetTexture::VgetTexture(const std::string& path, VgetDevice& device) : vgetDevice{device}
     {
         createTextureImage(path);
@@ -213,5 +213,6 @@ namespace vget
             textureImageView,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
-    }
-}
+   }
+
+ENGINE_END

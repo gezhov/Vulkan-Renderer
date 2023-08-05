@@ -12,41 +12,42 @@
 #include <memory>
 #include <vector>
 
-namespace vget
+ENGINE_BEGIN
+
+class TextureRenderSystem
 {
-    class TextureRenderSystem
-    {
-    public:
-        TextureRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
-        ~TextureRenderSystem();
+public:
+	TextureRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
+	~TextureRenderSystem();
 
-        // Избавляемся от copy operator и copy constrcutor, т.к. TextureRenderSystem хранит в себе указатели
-        // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
-        TextureRenderSystem(const TextureRenderSystem&) = delete;
-        TextureRenderSystem& operator=(const TextureRenderSystem&) = delete;
+	// Избавляемся от copy operator и copy constrcutor, т.к. TextureRenderSystem хранит в себе указатели
+	// на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
+	TextureRenderSystem(const TextureRenderSystem&) = delete;
+	TextureRenderSystem& operator=(const TextureRenderSystem&) = delete;
 
-        void update(FrameInfo& frameInfo, TextureSystemUbo& ubo);
-        void renderGameObjects(FrameInfo& frameInfo);
+	void update(FrameInfo& frameInfo, TextureSystemUbo& ubo);
+	void renderGameObjects(FrameInfo& frameInfo);
 
-    private:
-        void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-        void createPipeline(VkRenderPass renderPass);
-        void createUboBuffers();
+private:
+	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+	void createPipeline(VkRenderPass renderPass);
+	void createUboBuffers();
 
-        int fillModelsIds(VgetGameObject::Map& gameObjects);
-        void createDescriptorSets(FrameInfo& frameInfo);
+	int fillModelsIds(VgetGameObject::Map& gameObjects);
+	void createDescriptorSets(FrameInfo& frameInfo);
 
-        VgetDevice& vgetDevice;
+	VgetDevice& vgetDevice;
 
-        std::unique_ptr<VgetPipeline> vgetPipeline;
-        VkPipelineLayout pipelineLayout;
+	std::unique_ptr<VgetPipeline> vgetPipeline;
+	VkPipelineLayout pipelineLayout;
 
-        std::vector<VgetGameObject::id_t> modelObjectsIds{};
-        size_t prevModelCount = 0;
-        std::vector<std::unique_ptr<VgetBuffer>> uboBuffers{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
+	std::vector<VgetGameObject::id_t> modelObjectsIds{};
+	size_t prevModelCount = 0;
+	std::vector<std::unique_ptr<VgetBuffer>> uboBuffers{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
 
-        std::unique_ptr<VgetDescriptorPool> systemDescriptorPool;
-        std::unique_ptr<VgetDescriptorSetLayout> systemDescriptorSetLayout;
-        std::vector<VkDescriptorSet> systemDescriptorSets{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
-    };
-}
+	std::unique_ptr<VgetDescriptorPool> systemDescriptorPool;
+	std::unique_ptr<VgetDescriptorSetLayout> systemDescriptorSetLayout;
+	std::vector<VkDescriptorSet> systemDescriptorSets{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
+};
+
+ENGINE_END

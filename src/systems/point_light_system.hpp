@@ -10,29 +10,30 @@
 #include <memory>
 #include <vector>
 
-namespace vget
+ENGINE_BEGIN
+
+class PointLightSystem
 {
-    class PointLightSystem
-    {
-    public:
-        PointLightSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-        ~PointLightSystem();
+public:
+	PointLightSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	~PointLightSystem();
 
-        // Избавляемся от copy operator и copy constrcutor, т.к. PointLightSystem хранит в себе указатели
-        // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
-        PointLightSystem(const PointLightSystem&) = delete;
-        PointLightSystem& operator=(const PointLightSystem&) = delete;
+	// Избавляемся от copy operator и copy constrcutor, т.к. PointLightSystem хранит в себе указатели
+	// на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
+	PointLightSystem(const PointLightSystem&) = delete;
+	PointLightSystem& operator=(const PointLightSystem&) = delete;
 
-        void update(FrameInfo& frameInfo, GlobalUbo& ubo);
-        void render(FrameInfo& frameInfo);
+	void update(FrameInfo& frameInfo, GlobalUbo& ubo);
+	void render(FrameInfo& frameInfo);
 
-    private:
-        void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-        void createPipeline(VkRenderPass renderPass);
+private:
+	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+	void createPipeline(VkRenderPass renderPass);
 
-        VgetDevice& vgetDevice;
+	VgetDevice& vgetDevice;
 
-        std::unique_ptr<VgetPipeline> vgetPipeline;
-        VkPipelineLayout pipelineLayout;
-    };
-}
+	std::unique_ptr<VgetPipeline> vgetPipeline;
+	VkPipelineLayout pipelineLayout;
+};
+
+ENGINE_END

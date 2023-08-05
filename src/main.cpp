@@ -9,7 +9,7 @@ int main()
 {
     try
     {
-        vget::FirstApp app{};
+        engine::FirstApp app{};
 
         app.run();
     }

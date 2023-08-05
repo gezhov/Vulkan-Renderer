@@ -10,26 +10,27 @@
 #include <memory>
 #include <vector>
 
-namespace vget
+ENGINE_BEGIN
+
+class SimpleRenderSystem
 {
-    class SimpleRenderSystem
-    {
-    public:
-        SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-        ~SimpleRenderSystem();
+public:
+	SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	~SimpleRenderSystem();
 
-        SimpleRenderSystem(const SimpleRenderSystem&) = delete;
-        SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
+	SimpleRenderSystem(const SimpleRenderSystem&) = delete;
+	SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-        void renderGameObjects(FrameInfo& frameInfo);
+	void renderGameObjects(FrameInfo& frameInfo);
 
-    private:
-        void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-        void createPipeline(VkRenderPass renderPass);
+private:
+	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+	void createPipeline(VkRenderPass renderPass);
 
-        VgetDevice& vgetDevice;
+	VgetDevice& vgetDevice;
 
-        std::unique_ptr<VgetPipeline> vgetPipeline;
-        VkPipelineLayout pipelineLayout;
-    };
-}
+	std::unique_ptr<VgetPipeline> vgetPipeline;
+	VkPipelineLayout pipelineLayout;
+};
+
+ENGINE_END
