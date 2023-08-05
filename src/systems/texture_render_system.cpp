@@ -25,7 +25,7 @@ struct TextureSystemPushConstantData
 	alignas(16) glm::vec3 diffuseColor{};
 };
 
-TextureRenderSystem::TextureRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
+TextureRenderSystem::TextureRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
 	: vgetDevice{ device }
 {
 	createUboBuffers();
@@ -68,11 +68,11 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
-	VgetPipeline::defaultPipelineConfigInfo(pipelineConfig);
+	WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
-	vgetPipeline = std::make_unique<VgetPipeline>(
+	vgetPipeline = std::make_unique<WrpPipeline>(
 		vgetDevice,
 		"shaders/texture_shader.vert.spv",
 		"shaders/texture_shader.frag.spv",
@@ -83,7 +83,7 @@ void TextureRenderSystem::createUboBuffers()
 {
 	for (int i = 0; i < uboBuffers.size(); ++i)
 	{
-		uboBuffers[i] = std::make_unique<VgetBuffer>(
+		uboBuffers[i] = std::make_unique<WrpBuffer>(
 			vgetDevice,
 			sizeof(TextureSystemUbo),
 			1,
@@ -94,7 +94,7 @@ void TextureRenderSystem::createUboBuffers()
 	}
 }
 
-int TextureRenderSystem::fillModelsIds(VgetGameObject::Map& gameObjects)
+int TextureRenderSystem::fillModelsIds(WrpGameObject::Map& gameObjects)
 {
 	modelObjectsIds.clear();
 	for (auto& kv : gameObjects)
@@ -133,14 +133,14 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 		}
 	}
 
-	systemDescriptorPool = VgetDescriptorPool::Builder(vgetDevice)
-		.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
-		//.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT * 1000)
+	systemDescriptorPool = WrpDescriptorPool::Builder(vgetDevice)
+		.setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
+		//.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * 1000)
 		.build();
 
-	systemDescriptorSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
+	systemDescriptorSetLayout = WrpDescriptorSetLayout::Builder(vgetDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount)
 		//.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1000)
@@ -155,7 +155,7 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 
 		auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
-		VgetDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool)
+		WrpDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool)
 			.writeBuffer(0, &bufferInfo)
 			.writeImage(1, descriptorImageInfos.data(), texturesCount)
 			.build(systemDescriptorSets[i]);

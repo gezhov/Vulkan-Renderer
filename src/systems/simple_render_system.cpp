@@ -21,7 +21,7 @@ struct SimplePushConstantData
 	alignas(16) glm::vec3 diffuseColor{};
 };
 
-SimpleRenderSystem::SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass,
+SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
 	VkDescriptorSetLayout globalDescriptorSetLayout) : vgetDevice{ device }
 {
 	createPipelineLayout(globalDescriptorSetLayout);
@@ -66,11 +66,11 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout.");
 
 	PipelineConfigInfo pipelineConfig{};
-	VgetPipeline::defaultPipelineConfigInfo(pipelineConfig);
+	WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
-	vgetPipeline = std::make_unique<VgetPipeline>(
+	vgetPipeline = std::make_unique<WrpPipeline>(
 		vgetDevice,
 		"./shaders/simple_shader.vert.spv",
 		"./shaders/simple_shader.frag.spv",

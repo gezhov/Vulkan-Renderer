@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "camera.hpp"
 #include "game_object.hpp"
@@ -23,9 +23,9 @@ struct FrameInfo
 	int frameIndex;
 	float frameTime;
 	VkCommandBuffer commandBuffer;
-	VgetCamera& camera;
+	WrpCamera& camera;
 	VkDescriptorSet globalDescriptorSet;
-	VgetGameObject::Map& gameObjects;
+	WrpGameObject::Map& gameObjects;
 };
 
 struct GlobalUbo // global uniform buffer object

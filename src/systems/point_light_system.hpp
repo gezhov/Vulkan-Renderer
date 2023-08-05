@@ -15,7 +15,7 @@ ENGINE_BEGIN
 class PointLightSystem
 {
 public:
-	PointLightSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	PointLightSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 	~PointLightSystem();
 
 	// Избавляемся от copy operator и copy constrcutor, т.к. PointLightSystem хранит в себе указатели
@@ -30,9 +30,9 @@ private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	VgetDevice& vgetDevice;
+	WrpDevice& vgetDevice;
 
-	std::unique_ptr<VgetPipeline> vgetPipeline;
+	std::unique_ptr<WrpPipeline> vgetPipeline;
 	VkPipelineLayout pipelineLayout;
 };
 

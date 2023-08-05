@@ -10,19 +10,19 @@
 
 ENGINE_BEGIN
 
-VgetRenderer::VgetRenderer(VgetWindow& window, VgetDevice& device) : vgetWindow{ window }, vgetDevice{ device }
+WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : vgetWindow{ window }, vgetDevice{ device }
 {
     recreateSwapChain();
     createCommandBuffers();
 }
 
-VgetRenderer::~VgetRenderer()
+WrpRenderer::~WrpRenderer()
 {
     freeCommandBuffers();
 }
 
 // Пересоздать SwapChain
-void VgetRenderer::recreateSwapChain()
+void WrpRenderer::recreateSwapChain()
 {
     auto extent = vgetWindow.getExtent();
 
@@ -40,7 +40,7 @@ void VgetRenderer::recreateSwapChain()
     {
         std::cout << "Creating SwapChain for the first time." << std::endl;
         // Стандартное создание цепи обмена в первый раз
-        vgetSwapChain = std::make_unique<VgetSwapChain>(vgetDevice, vgetWindow);
+        vgetSwapChain = std::make_unique<WrpSwapChain>(vgetDevice, vgetWindow);
     }
     else
     {
@@ -48,8 +48,8 @@ void VgetRenderer::recreateSwapChain()
         
         // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
         // std::move() перемещает уникальный указатель в данный shared указатель.
-        std::shared_ptr<VgetSwapChain> oldSwapChain = std::move(vgetSwapChain);
-        vgetSwapChain = std::make_unique<VgetSwapChain>(vgetDevice, vgetWindow, oldSwapChain);
+        std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(vgetSwapChain);
+        vgetSwapChain = std::make_unique<WrpSwapChain>(vgetDevice, vgetWindow, oldSwapChain);
 
         if (!oldSwapChain->compareSwapChainFormats(*vgetSwapChain.get()))
         {
@@ -59,11 +59,11 @@ void VgetRenderer::recreateSwapChain()
 }
 
 // Создание буферов команд
-void VgetRenderer::createCommandBuffers()
+void WrpRenderer::createCommandBuffers()
 {
     // Размер массива буферов команд равен константе, определённой в цепи обмена.
     // Кол-во буферов команд в таком случае может отличаться от количества framebuffer'ов в цепи.
-    commandBuffers.resize(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
+    commandBuffers.resize(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -78,7 +78,7 @@ void VgetRenderer::createCommandBuffers()
 }
 
 // Освобождение всех буферов команд
-void VgetRenderer::freeCommandBuffers()
+void WrpRenderer::freeCommandBuffers()
 {
     vkFreeCommandBuffers(
         vgetDevice.device(),
@@ -90,7 +90,7 @@ void VgetRenderer::freeCommandBuffers()
     commandBuffers.clear();
 }
 
-VkCommandBuffer VgetRenderer::beginFrame()
+VkCommandBuffer WrpRenderer::beginFrame()
 {
     assert(!isFrameStarted && "Can't call beginFrame while already in progress.");
 
@@ -128,7 +128,7 @@ VkCommandBuffer VgetRenderer::beginFrame()
     return commandBuffer;
 }
 
-void VgetRenderer::endFrame()
+void WrpRenderer::endFrame()
 {
     assert(isFrameStarted && "Can't call endFrame while frame is not in progress.");
     auto commandBuffer = getCurrentCommandBuffer();
@@ -156,10 +156,10 @@ void VgetRenderer::endFrame()
     }
 
     isFrameStarted = false;
-    currentFrameIndex = (currentFrameIndex + 1) % VgetSwapChain::MAX_FRAMES_IN_FLIGHT; // выбираем следующий кадр
+    currentFrameIndex = (currentFrameIndex + 1) % WrpSwapChain::MAX_FRAMES_IN_FLIGHT; // выбираем следующий кадр
 }
 
-void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors)
+void WrpRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors)
 {
     assert(isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
     assert(commandBuffer == getCurrentCommandBuffer() && "Can't begin render pass on command buffer from a different frame");
@@ -184,7 +184,7 @@ void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // начинаем проход рендера
 
-    /* Ширина и высота изображения берутся из SwapChain, т.к. они могут отличаться от ширины и высоты из окна VgetWindow.
+    /* Ширина и высота изображения берутся из SwapChain, т.к. они могут отличаться от ширины и высоты из окна WrpWindow.
        Например, такой эффект есть при использовании Retina дисплеев (Apple), у которых высокая плотность пикселей.
        Перезаписываясь каждый кадр, динамические Viewport и Scissor всегда получают корректное значение ширины и высоты окна.*/
 
@@ -205,7 +205,7 @@ void VgetRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);    // установка scissor объекта
 }
 
-void VgetRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
+void WrpRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
     assert(isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress.");
     assert(commandBuffer == getCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame.");
@@ -213,7 +213,7 @@ void VgetRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
     vkCmdEndRenderPass(commandBuffer); // завершаем проход рендера
 }
 
-std::string VgetRenderer::getTimeStampStr()
+std::string WrpRenderer::getTimeStampStr()
 {
     auto timePoint = std::chrono::system_clock::now();
     std::time_t timeStamp = std::chrono::system_clock::to_time_t(timePoint);

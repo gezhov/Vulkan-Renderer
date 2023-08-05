@@ -15,82 +15,82 @@
 
 ENGINE_BEGIN
 
-class VgetModel
+class WrpModel
 {
 public:
-	struct Vertex
-	{
-		glm::vec3 position;
-		glm::vec3 color;
-		glm::vec3 normal;
-		glm::vec2 uv;		// координаты текстуры
+    struct Vertex
+    {
+        glm::vec3 position;
+        glm::vec3 color;
+        glm::vec3 normal;
+        glm::vec2 uv;		// координаты текстуры
 
-		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+        static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
+        static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 
-		bool operator==(const Vertex& other) const
-		{
-			return position == other.position && color == other.color &&
-				normal == other.normal && uv == other.uv;
-		}
-	};
+        bool operator==(const Vertex& other) const
+        {
+            return position == other.position && color == other.color &&
+                normal == other.normal && uv == other.uv;
+        }
+    };
 
-	// вспомогательная структура, которая хранит в себе буферы вершин и индексов
-	struct Builder
-	{
-		// структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
-		struct SubObjectInfo
-		{
-			uint32_t indexCount;
-			uint32_t indexStart;
-			int textureIndex;
-			glm::vec3 diffuseColor;
-		};
+    // вспомогательная структура, которая хранит в себе буферы вершин и индексов
+    struct Builder
+    {
+        // структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
+        struct SubObjectInfo
+        {
+            uint32_t indexCount;
+            uint32_t indexStart;
+            int textureIndex;
+            glm::vec3 diffuseColor;
+        };
 
-		std::vector<Vertex> vertices{};
-		std::vector<uint32_t> indices{};
-		std::vector<std::string> texturePaths{};
-		std::vector<SubObjectInfo> subObjectsInfo{};
+        std::vector<Vertex> vertices{};
+        std::vector<uint32_t> indices{};
+        std::vector<std::string> texturePaths{};
+        std::vector<SubObjectInfo> subObjectsInfo{};
 
-		void loadModel(const std::string& filepath);
-	};
+        void loadModel(const std::string& filepath);
+    };
 
-	VgetModel(VgetDevice& device, const VgetModel::Builder& builder);
-	~VgetModel();
+    WrpModel(WrpDevice& device, const WrpModel::Builder& builder);
+    ~WrpModel();
 
-	// Избавляемся от copy operator и copy constrcutor, т.к. VgetModel хранит
-	// указатели на буфер вершин и его память.
-	VgetModel(const VgetModel&) = delete;
-	VgetModel& operator=(const VgetModel&) = delete;
+    // Избавляемся от copy operator и copy constrcutor, т.к. WrpModel хранит
+    // указатели на буфер вершин и его память.
+    WrpModel(const WrpModel&) = delete;
+    WrpModel& operator=(const WrpModel&) = delete;
 
-	static std::unique_ptr<VgetModel> createModelFromFile(VgetDevice& device, const std::string& filepath);
+    static std::unique_ptr<WrpModel> createModelFromFile(WrpDevice& device, const std::string& filepath);
 
-	void bind(VkCommandBuffer commandBuffer);
-	// todo подумать как можно объединить draw и drawIndexed
-	void draw(VkCommandBuffer commandBuffer);
-	void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
+    void bind(VkCommandBuffer commandBuffer);
+    // todo подумать как можно объединить draw и drawIndexed
+    void draw(VkCommandBuffer commandBuffer);
+    void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
 
-	std::vector<Builder::SubObjectInfo>& getSubObjectsInfo() {return subObjectsInfo;}
-	std::vector<std::unique_ptr<VgetTexture>>& getTextures() {return textures;}
+    std::vector<Builder::SubObjectInfo>& getSubObjectsInfo() {return subObjectsInfo;}
+    std::vector<std::unique_ptr<WrpTexture>>& getTextures() {return textures;}
 
-	bool hasTextures = false;
+    bool hasTextures = false;
 
 private:
-	void createVertexBuffers(const std::vector<Vertex>& vertices);
-	void createIndexBuffers(const std::vector<uint32_t>& indices);
-	void createTextures(const std::vector<std::string>& texturePaths);
+    void createVertexBuffers(const std::vector<Vertex>& vertices);
+    void createIndexBuffers(const std::vector<uint32_t>& indices);
+    void createTextures(const std::vector<std::string>& texturePaths);
 
-	VgetDevice& vgetDevice;
+    WrpDevice& vgetDevice;
 
-	std::unique_ptr<VgetBuffer> vertexBuffer;
-	uint32_t vertexCount;
+    std::unique_ptr<WrpBuffer> vertexBuffer;
+    uint32_t vertexCount;
 
-	bool hasIndexBuffer = false;
-	std::unique_ptr<VgetBuffer> indexBuffer;
-	uint32_t indexCount;
+    bool hasIndexBuffer = false;
+    std::unique_ptr<WrpBuffer> indexBuffer;
+    uint32_t indexCount;
 
-	std::vector<Builder::SubObjectInfo> subObjectsInfo;
-	std::vector<std::unique_ptr<VgetTexture>> textures;
+    std::vector<Builder::SubObjectInfo> subObjectsInfo;
+    std::vector<std::unique_ptr<WrpTexture>> textures;
 };
 
 ENGINE_END

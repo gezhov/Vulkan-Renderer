@@ -9,7 +9,7 @@ ENGINE_BEGIN
 
 // *************** Descriptor Set Layout Builder *********************
 
-VgetDescriptorSetLayout::Builder& VgetDescriptorSetLayout::Builder::addBinding(
+WrpDescriptorSetLayout::Builder& WrpDescriptorSetLayout::Builder::addBinding(
 	uint32_t binding,
 	VkDescriptorType descriptorType,
 	VkShaderStageFlags stageFlags,
@@ -26,15 +26,15 @@ VgetDescriptorSetLayout::Builder& VgetDescriptorSetLayout::Builder::addBinding(
 	return *this;
 }
 
-std::unique_ptr<VgetDescriptorSetLayout> VgetDescriptorSetLayout::Builder::build() const
+std::unique_ptr<WrpDescriptorSetLayout> WrpDescriptorSetLayout::Builder::build() const
 {
-	return std::make_unique<VgetDescriptorSetLayout>(vgetDevice, bindings);
+	return std::make_unique<WrpDescriptorSetLayout>(vgetDevice, bindings);
 }
 
 // *************** Descriptor Set Layout *********************
 
-VgetDescriptorSetLayout::VgetDescriptorSetLayout(
-	VgetDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+WrpDescriptorSetLayout::WrpDescriptorSetLayout(
+	WrpDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
 	: vgetDevice{vgetDevice}, bindings{bindings}
 {
 	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
@@ -55,42 +55,42 @@ VgetDescriptorSetLayout::VgetDescriptorSetLayout(
 	}
 }
 
-VgetDescriptorSetLayout::~VgetDescriptorSetLayout()
+WrpDescriptorSetLayout::~WrpDescriptorSetLayout()
 {
 	vkDestroyDescriptorSetLayout(vgetDevice.device(), descriptorSetLayout, nullptr);
 }
 
 // *************** Descriptor Pool Builder *********************
 
-VgetDescriptorPool::Builder& VgetDescriptorPool::Builder::addPoolSize(
+WrpDescriptorPool::Builder& WrpDescriptorPool::Builder::addPoolSize(
 	VkDescriptorType descriptorType, uint32_t count)
 {
 	poolSizes.push_back({descriptorType, count});
 	return *this;
 }
 
-VgetDescriptorPool::Builder& VgetDescriptorPool::Builder::setPoolFlags(
+WrpDescriptorPool::Builder& WrpDescriptorPool::Builder::setPoolFlags(
 	VkDescriptorPoolCreateFlags flags)
 {
 	poolFlags = flags;
 	return *this;
 }
 
-VgetDescriptorPool::Builder& VgetDescriptorPool::Builder::setMaxSets(uint32_t count)
+WrpDescriptorPool::Builder& WrpDescriptorPool::Builder::setMaxSets(uint32_t count)
 {
 	maxSets = count;
 	return *this;
 }
 
-std::unique_ptr<VgetDescriptorPool> VgetDescriptorPool::Builder::build() const
+std::unique_ptr<WrpDescriptorPool> WrpDescriptorPool::Builder::build() const
 {
-	return std::make_unique<VgetDescriptorPool>(vgetDevice, maxSets, poolFlags, poolSizes);
+	return std::make_unique<WrpDescriptorPool>(vgetDevice, maxSets, poolFlags, poolSizes);
 }
 
 // *************** Descriptor Pool *********************
 
-VgetDescriptorPool::VgetDescriptorPool(
-	VgetDevice& vgetDevice,
+WrpDescriptorPool::WrpDescriptorPool(
+	WrpDevice& vgetDevice,
 	uint32_t maxSets,
 	VkDescriptorPoolCreateFlags poolFlags,
 	const std::vector<VkDescriptorPoolSize>& poolSizes)
@@ -110,12 +110,12 @@ VgetDescriptorPool::VgetDescriptorPool(
 	}
 }
 
-VgetDescriptorPool::~VgetDescriptorPool()
+WrpDescriptorPool::~WrpDescriptorPool()
 {
 	vkDestroyDescriptorPool(vgetDevice.device(), descriptorPool, nullptr);
 }
 
-bool VgetDescriptorPool::allocateDescriptorSet(
+bool WrpDescriptorPool::allocateDescriptorSet(
 	const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptorSet) const
 {
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -134,7 +134,7 @@ bool VgetDescriptorPool::allocateDescriptorSet(
 	return true;
 }
 
-void VgetDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
+void WrpDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
 {
 	vkFreeDescriptorSets(
 		vgetDevice.device(),
@@ -143,14 +143,14 @@ void VgetDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descripto
 		descriptors.data());
 }
 
-void VgetDescriptorPool::resetPool()
+void WrpDescriptorPool::resetPool()
 {
 	vkResetDescriptorPool(vgetDevice.device(), descriptorPool, 0);
 }
 
 // *************** Descriptor Writer *********************
 
-VgetDescriptorWriter::VgetDescriptorWriter(VgetDescriptorSetLayout& setLayout, VgetDescriptorPool& pool)
+WrpDescriptorWriter::WrpDescriptorWriter(WrpDescriptorSetLayout& setLayout, WrpDescriptorPool& pool)
 	: setLayout{setLayout}, pool{pool}
 {
 }
@@ -158,7 +158,7 @@ VgetDescriptorWriter::VgetDescriptorWriter(VgetDescriptorSetLayout& setLayout, V
 // Создание объекта записи VkWriteDescriptorSet и добавление его в вектор записей.
 // Эти записи нужны для добавления/обновления информации о дескрипторах в заданном наборе.
 // Конкретно эта функция готовит к записи в дескриптор информации о его буфере.
-VgetDescriptorWriter& VgetDescriptorWriter::writeBuffer(
+WrpDescriptorWriter& WrpDescriptorWriter::writeBuffer(
 	uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
 {
 	assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding.");
@@ -182,7 +182,7 @@ VgetDescriptorWriter& VgetDescriptorWriter::writeBuffer(
 }
 
 // Подготовка записи в дескриптор информации о его ресурсе-изображении 
-VgetDescriptorWriter& VgetDescriptorWriter::writeImage(
+WrpDescriptorWriter& WrpDescriptorWriter::writeImage(
 	uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count)
 {
 	assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding.");
@@ -205,7 +205,7 @@ VgetDescriptorWriter& VgetDescriptorWriter::writeImage(
 	return *this;
 }
 
-bool VgetDescriptorWriter::build(VkDescriptorSet& set)
+bool WrpDescriptorWriter::build(VkDescriptorSet& set)
 {
 	bool success = pool.allocateDescriptorSet(setLayout.getDescriptorSetLayout(), set);
 	// todo: нужны ли тут bool возвраты или можно выбрасывать runtime_error исключение?
@@ -219,7 +219,7 @@ bool VgetDescriptorWriter::build(VkDescriptorSet& set)
 
 // Эта функция обновляет данные дескрипторов при выделении набора из пула,
 // либо её можно вызвать отдельно для обновления данных, связанных с дескрипторами данного набора.
-void VgetDescriptorWriter::overwrite(VkDescriptorSet& set)
+void WrpDescriptorWriter::overwrite(VkDescriptorSet& set)
 {
 	for (auto& write : writes)
 	{

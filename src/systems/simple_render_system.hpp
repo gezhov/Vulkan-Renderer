@@ -15,7 +15,7 @@ ENGINE_BEGIN
 class SimpleRenderSystem
 {
 public:
-	SimpleRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 	~SimpleRenderSystem();
 
 	SimpleRenderSystem(const SimpleRenderSystem&) = delete;
@@ -27,9 +27,9 @@ private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	VgetDevice& vgetDevice;
+	WrpDevice& vgetDevice;
 
-	std::unique_ptr<VgetPipeline> vgetPipeline;
+	std::unique_ptr<WrpPipeline> vgetPipeline;
 	VkPipelineLayout pipelineLayout;
 };
 

@@ -31,9 +31,9 @@ ENGINE_BEGIN
 FirstApp::FirstApp()
 {
 	// Создаётся глобальный пул дескрипторов для всего приложения
-	globalPool = VgetDescriptorPool::Builder(vgetDevice)
-		.setMaxSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VgetSwapChain::MAX_FRAMES_IN_FLIGHT)
+	globalPool = WrpDescriptorPool::Builder(vgetDevice)
+		.setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
 		.build();
 
 	loadGameObjects();
@@ -44,10 +44,10 @@ FirstApp::~FirstApp() {}
 void FirstApp::run()
 {
 	// Создание Uniform Buffer'ов. По одному на каждый одновременно рисующийся кадр.
-	std::vector<std::unique_ptr<VgetBuffer>> uboBuffers(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
+	std::vector<std::unique_ptr<WrpBuffer>> uboBuffers(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < uboBuffers.size(); ++i)
 	{
-		uboBuffers[i] = std::make_unique<VgetBuffer> (
+		uboBuffers[i] = std::make_unique<WrpBuffer> (
 			vgetDevice,
 			sizeof(GlobalUbo),
 			1,
@@ -59,17 +59,17 @@ void FirstApp::run()
 	}
 
 	// Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
-	auto globalDescriptorSetLayout = VgetDescriptorSetLayout::Builder(vgetDevice)
+	auto globalDescriptorSetLayout = WrpDescriptorSetLayout::Builder(vgetDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1)
 		.build();
 
 	// Выделение наборов дескрипторов из пула (по одному сету на кадр)
-	std::vector<VkDescriptorSet> globalDescriptorSets(VgetSwapChain::MAX_FRAMES_IN_FLIGHT);
+	std::vector<VkDescriptorSet> globalDescriptorSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < globalDescriptorSets.size(); ++i)
 	{
 		VkDescriptorBufferInfo bufferInfo = uboBuffers[i]->descriptorInfo(); // инфа о буфере для дескриптора
 
-		VgetDescriptorWriter(*globalDescriptorSetLayout, *globalPool)
+		WrpDescriptorWriter(*globalDescriptorSetLayout, *globalPool)
 			.writeBuffer(0, &bufferInfo)
 			.build(globalDescriptorSets[i]);
 	}
@@ -83,7 +83,7 @@ void FirstApp::run()
 		vgetDevice,
 		vgetRenderer.getSwapChainRenderPass(),
 		globalDescriptorSetLayout->getDescriptorSetLayout(),
-		FrameInfo{0, 0, nullptr, VgetCamera{}, nullptr, gameObjects}
+		FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, gameObjects}
 	};
 	PointLightSystem pointLightSystem{
 		vgetDevice,
@@ -91,19 +91,19 @@ void FirstApp::run()
 		globalDescriptorSetLayout->getDescriptorSetLayout()
 	};
 
-	VgetCamera camera{};
+	WrpCamera camera{};
 	// установка положения "теоретической камеры"
 	//camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
 	//camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
-	auto viewerObject = VgetGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
+	auto viewerObject = WrpGameObject::createGameObject(); // объект без модели для хранения текущего состояния камеры
 	KeyboardMovementController cameraController{};
 
-	VgetImgui vgetImgui{
+	WrpImgui vgetImgui{
 		vgetWindow,
 		vgetDevice,
 		vgetRenderer.getSwapChainRenderPass(),
-		VgetSwapChain::MAX_FRAMES_IN_FLIGHT,
+		WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
 		camera,
 		cameraController,
 		gameObjects
@@ -197,8 +197,8 @@ void FirstApp::run()
 void FirstApp::loadGameObjects()
 {
 	// Viking Room model
-	/*std::shared_ptr<VgetModel> vikingRoom = VgetModel::createModelFromFile(vgetDevice, "models/viking_room.obj");
-	auto vikingRoomObj = VgetGameObject::createGameObject();
+	/*std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromFile(vgetDevice, "models/viking_room.obj");
+	auto vikingRoomObj = WrpGameObject::createGameObject();
 	vikingRoomObj.model = vikingRoom;
 	vikingRoomObj.transform.translation = {.0f, .0f, 0.f};
 	vikingRoomObj.transform.scale = glm::vec3(1.f, 1.f, 1.f);
@@ -206,8 +206,8 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 	// Sponza model
-	std::shared_ptr<VgetModel> sponza = VgetModel::createModelFromFile(vgetDevice, "../../../models/sponza.obj");
-	auto sponzaObj = VgetGameObject::createGameObject("Sponza");
+	std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromFile(vgetDevice, "../../../models/sponza.obj");
+	auto sponzaObj = WrpGameObject::createGameObject("Sponza");
 	sponzaObj.model = sponza;
 	sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
 	sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
@@ -215,8 +215,8 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 
 	// Living room model
-	/*std::shared_ptr<VgetModel> container = VgetModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
-	auto containerObj = VgetGameObject::createGameObject("LivingRoom");
+	/*std::shared_ptr<WrpModel> container = WrpModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
+	auto containerObj = WrpGameObject::createGameObject("LivingRoom");
 	containerObj.model = container;
 	containerObj.transform.translation = {1.f, 1.0f, 20.f};
 	containerObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
@@ -224,8 +224,8 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(containerObj.getId(), std::move(containerObj));*/
 
 	// Conference model
-	//std::shared_ptr<VgetModel> conference = VgetModel::createModelFromFile(vgetDevice, "../../../models/iscv2.obj");
-	//auto conferenceObj = VgetGameObject::createGameObject("Room");
+	//std::shared_ptr<WrpModel> conference = WrpModel::createModelFromFile(vgetDevice, "../../../models/iscv2.obj");
+	//auto conferenceObj = WrpGameObject::createGameObject("Room");
 	//conferenceObj.model = conference;
 	//conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
 	//conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
@@ -233,8 +233,8 @@ void FirstApp::loadGameObjects()
 	//gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));
 
 	// тестирование работы текстурирования
-	/*VgetModel::Builder textureModelBuilder{};
-	const std::vector<VgetModel::Vertex> vertices = {
+	/*WrpModel::Builder textureModelBuilder{};
+	const std::vector<WrpModel::Vertex> vertices = {
 		{{-0.5f, -0.5f, 0.f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, -0.5f, 0.f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
 		{{0.5f, 0.5f, 0.f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
@@ -251,33 +251,33 @@ void FirstApp::loadGameObjects()
 	};
 	textureModelBuilder.vertices = vertices;
 	textureModelBuilder.indices = indices;
-	std::shared_ptr<VgetModel> vgetTextureModel = std::make_unique<VgetModel>(vgetDevice, textureModelBuilder);
+	std::shared_ptr<WrpModel> vgetTextureModel = std::make_unique<WrpModel>(vgetDevice, textureModelBuilder);
 	vgetTextureModel->createTextureImage();
 	vgetTextureModel->createTextureImageView();
 	vgetTextureModel->createTextureSampler();
-	auto textureObject = VgetGameObject::createGameObject();
+	auto textureObject = WrpGameObject::createGameObject();
 	textureObject.model = vgetTextureModel;
 	textureObject.transform.translation = {.0f, -1.0f, 0.f};
 	textureObject.transform.scale = glm::vec3(1.f, 1.f, 1.f);
 	gameObjects.emplace(textureObject.getId(), std::move(textureObject));*/
 
 	// сцена из vget
-	//std::shared_ptr<VgetModel> vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");
-	//auto flatVase = VgetGameObject::createGameObject();
+	//std::shared_ptr<WrpModel> vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");
+	//auto flatVase = WrpGameObject::createGameObject();
 	//flatVase.model = vgetModel;
 	//flatVase.transform.translation = {-.5f, .5f, 0.f}; // в глубину объект двигается внутри ортогонального объёма просмотра, поэтому он не ограничен каноническим диапазоном [0;1]
 	//flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
 	//gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
-	//vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
-	//auto smoothVase = VgetGameObject::createGameObject();
+	//vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
+	//auto smoothVase = WrpGameObject::createGameObject();
 	//smoothVase.model = vgetModel;
 	//smoothVase.transform.translation = {.5f, .5f, 0.f};
 	//smoothVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
 	//gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
-	//vgetModel = VgetModel::createModelFromFile(vgetDevice, "models/quad.obj");
-	//auto floor = VgetGameObject::createGameObject();
+	//vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/quad.obj");
+	//auto floor = WrpGameObject::createGameObject();
 	//floor.model = vgetModel;
 	//floor.transform.translation = {0.f, .5f, 0.f};
 	//floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
@@ -295,7 +295,7 @@ void FirstApp::loadGameObjects()
 	//// Создаётся по одному Point Light'у на каждый цвет
 	//for (int i = 0; i < lightColors.size(); ++i)
 	//{
-	//	auto pointLight = VgetGameObject::makePointLight(0.2f);
+	//	auto pointLight = WrpGameObject::makePointLight(0.2f);
 	//	pointLight.color = lightColors[i];
 
 	//	// создаётся матрица преобразования для расстановки объектов точечного света по кругу

@@ -12,14 +12,14 @@
 
 ENGINE_BEGIN
 
-    VgetTexture::VgetTexture(const std::string& path, VgetDevice& device) : vgetDevice{device}
+    WrpTexture::WrpTexture(const std::string& path, WrpDevice& device) : vgetDevice{device}
     {
         createTextureImage(path);
         createTextureImageView();
         createTextureSampler();
     }
 
-    VgetTexture::~VgetTexture()
+    WrpTexture::~WrpTexture()
     {
         vkDestroySampler(vgetDevice.device(), textureSampler, nullptr);
         vkDestroyImageView(vgetDevice.device(), textureImageView, nullptr);
@@ -27,7 +27,7 @@ ENGINE_BEGIN
         vkFreeMemory(vgetDevice.device(), textureImageMemory, nullptr);
     }
 
-    void VgetTexture::createTextureImage(const std::string& path)
+    void WrpTexture::createTextureImage(const std::string& path)
     {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -41,7 +41,7 @@ ENGINE_BEGIN
         }
 
         // Создание промежуточного буфера
-        VgetBuffer stagingBuffer
+        WrpBuffer stagingBuffer
         {
             vgetDevice,
             pixelSize,
@@ -67,7 +67,7 @@ ENGINE_BEGIN
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
-    void VgetTexture::createImage(
+    void WrpTexture::createImage(
         uint32_t width,
         uint32_t height,
         VkFormat format,
@@ -100,7 +100,7 @@ ENGINE_BEGIN
     }
 
     // Смена схемы изображения
-    void VgetTexture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    void WrpTexture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         VkCommandBuffer commandBuffer = vgetDevice.beginSingleTimeCommands();
 
@@ -158,7 +158,7 @@ ENGINE_BEGIN
     }
 
     // Создание представления изображения для текстуры
-    void VgetTexture::createTextureImageView()
+    void WrpTexture::createTextureImageView()
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -178,7 +178,7 @@ ENGINE_BEGIN
     }
 
     // Создание выборщика для текстуры (ищет цвет, соответствующий координате)
-    void VgetTexture::createTextureSampler()
+    void WrpTexture::createTextureSampler()
     {
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -206,7 +206,7 @@ ENGINE_BEGIN
         }
     }
 
-    VkDescriptorImageInfo VgetTexture::descriptorInfo()
+    VkDescriptorImageInfo WrpTexture::descriptorInfo()
     {
         return VkDescriptorImageInfo {
             textureSampler,

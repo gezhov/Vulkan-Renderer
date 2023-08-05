@@ -1,14 +1,14 @@
-﻿#pragma once
+#pragma once
 
 #include "device.hpp"
 
 ENGINE_BEGIN
 
-class VgetTexture
+class WrpTexture
 {
 public:
-	VgetTexture(const std::string& path, VgetDevice& device);
-	~VgetTexture();
+	WrpTexture(const std::string& path, WrpDevice& device);
+	~WrpTexture();
 
 	VkDescriptorImageInfo descriptorInfo();
 
@@ -29,7 +29,7 @@ private:
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	VgetDevice& vgetDevice;
+	WrpDevice& vgetDevice;
 
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;

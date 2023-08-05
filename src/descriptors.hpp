@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "device.hpp"
 
@@ -10,114 +10,114 @@
 ENGINE_BEGIN
 
 // Класс обёртка над VkDescriptorSetLayout для удобного управления им
-class VgetDescriptorSetLayout
+class WrpDescriptorSetLayout
 {
 public:
-	// Класс для удобного создания информации о привязках в Descriptor Set'е
-	class Builder
-	{
-	public:
-		Builder(VgetDevice& vgetDevice) : vgetDevice{vgetDevice} {}
+    // Класс для удобного создания информации о привязках в Descriptor Set'е
+    class Builder
+    {
+    public:
+        Builder(WrpDevice& vgetDevice) : vgetDevice{vgetDevice} {}
 
-		// Добавление новой привязки дескрпитора в мапу
-		Builder& addBinding(
-			uint32_t binding,
-			VkDescriptorType descriptorType,
-			VkShaderStageFlags stageFlags,
-			uint32_t count = 1);
-		// Создание экземпляра VgetDescriptorSetLayout на основе текущей мапы привязок
-		std::unique_ptr<VgetDescriptorSetLayout> build() const;
+        // Добавление новой привязки дескрпитора в мапу
+        Builder& addBinding(
+            uint32_t binding,
+            VkDescriptorType descriptorType,
+            VkShaderStageFlags stageFlags,
+            uint32_t count = 1);
+        // Создание экземпляра WrpDescriptorSetLayout на основе текущей мапы привязок
+        std::unique_ptr<WrpDescriptorSetLayout> build() const;
 
-	private:
-		VgetDevice& vgetDevice;
-		// Мапа с информацией по каждой привязке. На основе этой мапы строится VgetDescriptorSetLayout
-		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
-	};
+    private:
+        WrpDevice& vgetDevice;
+        // Мапа с информацией по каждой привязке. На основе этой мапы строится WrpDescriptorSetLayout
+        std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
+    };
 
-	VgetDescriptorSetLayout(VgetDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
-	~VgetDescriptorSetLayout();
-	VgetDescriptorSetLayout(const VgetDescriptorSetLayout&) = delete;
-	VgetDescriptorSetLayout& operator=(const VgetDescriptorSetLayout&) = delete;
+    WrpDescriptorSetLayout(WrpDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+    ~WrpDescriptorSetLayout();
+    WrpDescriptorSetLayout(const WrpDescriptorSetLayout&) = delete;
+    WrpDescriptorSetLayout& operator=(const WrpDescriptorSetLayout&) = delete;
 
-	VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
+    VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
 private:
-	VgetDevice& vgetDevice;
-	VkDescriptorSetLayout descriptorSetLayout;
-	std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+    WrpDevice& vgetDevice;
+    VkDescriptorSetLayout descriptorSetLayout;
+    std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
-	friend class VgetDescriptorWriter;
+    friend class WrpDescriptorWriter;
 };
 
 // Класс обёртка над VkDescriptorPool для удобного управления им
-class VgetDescriptorPool
+class WrpDescriptorPool
 {
 public:
-	// Удобный класс-строитель для настройки и создания экземпляра VgetDescriptorPool
-	class Builder
-	{
-	public:
-		Builder(VgetDevice& vgetDevice) : vgetDevice{vgetDevice} {}
+    // Удобный класс-строитель для настройки и создания экземпляра WrpDescriptorPool
+    class Builder
+    {
+    public:
+        Builder(WrpDevice& vgetDevice) : vgetDevice{vgetDevice} {}
 
-		Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count); // кол-во дескрипторов заданного типа в данном пуле
-		Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);		// флаги настройки поведения пула
-		Builder& setMaxSets(uint32_t count);							// макс. число наборов, которые можно выделить из пула дескрипторов
-		// Создание экземпляра VgetDescriptorPool
-		std::unique_ptr<VgetDescriptorPool> build() const;
+        Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count); // кол-во дескрипторов заданного типа в данном пуле
+        Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);		// флаги настройки поведения пула
+        Builder& setMaxSets(uint32_t count);							// макс. число наборов, которые можно выделить из пула дескрипторов
+        // Создание экземпляра WrpDescriptorPool
+        std::unique_ptr<WrpDescriptorPool> build() const;
 
-	private:
-		VgetDevice& vgetDevice;
-		std::vector<VkDescriptorPoolSize> poolSizes{};
-		uint32_t maxSets = 1000;
-		VkDescriptorPoolCreateFlags poolFlags = 0;
-	};
+    private:
+        WrpDevice& vgetDevice;
+        std::vector<VkDescriptorPoolSize> poolSizes{};
+        uint32_t maxSets = 1000;
+        VkDescriptorPoolCreateFlags poolFlags = 0;
+    };
 
-	VgetDescriptorPool(
-		VgetDevice& vgetDevice,
-		uint32_t maxSets,
-		VkDescriptorPoolCreateFlags poolFlags,
-		const std::vector<VkDescriptorPoolSize>& poolSizes);
-	~VgetDescriptorPool();
-	VgetDescriptorPool(const VgetDescriptorPool&) = delete;
-	VgetDescriptorPool& operator=(const VgetDescriptorPool&) = delete;
+    WrpDescriptorPool(
+        WrpDevice& vgetDevice,
+        uint32_t maxSets,
+        VkDescriptorPoolCreateFlags poolFlags,
+        const std::vector<VkDescriptorPoolSize>& poolSizes);
+    ~WrpDescriptorPool();
+    WrpDescriptorPool(const WrpDescriptorPool&) = delete;
+    WrpDescriptorPool& operator=(const WrpDescriptorPool&) = delete;
 
-	// Выделение набора дескрипторов из пула
-	bool allocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+    // Выделение набора дескрипторов из пула
+    bool allocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
 
-	// Освобождение дескрипторов из пула
-	void freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
+    // Освобождение дескрипторов из пула
+    void freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 
-	// Сброс всего пула и всех дескрипторов, которые были из него выделены
-	void resetPool();
+    // Сброс всего пула и всех дескрипторов, которые были из него выделены
+    void resetPool();
 
 private:
-	VgetDevice& vgetDevice;
-	VkDescriptorPool descriptorPool;
+    WrpDevice& vgetDevice;
+    VkDescriptorPool descriptorPool;
 
-	friend class VgetDescriptorWriter;
+    friend class WrpDescriptorWriter;
 };
 
 // Класс для конфигурирования и создания наборов дескрипторов. Он выделяет набор
 // дескрипторов из пула и записывает необходимую информацию для дескрипторов набора.
-class VgetDescriptorWriter
+class WrpDescriptorWriter
 {
 public:
-	VgetDescriptorWriter(VgetDescriptorSetLayout& setLayout, VgetDescriptorPool& pool);
+    WrpDescriptorWriter(WrpDescriptorSetLayout& setLayout, WrpDescriptorPool& pool);
 
-	// Готовит запись для информации о буфере дескриптора
-	VgetDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-	// Готовт запись для информации о ресурсе-изображении дескрипторов
-	VgetDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count = 1);
+    // Готовит запись для информации о буфере дескриптора
+    WrpDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
+    // Готовт запись для информации о ресурсе-изображении дескрипторов
+    WrpDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t count = 1);
 
-	// Выделяет набор из пула в переданный VkDescriptorSet
-	// и конфигурирует его VkWriteDescriptorSet записями
-	bool build(VkDescriptorSet& set);
-	void overwrite(VkDescriptorSet& set);
+    // Выделяет набор из пула в переданный VkDescriptorSet
+    // и конфигурирует его VkWriteDescriptorSet записями
+    bool build(VkDescriptorSet& set);
+    void overwrite(VkDescriptorSet& set);
 
 private:
-	VgetDescriptorSetLayout& setLayout;
-	VgetDescriptorPool& pool;
-	std::vector<VkWriteDescriptorSet> writes; // структуры-записи для обновления информации о ресурсах дескрипторов
+    WrpDescriptorSetLayout& setLayout;
+    WrpDescriptorPool& pool;
+    std::vector<VkWriteDescriptorSet> writes; // структуры-записи для обновления информации о ресурсах дескрипторов
 };
 
 ENGINE_END

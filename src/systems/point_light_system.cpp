@@ -21,7 +21,7 @@ struct PointLightPushConstants
 	float radius{};
 };
 
-PointLightSystem::PointLightSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
+PointLightSystem::PointLightSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
 	: vgetDevice{device}
 {
 	createPipelineLayout(globalSetLayout);
@@ -60,14 +60,14 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
-	VgetPipeline::defaultPipelineConfigInfo(pipelineConfig);
-	VgetPipeline::enableAlphaBlending(pipelineConfig);
+	WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
+	WrpPipeline::enableAlphaBlending(pipelineConfig);
 	pipelineConfig.bindingDescriptions.clear();   // массивы с привязками и атрибутами буфера вершин очищаем, т.к.
 	pipelineConfig.attributeDescriptions.clear(); // они не нужны в PointLightSystem с билбордами
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
-	vgetPipeline = std::make_unique<VgetPipeline>(
+	vgetPipeline = std::make_unique<WrpPipeline>(
 		vgetDevice,
 		"./shaders/point_light.vert.spv",
 		"./shaders/point_light.frag.spv",
@@ -112,7 +112,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
 	// Автоматическа сортировка PointLight'ов в мапе по их дистанции до камеры.
 	// Это нужно для поочерёдного порядка их отрисовки, начиная с дальних билбордов,
 	// а затем для их дальнейшего правильного смешивания цветов в ColorBlend этапе.
-	std::map<float, VgetGameObject::id_t> sorted;
+	std::map<float, WrpGameObject::id_t> sorted;
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;

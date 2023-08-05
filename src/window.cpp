@@ -5,19 +5,19 @@
 
 ENGINE_BEGIN
 
-VgetWindow::VgetWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
+WrpWindow::WrpWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
 {
 	initWindow();
 }
 
-VgetWindow::~VgetWindow()
+WrpWindow::~WrpWindow()
 {
 	// Уничтожение окна и его контекста. Освобождение всех остальных ресурсов библиотеки GLFW.
 	glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
-void VgetWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
+void WrpWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
 {
 	if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS)
 	{
@@ -25,7 +25,7 @@ void VgetWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
 	}
 }
 
-void VgetWindow::initWindow()
+void WrpWindow::initWindow()
 {
 	glfwInit();  // GLFW library initialization
 
@@ -35,15 +35,15 @@ void VgetWindow::initWindow()
 
 	// Создание окна и его контекста.
 	window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
-	glfwSetWindowUserPointer(window, this);  // Связывание указателя GLFWwindow* и указателя на текущий экземпляр VgetWindow*.
+	glfwSetWindowUserPointer(window, this);  // Связывание указателя GLFWwindow* и указателя на текущий экземпляр WrpWindow*.
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);  // Установка callback функции на изменение размера окна (буфера кадра)
 }
 
-void VgetWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+void WrpWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	// Используя приведение reinterpret_cast(), получаем из указателя на окно GLFWwindow*
-	// связанный с ним указатель на пользовательский тип окна VgetWindow*
-	auto vgetWindow = reinterpret_cast<VgetWindow*>(glfwGetWindowUserPointer(window));
+	// связанный с ним указатель на пользовательский тип окна WrpWindow*
+	auto vgetWindow = reinterpret_cast<WrpWindow*>(glfwGetWindowUserPointer(window));
 
 	vgetWindow->framebufferResized = true;
 	vgetWindow->width = width;

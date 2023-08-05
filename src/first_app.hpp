@@ -35,12 +35,12 @@ private:
     // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
     // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
     // быть объявлен после девайса.
-    VgetWindow vgetWindow{ WIDTH, HEIGHT, "Vulkan Graphics Engine" };
-    VgetDevice vgetDevice{ vgetWindow };
-    VgetRenderer vgetRenderer{ vgetWindow, vgetDevice };
+    WrpWindow vgetWindow{ WIDTH, HEIGHT, "Vulkan Graphics Engine" };
+    WrpDevice vgetDevice{ vgetWindow };
+    WrpRenderer vgetRenderer{ vgetWindow, vgetDevice };
 
-    std::unique_ptr<VgetDescriptorPool> globalPool{};
-    VgetGameObject::Map gameObjects;
+    std::unique_ptr<WrpDescriptorPool> globalPool{};
+    WrpGameObject::Map gameObjects;
 };
 
 ENGINE_END

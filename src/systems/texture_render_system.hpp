@@ -17,7 +17,7 @@ ENGINE_BEGIN
 class TextureRenderSystem
 {
 public:
-	TextureRenderSystem(VgetDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
+	TextureRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
 	~TextureRenderSystem();
 
 	// Избавляемся от copy operator и copy constrcutor, т.к. TextureRenderSystem хранит в себе указатели
@@ -33,21 +33,21 @@ private:
 	void createPipeline(VkRenderPass renderPass);
 	void createUboBuffers();
 
-	int fillModelsIds(VgetGameObject::Map& gameObjects);
+	int fillModelsIds(WrpGameObject::Map& gameObjects);
 	void createDescriptorSets(FrameInfo& frameInfo);
 
-	VgetDevice& vgetDevice;
+	WrpDevice& vgetDevice;
 
-	std::unique_ptr<VgetPipeline> vgetPipeline;
+	std::unique_ptr<WrpPipeline> vgetPipeline;
 	VkPipelineLayout pipelineLayout;
 
-	std::vector<VgetGameObject::id_t> modelObjectsIds{};
+	std::vector<WrpGameObject::id_t> modelObjectsIds{};
 	size_t prevModelCount = 0;
-	std::vector<std::unique_ptr<VgetBuffer>> uboBuffers{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
+	std::vector<std::unique_ptr<WrpBuffer>> uboBuffers{ WrpSwapChain::MAX_FRAMES_IN_FLIGHT };
 
-	std::unique_ptr<VgetDescriptorPool> systemDescriptorPool;
-	std::unique_ptr<VgetDescriptorSetLayout> systemDescriptorSetLayout;
-	std::vector<VkDescriptorSet> systemDescriptorSets{ VgetSwapChain::MAX_FRAMES_IN_FLIGHT };
+	std::unique_ptr<WrpDescriptorPool> systemDescriptorPool;
+	std::unique_ptr<WrpDescriptorSetLayout> systemDescriptorSetLayout;
+	std::vector<VkDescriptorSet> systemDescriptorSets{ WrpSwapChain::MAX_FRAMES_IN_FLIGHT };
 };
 
 ENGINE_END
