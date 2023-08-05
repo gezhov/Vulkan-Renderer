@@ -92,6 +92,9 @@ endif()
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
                           ${PROJECT_SOURCE_DIR}/external/*.cpp)
 
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17) # C++ 17 стандарт компилятора
