@@ -29,7 +29,7 @@ private:
 
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	WrpDevice& vgetDevice;
+	WrpDevice& wrpDevice;
 
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;

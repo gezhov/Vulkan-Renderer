@@ -22,7 +22,7 @@ struct SimplePushConstantData
 };
 
 SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
-	VkDescriptorSetLayout globalDescriptorSetLayout) : vgetDevice{ device }
+	VkDescriptorSetLayout globalDescriptorSetLayout) : wrpDevice{ device }
 {
 	createPipelineLayout(globalDescriptorSetLayout);
 	createPipeline(renderPass);
@@ -30,7 +30,7 @@ SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPas
 
 SimpleRenderSystem::~SimpleRenderSystem()
 {
-	vkDestroyPipelineLayout(vgetDevice.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(wrpDevice.device(), pipelineLayout, nullptr);
 }
 
 void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalDescriptorSetLayout)
@@ -55,7 +55,7 @@ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalDescri
 	// PushConstant'ы используются для передачи в шейдерные программы небольшого количества данных.
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	if (vkCreatePipelineLayout(vgetDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(wrpDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create pipeline layout!");
 	}
@@ -71,7 +71,7 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
 	vgetPipeline = std::make_unique<WrpPipeline>(
-		vgetDevice,
+		wrpDevice,
 		"./shaders/simple_shader.vert.spv",
 		"./shaders/simple_shader.frag.spv",
 		pipelineConfig);

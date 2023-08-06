@@ -31,7 +31,7 @@ ENGINE_BEGIN
 FirstApp::FirstApp()
 {
 	// Создаётся глобальный пул дескрипторов для всего приложения
-	globalPool = WrpDescriptorPool::Builder(vgetDevice)
+	globalPool = WrpDescriptorPool::Builder(wrpDevice)
 		.setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
 		.build();
@@ -48,7 +48,7 @@ void FirstApp::run()
 	for (int i = 0; i < uboBuffers.size(); ++i)
 	{
 		uboBuffers[i] = std::make_unique<WrpBuffer> (
-			vgetDevice,
+			wrpDevice,
 			sizeof(GlobalUbo),
 			1,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -59,7 +59,7 @@ void FirstApp::run()
 	}
 
 	// Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
-	auto globalDescriptorSetLayout = WrpDescriptorSetLayout::Builder(vgetDevice)
+	auto globalDescriptorSetLayout = WrpDescriptorSetLayout::Builder(wrpDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1)
 		.build();
 
@@ -75,19 +75,19 @@ void FirstApp::run()
 	}
 
 	SimpleRenderSystem simpleRenderSystem{
-		vgetDevice,
-		vgetRenderer.getSwapChainRenderPass(),
+		wrpDevice,
+		wrpRenderer.getSwapChainRenderPass(),
 		globalDescriptorSetLayout->getDescriptorSetLayout()
 	};
 	TextureRenderSystem textureRenderSystem{
-		vgetDevice,
-		vgetRenderer.getSwapChainRenderPass(),
+		wrpDevice,
+		wrpRenderer.getSwapChainRenderPass(),
 		globalDescriptorSetLayout->getDescriptorSetLayout(),
 		FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, gameObjects}
 	};
 	PointLightSystem pointLightSystem{
-		vgetDevice,
-		vgetRenderer.getSwapChainRenderPass(),
+		wrpDevice,
+		wrpRenderer.getSwapChainRenderPass(),
 		globalDescriptorSetLayout->getDescriptorSetLayout()
 	};
 
@@ -100,9 +100,9 @@ void FirstApp::run()
 	KeyboardMovementController cameraController{};
 
 	WrpImgui vgetImgui{
-		vgetWindow,
-		vgetDevice,
-		vgetRenderer.getSwapChainRenderPass(),
+		wrpWindown,
+		wrpDevice,
+		wrpRenderer.getSwapChainRenderPass(),
 		WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
 		camera,
 		cameraController,
@@ -112,7 +112,7 @@ void FirstApp::run()
 	auto currentTime = std::chrono::high_resolution_clock::now();
 
 	// Обработка событий происходит, пока окно не должно быть закрыто.
-	while (!vgetWindow.shouldClose())
+	while (!wrpWindown.shouldClose())
 	{
 		glfwPollEvents(); // Обработка событий из очереди (нажатие клавиш, взаимодействие с окном и т.п.)
 
@@ -126,7 +126,7 @@ void FirstApp::run()
 		frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
 		// двигаем/вращаем объект теоретической камеры в зависимости от ввода с клавиатуры
-		cameraController.moveInPlaneXZ(vgetWindow.getGLFWwindow(), frameTime, viewerObject);
+		cameraController.moveInPlaneXZ(wrpWindown.getGLFWwindow(), frameTime, viewerObject);
 		camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
 		// Матрица ортогонального проецирования перестраивается каждый кадр, чтобы размеры ортогонального объёма просмотра
@@ -134,7 +134,7 @@ void FirstApp::run()
 		// Aspect ratio подставляется именно в -left и right, чтобы соответствовать выражению: right - left = aspect * (bottom - top)
 		// И в таком случае ортогональный объём просмотра будет иметь такое же соотношение сторон, что и окно.
 		// Это избавляет отображаемый объект от искажений, связанных с соотношением сторон.
-		float aspect = vgetRenderer.getAspectRatio();
+		float aspect = wrpRenderer.getAspectRatio();
 		//camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
 
 		// Установка матрицы проецирования перспективы.
@@ -145,11 +145,11 @@ void FirstApp::run()
 		camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
 		// отрисовка кадра
-		if (auto commandBuffer = vgetRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
+		if (auto commandBuffer = wrpRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
 		{
 			vgetImgui.newFrame(); // tell imgui that we're starting a new frame
 
-			int frameIndex = vgetRenderer.getFrameIndex();
+			int frameIndex = wrpRenderer.getFrameIndex();
 			FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
 				globalDescriptorSets[frameIndex], gameObjects};
 
@@ -171,7 +171,7 @@ void FirstApp::run()
 			/* Начало и конец прохода рендера и кадра отделены друг от друга для упрощения в дальнейшем
 			   интеграции сразу нескольких проходов рендера (Render passes) для создания отражений,
 			   теней и эффектов пост-процесса. */
-			vgetRenderer.beginSwapChainRenderPass(commandBuffer, vgetImgui.clear_color);
+			wrpRenderer.beginSwapChainRenderPass(commandBuffer, vgetImgui.clear_color);
 
 			// Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью textureRenderSystem, а
 			// затем полупрозрачные билборды поинт лайтов с помощью PointLightSystem.
@@ -186,18 +186,18 @@ void FirstApp::run()
 			vgetImgui.enumerateObjectsInTheScene();
 			vgetImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
 
-			vgetRenderer.endSwapChainRenderPass(commandBuffer);
-			vgetRenderer.endFrame();
+			wrpRenderer.endSwapChainRenderPass(commandBuffer);
+			wrpRenderer.endFrame();
 		}
 	}
 
-	vkDeviceWaitIdle(vgetDevice.device());  // ожидать завершения всех операций на GPU перед закрытием программы и очисткой всех ресурсов
+	vkDeviceWaitIdle(wrpDevice.device());  // ожидать завершения всех операций на GPU перед закрытием программы и очисткой всех ресурсов
 }
 
 void FirstApp::loadGameObjects()
 {
 	// Viking Room model
-	/*std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromFile(vgetDevice, "models/viking_room.obj");
+	/*std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromFile(wrpDevice, "models/viking_room.obj");
 	auto vikingRoomObj = WrpGameObject::createGameObject();
 	vikingRoomObj.model = vikingRoom;
 	vikingRoomObj.transform.translation = {.0f, .0f, 0.f};
@@ -206,7 +206,7 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
 	// Sponza model
-	std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromFile(vgetDevice, "../../../models/sponza.obj");
+	std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromFile(wrpDevice, "../../../models/sponza.obj");
 	auto sponzaObj = WrpGameObject::createGameObject("Sponza");
 	sponzaObj.model = sponza;
 	sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
@@ -215,7 +215,7 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 
 	// Living room model
-	/*std::shared_ptr<WrpModel> container = WrpModel::createModelFromFile(vgetDevice, "../models/living_room.obj");
+	/*std::shared_ptr<WrpModel> container = WrpModel::createModelFromFile(wrpDevice, "../models/living_room.obj");
 	auto containerObj = WrpGameObject::createGameObject("LivingRoom");
 	containerObj.model = container;
 	containerObj.transform.translation = {1.f, 1.0f, 20.f};
@@ -224,7 +224,7 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(containerObj.getId(), std::move(containerObj));*/
 
 	// Conference model
-	//std::shared_ptr<WrpModel> conference = WrpModel::createModelFromFile(vgetDevice, "../../../models/iscv2.obj");
+	//std::shared_ptr<WrpModel> conference = WrpModel::createModelFromFile(wrpDevice, "../../../models/iscv2.obj");
 	//auto conferenceObj = WrpGameObject::createGameObject("Room");
 	//conferenceObj.model = conference;
 	//conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
@@ -251,7 +251,7 @@ void FirstApp::loadGameObjects()
 	};
 	textureModelBuilder.vertices = vertices;
 	textureModelBuilder.indices = indices;
-	std::shared_ptr<WrpModel> vgetTextureModel = std::make_unique<WrpModel>(vgetDevice, textureModelBuilder);
+	std::shared_ptr<WrpModel> vgetTextureModel = std::make_unique<WrpModel>(wrpDevice, textureModelBuilder);
 	vgetTextureModel->createTextureImage();
 	vgetTextureModel->createTextureImageView();
 	vgetTextureModel->createTextureSampler();
@@ -262,21 +262,21 @@ void FirstApp::loadGameObjects()
 	gameObjects.emplace(textureObject.getId(), std::move(textureObject));*/
 
 	// сцена из vget
-	//std::shared_ptr<WrpModel> vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/flat_vase.obj");
+	//std::shared_ptr<WrpModel> vgetModel = WrpModel::createModelFromFile(wrpDevice, "models/flat_vase.obj");
 	//auto flatVase = WrpGameObject::createGameObject();
 	//flatVase.model = vgetModel;
 	//flatVase.transform.translation = {-.5f, .5f, 0.f}; // в глубину объект двигается внутри ортогонального объёма просмотра, поэтому он не ограничен каноническим диапазоном [0;1]
 	//flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
 	//gameObjects.emplace(flatVase.getId(), std::move(flatVase));
 
-	//vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/smooth_vase.obj");
+	//vgetModel = WrpModel::createModelFromFile(wrpDevice, "models/smooth_vase.obj");
 	//auto smoothVase = WrpGameObject::createGameObject();
 	//smoothVase.model = vgetModel;
 	//smoothVase.transform.translation = {.5f, .5f, 0.f};
 	//smoothVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
 	//gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
-	//vgetModel = WrpModel::createModelFromFile(vgetDevice, "models/quad.obj");
+	//vgetModel = WrpModel::createModelFromFile(wrpDevice, "models/quad.obj");
 	//auto floor = WrpGameObject::createGameObject();
 	//floor.model = vgetModel;
 	//floor.transform.translation = {0.f, .5f, 0.f};

@@ -74,8 +74,8 @@ private:
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
-    WrpDevice& vgetDevice;
-    WrpWindow& vgetWindow;
+    WrpDevice& wrpDevice;
+    WrpWindow& wrpWindown;
 
     VkSwapchainKHR swapChain;
     std::shared_ptr<WrpSwapChain> oldSwapChain;

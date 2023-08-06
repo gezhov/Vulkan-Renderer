@@ -28,14 +28,14 @@ WrpDescriptorSetLayout::Builder& WrpDescriptorSetLayout::Builder::addBinding(
 
 std::unique_ptr<WrpDescriptorSetLayout> WrpDescriptorSetLayout::Builder::build() const
 {
-	return std::make_unique<WrpDescriptorSetLayout>(vgetDevice, bindings);
+	return std::make_unique<WrpDescriptorSetLayout>(wrpDevice, bindings);
 }
 
 // *************** Descriptor Set Layout *********************
 
 WrpDescriptorSetLayout::WrpDescriptorSetLayout(
-	WrpDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
-	: vgetDevice{vgetDevice}, bindings{bindings}
+	WrpDevice& wrpDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+	: wrpDevice{wrpDevice}, bindings{bindings}
 {
 	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
 	for (auto& kv : bindings)
@@ -48,7 +48,7 @@ WrpDescriptorSetLayout::WrpDescriptorSetLayout(
 	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 	descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 
-	if (vkCreateDescriptorSetLayout(vgetDevice.device(), &descriptorSetLayoutInfo,
+	if (vkCreateDescriptorSetLayout(wrpDevice.device(), &descriptorSetLayoutInfo,
 		nullptr, &descriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor set layout!");
@@ -57,7 +57,7 @@ WrpDescriptorSetLayout::WrpDescriptorSetLayout(
 
 WrpDescriptorSetLayout::~WrpDescriptorSetLayout()
 {
-	vkDestroyDescriptorSetLayout(vgetDevice.device(), descriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(wrpDevice.device(), descriptorSetLayout, nullptr);
 }
 
 // *************** Descriptor Pool Builder *********************
@@ -84,17 +84,17 @@ WrpDescriptorPool::Builder& WrpDescriptorPool::Builder::setMaxSets(uint32_t coun
 
 std::unique_ptr<WrpDescriptorPool> WrpDescriptorPool::Builder::build() const
 {
-	return std::make_unique<WrpDescriptorPool>(vgetDevice, maxSets, poolFlags, poolSizes);
+	return std::make_unique<WrpDescriptorPool>(wrpDevice, maxSets, poolFlags, poolSizes);
 }
 
 // *************** Descriptor Pool *********************
 
 WrpDescriptorPool::WrpDescriptorPool(
-	WrpDevice& vgetDevice,
+	WrpDevice& wrpDevice,
 	uint32_t maxSets,
 	VkDescriptorPoolCreateFlags poolFlags,
 	const std::vector<VkDescriptorPoolSize>& poolSizes)
-	: vgetDevice{vgetDevice}
+	: wrpDevice{wrpDevice}
 {
 	VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 	descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -103,7 +103,7 @@ WrpDescriptorPool::WrpDescriptorPool(
 	descriptorPoolInfo.maxSets = maxSets;
 	descriptorPoolInfo.flags = poolFlags;
 
-	if (vkCreateDescriptorPool(vgetDevice.device(), &descriptorPoolInfo, nullptr, &descriptorPool) !=
+	if (vkCreateDescriptorPool(wrpDevice.device(), &descriptorPoolInfo, nullptr, &descriptorPool) !=
 		VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor pool!");
@@ -112,7 +112,7 @@ WrpDescriptorPool::WrpDescriptorPool(
 
 WrpDescriptorPool::~WrpDescriptorPool()
 {
-	vkDestroyDescriptorPool(vgetDevice.device(), descriptorPool, nullptr);
+	vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
 }
 
 bool WrpDescriptorPool::allocateDescriptorSet(
@@ -126,7 +126,7 @@ bool WrpDescriptorPool::allocateDescriptorSet(
 
 	// todo: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 	// a new pool whenever an old pool fills up. But this is beyond our current scope
-	if (vkAllocateDescriptorSets(vgetDevice.device(), &allocInfo, &descriptorSet) != VK_SUCCESS)
+	if (vkAllocateDescriptorSets(wrpDevice.device(), &allocInfo, &descriptorSet) != VK_SUCCESS)
 	{
 		std::cerr << "Failed to allocate descriptor sets!" << std::endl; // поменять на exeception, если потребуется
 		return false;
@@ -137,7 +137,7 @@ bool WrpDescriptorPool::allocateDescriptorSet(
 void WrpDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
 {
 	vkFreeDescriptorSets(
-		vgetDevice.device(),
+		wrpDevice.device(),
 		descriptorPool,
 		static_cast<uint32_t>(descriptors.size()),
 		descriptors.data());
@@ -145,7 +145,7 @@ void WrpDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptor
 
 void WrpDescriptorPool::resetPool()
 {
-	vkResetDescriptorPool(vgetDevice.device(), descriptorPool, 0);
+	vkResetDescriptorPool(wrpDevice.device(), descriptorPool, 0);
 }
 
 // *************** Descriptor Writer *********************
@@ -225,7 +225,7 @@ void WrpDescriptorWriter::overwrite(VkDescriptorSet& set)
 	{
 		write.dstSet = set; // к структурам записей добавляется обновляемый набор
 	}
-	vkUpdateDescriptorSets(pool.vgetDevice.device(), writes.size(), writes.data(), 0, nullptr);
+	vkUpdateDescriptorSets(pool.wrpDevice.device(), writes.size(), writes.data(), 0, nullptr);
 }
 
 ENGINE_END

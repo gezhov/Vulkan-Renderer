@@ -63,7 +63,7 @@ public:
     glm::vec3 pointLightColor{};
 
 private:
-    WrpDevice& vgetDevice;
+    WrpDevice& wrpDevice;
     WrpCamera& camera;
     KeyboardMovementController& kmc;
     WrpGameObject::Map& gameObjects;

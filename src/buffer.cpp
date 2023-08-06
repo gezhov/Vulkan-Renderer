@@ -38,7 +38,7 @@ WrpBuffer::WrpBuffer(
     VkBufferUsageFlags usageFlags,
     VkMemoryPropertyFlags memoryPropertyFlags,
     VkDeviceSize minOffsetAlignment)
-    : vgetDevice{device},
+    : wrpDevice{device},
       instanceSize{instanceSize},
       instanceCount{instanceCount},
       usageFlags{usageFlags},
@@ -52,8 +52,8 @@ WrpBuffer::WrpBuffer(
 WrpBuffer::~WrpBuffer()
 {
     unmap();
-    vkDestroyBuffer(vgetDevice.device(), buffer, nullptr);
-    vkFreeMemory(vgetDevice.device(), memory, nullptr);
+    vkDestroyBuffer(wrpDevice.device(), buffer, nullptr);
+    vkFreeMemory(wrpDevice.device(), memory, nullptr);
 }
 
 /**
@@ -72,7 +72,7 @@ VkResult WrpBuffer::map(VkDeviceSize size, VkDeviceSize offset)
     // Функция vkMapMemory проецирует область памяти хоста на память девайса. После выполнения
     // функции указатель mapped указывает на отображаемое начало области памяти девайса (GPU).
     // {HOST(CPU)}[void* mapped] <===========> [Buffer memory]{DEVICE(GPU)}
-    return vkMapMemory(vgetDevice.device(), memory, offset, size, 0, &mapped);
+    return vkMapMemory(wrpDevice.device(), memory, offset, size, 0, &mapped);
 }
 
 /**
@@ -84,7 +84,7 @@ void WrpBuffer::unmap()
 {
     if (mapped)
     {
-        vkUnmapMemory(vgetDevice.device(), memory);
+        vkUnmapMemory(wrpDevice.device(), memory);
         mapped = nullptr;
     }
 }
@@ -135,7 +135,7 @@ VkResult WrpBuffer::flush(VkDeviceSize size, VkDeviceSize offset)
     mappedRange.memory = memory;
     mappedRange.offset = offset;
     mappedRange.size = size;
-    return vkFlushMappedMemoryRanges(vgetDevice.device(), 1, &mappedRange);
+    return vkFlushMappedMemoryRanges(wrpDevice.device(), 1, &mappedRange);
 }
 
 /**
@@ -156,7 +156,7 @@ VkResult WrpBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset)
     mappedRange.memory = memory;
     mappedRange.offset = offset;
     mappedRange.size = size;
-    return vkInvalidateMappedMemoryRanges(vgetDevice.device(), 1, &mappedRange);
+    return vkInvalidateMappedMemoryRanges(wrpDevice.device(), 1, &mappedRange);
 }
 
 /**

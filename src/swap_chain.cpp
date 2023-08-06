@@ -13,17 +13,17 @@
 ENGINE_BEGIN
 
 WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window)
-    : vgetDevice{device}, vgetWindow{window}
+    : wrpDevice{device}, wrpWindown{window}
 {
     init();
 }
 
 WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window, std::shared_ptr<WrpSwapChain> previous)
-    : vgetDevice{device}, vgetWindow{window}, oldSwapChain{previous}
+    : wrpDevice{device}, wrpWindown{window}, oldSwapChain{previous}
 {
     init();
 
-    vkDeviceWaitIdle(vgetDevice.device()); // ожидание, пока старый SwapChain не перестанет использоваться девайсом
+    vkDeviceWaitIdle(wrpDevice.device()); // ожидание, пока старый SwapChain не перестанет использоваться девайсом
     oldSwapChain = nullptr; // избавляемся от старого свапчейна
 }
 
@@ -40,32 +40,32 @@ void WrpSwapChain::init()
 WrpSwapChain::~WrpSwapChain()
 {
     for (auto imageView : swapChainImageViews) {
-        vkDestroyImageView(vgetDevice.device(), imageView, nullptr);
+        vkDestroyImageView(wrpDevice.device(), imageView, nullptr);
     }
     swapChainImageViews.clear();
 
     if (swapChain != nullptr) {
-        vkDestroySwapchainKHR(vgetDevice.device(), swapChain, nullptr);
+        vkDestroySwapchainKHR(wrpDevice.device(), swapChain, nullptr);
         swapChain = nullptr;
     }
 
     for (int i = 0; i < depthImages.size(); i++) {
-        vkDestroyImageView(vgetDevice.device(), depthImageViews[i], nullptr);
-        vkDestroyImage(vgetDevice.device(), depthImages[i], nullptr);
-        vkFreeMemory(vgetDevice.device(), depthImageMemories[i], nullptr);
+        vkDestroyImageView(wrpDevice.device(), depthImageViews[i], nullptr);
+        vkDestroyImage(wrpDevice.device(), depthImages[i], nullptr);
+        vkFreeMemory(wrpDevice.device(), depthImageMemories[i], nullptr);
     }
 
     for (auto framebuffer : swapChainFramebuffers) {
-        vkDestroyFramebuffer(vgetDevice.device(), framebuffer, nullptr);
+        vkDestroyFramebuffer(wrpDevice.device(), framebuffer, nullptr);
     }
 
-    vkDestroyRenderPass(vgetDevice.device(), renderPass, nullptr);
+    vkDestroyRenderPass(wrpDevice.device(), renderPass, nullptr);
 
     // cleanup synchronization objects
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(vgetDevice.device(), renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(vgetDevice.device(), imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(vgetDevice.device(), inFlightFences[i], nullptr);
+        vkDestroySemaphore(wrpDevice.device(), renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(wrpDevice.device(), imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(wrpDevice.device(), inFlightFences[i], nullptr);
     }
 }
 
@@ -73,14 +73,14 @@ VkResult WrpSwapChain::acquireNextImage(uint32_t* imageIndex)
 {
     // Wait for fence signal when N'th frames command buffer has executed
     vkWaitForFences(
-        vgetDevice.device(),
+        wrpDevice.device(),
         1,
         &inFlightFences[currentFrame],
         VK_TRUE,
         std::numeric_limits<uint64_t>::max()); // big timeout number to wait till end
 
     VkResult result = vkAcquireNextImageKHR(
-        vgetDevice.device(),
+        wrpDevice.device(),
         swapChain,
         std::numeric_limits<uint64_t>::max(),
         imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
@@ -93,7 +93,7 @@ VkResult WrpSwapChain::acquireNextImage(uint32_t* imageIndex)
 VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
 {
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(vgetDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(wrpDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
     }
     imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
@@ -117,11 +117,11 @@ VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     // Resetting N'th frame fence for further successful waiting
-    vkResetFences(vgetDevice.device(), 1, &inFlightFences[currentFrame]);
+    vkResetFences(wrpDevice.device(), 1, &inFlightFences[currentFrame]);
 
     // Command buffer is submitting to graphics queue.
     // The passed fence will be signaled once command buffer(s) has finished execution.
-    if (vkQueueSubmit(vgetDevice.graphicsQueue(), 1, &submitInfo,
+    if (vkQueueSubmit(wrpDevice.graphicsQueue(), 1, &submitInfo,
         inFlightFences[currentFrame]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
@@ -140,7 +140,7 @@ VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint
     presentInfo.pResults = nullptr; // optional
 
     // Image is queueing for presentation
-    auto result = vkQueuePresentKHR(vgetDevice.presentQueue(), &presentInfo);
+    auto result = vkQueuePresentKHR(wrpDevice.presentQueue(), &presentInfo);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -149,7 +149,7 @@ VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint
 
 void WrpSwapChain::createSwapChain()
 {
-    SwapChainSupportDetails swapChainSupport = vgetDevice.getSwapChainSupport();
+    SwapChainSupportDetails swapChainSupport = wrpDevice.getSwapChainSupport();
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapChainSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapChainPresentMode(swapChainSupport.presentModes);
@@ -167,7 +167,7 @@ void WrpSwapChain::createSwapChain()
 
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = vgetDevice.surface();
+    createInfo.surface = wrpDevice.surface();
     // детали по хранящимся в SwapChain изображениям
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
@@ -178,7 +178,7 @@ void WrpSwapChain::createSwapChain()
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     // Указание режима использования изображений цепи обмена очередями
-    QueueFamilyIndices indices = vgetDevice.getQueueFamilies();
+    QueueFamilyIndices indices = wrpDevice.getQueueFamilies();
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     if (indices.graphicsFamily != indices.presentFamily) // параллельный режим, если очереди из разных семейств
     {
@@ -201,7 +201,7 @@ void WrpSwapChain::createSwapChain()
 
     createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
-    if (vkCreateSwapchainKHR(vgetDevice.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(wrpDevice.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create swap chain!");
     }
@@ -209,9 +209,9 @@ void WrpSwapChain::createSwapChain()
     // В структуре создания цепи обмена мы указали минимальное кол-во изображений в цепи, но
     // реализация Vulkan может создать число изображений больше, чем указано в структуре,
     // поэтому первым вызовом vkGetSwapchainImagesKHR() получаем реальное кол-во изображений.
-    vkGetSwapchainImagesKHR(vgetDevice.device(), swapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(wrpDevice.device(), swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(vgetDevice.device(), swapChain, &imageCount, swapChainImages.data());
+    vkGetSwapchainImagesKHR(wrpDevice.device(), swapChain, &imageCount, swapChainImages.data());
 
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
@@ -237,7 +237,7 @@ void WrpSwapChain::createImageViews()
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
+        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
             VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create image views in swapchain!");
@@ -314,7 +314,7 @@ void WrpSwapChain::createRenderPass()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(vgetDevice.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(wrpDevice.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create render pass!");
     }
@@ -344,7 +344,7 @@ void WrpSwapChain::createFramebuffers()
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(
-            vgetDevice.device(),
+            wrpDevice.device(),
             &framebufferInfo,
             nullptr,
             &swapChainFramebuffers[i]) != VK_SUCCESS)
@@ -383,7 +383,7 @@ void WrpSwapChain::createDepthResources()
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.flags = 0;
 
-        vgetDevice.createImageWithInfo(
+        wrpDevice.createImageWithInfo(
             imageInfo,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             depthImages[i],
@@ -400,7 +400,7 @@ void WrpSwapChain::createDepthResources()
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
+        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create texture image view!");
         }
@@ -423,9 +423,9 @@ void WrpSwapChain::createSyncObjects()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        if (vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(vgetDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(vgetDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+        if (vkCreateSemaphore(wrpDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(wrpDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(wrpDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
@@ -486,7 +486,7 @@ VkExtent2D WrpSwapChain::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& c
     else
     {
         int width, height;
-        glfwGetFramebufferSize(vgetWindow.getGLFWwindow(), &width, &height);
+        glfwGetFramebufferSize(wrpWindown.getGLFWwindow(), &width, &height);
 
         VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
@@ -500,7 +500,7 @@ VkExtent2D WrpSwapChain::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& c
 VkFormat WrpSwapChain::findDepthFormat()
 {
     // поиск поддерживаемого формата с компоненотом глубины и поддержкой использования в качестве depth stencil аттачмента
-    return vgetDevice.findSupportedFormat(
+    return wrpDevice.findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);

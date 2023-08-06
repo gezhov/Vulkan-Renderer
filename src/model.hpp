@@ -80,7 +80,7 @@ private:
     void createIndexBuffers(const std::vector<uint32_t>& indices);
     void createTextures(const std::vector<std::string>& texturePaths);
 
-    WrpDevice& vgetDevice;
+    WrpDevice& wrpDevice;
 
     std::unique_ptr<WrpBuffer> vertexBuffer;
     uint32_t vertexCount;

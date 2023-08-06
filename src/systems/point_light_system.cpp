@@ -22,7 +22,7 @@ struct PointLightPushConstants
 };
 
 PointLightSystem::PointLightSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
-	: vgetDevice{device}
+	: wrpDevice{device}
 {
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass);
@@ -30,7 +30,7 @@ PointLightSystem::PointLightSystem(WrpDevice& device, VkRenderPass renderPass, V
 
 PointLightSystem::~PointLightSystem()
 {
-	vkDestroyPipelineLayout(vgetDevice.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(wrpDevice.device(), pipelineLayout, nullptr);
 }
 
 void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
@@ -49,7 +49,7 @@ void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayou
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	if (vkCreatePipelineLayout(vgetDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(wrpDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
@@ -68,7 +68,7 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
 	vgetPipeline = std::make_unique<WrpPipeline>(
-		vgetDevice,
+		wrpDevice,
 		"./shaders/point_light.vert.spv",
 		"./shaders/point_light.frag.spv",
 		pipelineConfig);

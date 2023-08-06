@@ -27,7 +27,7 @@ private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	WrpDevice& vgetDevice;
+	WrpDevice& wrpDevice;
 
 	std::unique_ptr<WrpPipeline> vgetPipeline;
 	VkPipelineLayout pipelineLayout;

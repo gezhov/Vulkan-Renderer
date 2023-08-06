@@ -62,7 +62,7 @@ private:
 
     void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
-    WrpDevice& vgetDevice;				// девайс
+    WrpDevice& wrpDevice;				// девайс
     VkPipeline graphicsPipeline;		// Vulkan Graphics Pipeline (это указатель, сам тип определён через typedef)
 };
 

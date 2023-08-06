@@ -36,7 +36,7 @@ private:
 	int fillModelsIds(WrpGameObject::Map& gameObjects);
 	void createDescriptorSets(FrameInfo& frameInfo);
 
-	WrpDevice& vgetDevice;
+	WrpDevice& wrpDevice;
 
 	std::unique_ptr<WrpPipeline> vgetPipeline;
 	VkPipelineLayout pipelineLayout;

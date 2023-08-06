@@ -28,7 +28,7 @@ ENGINE_BEGIN
 WrpImgui::WrpImgui(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
     uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& gameObjects)
-    : vgetDevice{ device }, camera{ camera }, kmc{ kmc }, gameObjects{ gameObjects } {
+    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, gameObjects{ gameObjects } {
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -97,7 +97,7 @@ WrpImgui::WrpImgui(
 }
 
 WrpImgui::~WrpImgui() {
-    vkDestroyDescriptorPool(vgetDevice.device(), descriptorPool, nullptr);
+    vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -228,7 +228,7 @@ void WrpImgui::showModelsFromDirectory()
         }
 
         if (ImGui::Button("Add to the scene")) {
-            std::shared_ptr<WrpModel> model = WrpModel::createModelFromFile(vgetDevice, objectsPaths.at(item_current_idx));
+            std::shared_ptr<WrpModel> model = WrpModel::createModelFromFile(wrpDevice, objectsPaths.at(item_current_idx));
             auto newObj = WrpGameObject::createGameObject();
             newObj.model = model;
             gameObjects.emplace(newObj.getId(), std::move(newObj));

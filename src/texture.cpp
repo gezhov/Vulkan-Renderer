@@ -12,7 +12,7 @@
 
 ENGINE_BEGIN
 
-    WrpTexture::WrpTexture(const std::string& path, WrpDevice& device) : vgetDevice{device}
+    WrpTexture::WrpTexture(const std::string& path, WrpDevice& device) : wrpDevice{device}
     {
         createTextureImage(path);
         createTextureImageView();
@@ -21,10 +21,10 @@ ENGINE_BEGIN
 
     WrpTexture::~WrpTexture()
     {
-        vkDestroySampler(vgetDevice.device(), textureSampler, nullptr);
-        vkDestroyImageView(vgetDevice.device(), textureImageView, nullptr);
-        vkDestroyImage(vgetDevice.device(), textureImage, nullptr);
-        vkFreeMemory(vgetDevice.device(), textureImageMemory, nullptr);
+        vkDestroySampler(wrpDevice.device(), textureSampler, nullptr);
+        vkDestroyImageView(wrpDevice.device(), textureImageView, nullptr);
+        vkDestroyImage(wrpDevice.device(), textureImage, nullptr);
+        vkFreeMemory(wrpDevice.device(), textureImageMemory, nullptr);
     }
 
     void WrpTexture::createTextureImage(const std::string& path)
@@ -43,7 +43,7 @@ ENGINE_BEGIN
         // Создание промежуточного буфера
         WrpBuffer stagingBuffer
         {
-            vgetDevice,
+            wrpDevice,
             pixelSize,
             pixelCount,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // буфер используется как источник для операции переноса памяти
@@ -63,7 +63,7 @@ ENGINE_BEGIN
 
         // Копируем буфер с пикселами в изображение текстуры, при этом меняя лэйауты на нужные
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        vgetDevice.copyBufferToImage(stagingBuffer.getBuffer(), textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
+        wrpDevice.copyBufferToImage(stagingBuffer.getBuffer(), textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
@@ -96,13 +96,13 @@ ENGINE_BEGIN
         imageInfo.flags = 0;	// Optional
 
         // Выделение памяти под изображение в девайсе
-        vgetDevice.createImageWithInfo(imageInfo, properties, image, imageMemory);
+        wrpDevice.createImageWithInfo(imageInfo, properties, image, imageMemory);
     }
 
     // Смена схемы изображения
     void WrpTexture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
-        VkCommandBuffer commandBuffer = vgetDevice.beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = wrpDevice.beginSingleTimeCommands();
 
         // Для смены схемы будет использоваться барьер для изображения
         VkImageMemoryBarrier barrier{};
@@ -154,7 +154,7 @@ ENGINE_BEGIN
             1, &barrier  // массив барьеров памяти изображения
         );
 
-        vgetDevice.endSingleTimeCommands(commandBuffer);
+        wrpDevice.endSingleTimeCommands(commandBuffer);
     }
 
     // Создание представления изображения для текстуры
@@ -171,7 +171,7 @@ ENGINE_BEGIN
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(vgetDevice.device(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS)
+        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create texture image view!");
         }
@@ -189,7 +189,7 @@ ENGINE_BEGIN
         samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = vgetDevice.properties.limits.maxSamplerAnisotropy; // макс. кол-во текселей для расчёт финального цвета при анизотропной фильтрации
+        samplerInfo.maxAnisotropy = wrpDevice.properties.limits.maxSamplerAnisotropy; // макс. кол-во текселей для расчёт финального цвета при анизотропной фильтрации
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         samplerInfo.unnormalizedCoordinates = VK_FALSE;	// координаты будут адресоваться в диапазоне [0;1), т.е. они нормализованы для универсального использования
         samplerInfo.compareEnable = VK_FALSE;			// функция сравнения выбранного текселя с заданным значением отключена (исп. в precentage-closer фильтрации в картах теней)
@@ -200,7 +200,7 @@ ENGINE_BEGIN
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 0.0f;
 
-        if (vkCreateSampler(vgetDevice.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+        if (vkCreateSampler(wrpDevice.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create texture sampler!");
         }

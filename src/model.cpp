@@ -37,7 +37,7 @@ namespace std
 
 ENGINE_BEGIN
 
-WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder) : vgetDevice{device}, subObjectsInfo{builder.subObjectsInfo}
+WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder) : wrpDevice{device}, subObjectsInfo{builder.subObjectsInfo}
 {
     createVertexBuffers(builder.vertices);
     createIndexBuffers(builder.indices);
@@ -66,7 +66,7 @@ void WrpModel::createVertexBuffers(const std::vector<Vertex>& vertices)
     // Буфер представлен локальной переменной, поэтому он очистится, после окончания функции.
     WrpBuffer stagingBuffer
     {
-        vgetDevice,
+        wrpDevice,
         vertexSize,
         vertexCount,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // буфер используется как источник для операции переноса памяти
@@ -82,7 +82,7 @@ void WrpModel::createVertexBuffers(const std::vector<Vertex>& vertices)
 
     // Создание буфера для данных о вершинах в локальной памяти девайса
     vertexBuffer = std::make_unique<WrpBuffer>(
-        vgetDevice,
+        wrpDevice,
         vertexSize,
         vertexCount,
         // Буфер используется для входных данных вершин, а данные для него будут перенесены из другого источника (из промежуточного буфера)
@@ -92,7 +92,7 @@ void WrpModel::createVertexBuffers(const std::vector<Vertex>& vertices)
     );
 
     // copying buffer memory at the device itself through command submitting
-    vgetDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
+    wrpDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
 void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
@@ -106,7 +106,7 @@ void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
 
     // Создание промежуточного буфера
     WrpBuffer stagingBuffer {
-        vgetDevice,
+        wrpDevice,
         indexSize,
         indexCount,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -119,7 +119,7 @@ void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
 
     // Создание буфера для индексов в локальной памяти девайса
     indexBuffer = std::make_unique<WrpBuffer>(
-        vgetDevice,
+        wrpDevice,
         indexSize,
         indexCount,
         // Буфер используется для индексов, а данные для него будут перенесены из другого источника (из промежуточного буфера)
@@ -127,7 +127,7 @@ void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    vgetDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+    wrpDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
 void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
@@ -135,7 +135,7 @@ void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
     for (auto& path : texturePaths)
     {
         if (path != MODELS_DIR) {
-            textures.push_back(std::make_unique<WrpTexture>(path, vgetDevice));
+            textures.push_back(std::make_unique<WrpTexture>(path, wrpDevice));
             hasTextures = true;
         }
         else {

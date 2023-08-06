@@ -18,14 +18,14 @@ WrpPipeline::WrpPipeline(
     WrpDevice& device,
     const std::string& vertFilepath,
     const std::string& fragFilepath,
-    const PipelineConfigInfo& configInfo) : vgetDevice(device)
+    const PipelineConfigInfo& configInfo) : wrpDevice(device)
 {
     createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 
 WrpPipeline::~WrpPipeline()
 {
-    vkDestroyPipeline(vgetDevice.device(), graphicsPipeline, nullptr);
+    vkDestroyPipeline(wrpDevice.device(), graphicsPipeline, nullptr);
 }
 
 std::vector<char> WrpPipeline::readFile(const std::string& filepath)
@@ -131,7 +131,7 @@ void WrpPipeline::createGraphicsPipeline(
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.flags = 0; // два поля выше исп., если задать флаг VK_PIPELINE_CREATE_DERIVATIVE_BIT
 
-    if (vkCreateGraphicsPipelines(vgetDevice.device(),
+    if (vkCreateGraphicsPipelines(wrpDevice.device(),
         VK_NULL_HANDLE,
         1, &pipelineInfo,
         nullptr,
@@ -141,8 +141,8 @@ void WrpPipeline::createGraphicsPipeline(
     }
 
     // Шейдерные модули можно освободить сразу после создания пайплайна, т.к. шейдеры уже скомпилированы
-    vkDestroyShaderModule(vgetDevice.device(), vertShaderModule, nullptr);
-    vkDestroyShaderModule(vgetDevice.device(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(wrpDevice.device(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(wrpDevice.device(), fragShaderModule, nullptr);
 }
 
 void WrpPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
@@ -152,7 +152,7 @@ void WrpPipeline::createShaderModule(const std::vector<char>& code, VkShaderModu
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-    if (vkCreateShaderModule(vgetDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
+    if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
         throw std::runtime_error("Failed to create shader module");
 }
 

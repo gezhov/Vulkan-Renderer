@@ -17,7 +17,7 @@ public:
     class Builder
     {
     public:
-        Builder(WrpDevice& vgetDevice) : vgetDevice{vgetDevice} {}
+        Builder(WrpDevice& wrpDevice) : wrpDevice{wrpDevice} {}
 
         // Добавление новой привязки дескрпитора в мапу
         Builder& addBinding(
@@ -29,12 +29,12 @@ public:
         std::unique_ptr<WrpDescriptorSetLayout> build() const;
 
     private:
-        WrpDevice& vgetDevice;
+        WrpDevice& wrpDevice;
         // Мапа с информацией по каждой привязке. На основе этой мапы строится WrpDescriptorSetLayout
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
     };
 
-    WrpDescriptorSetLayout(WrpDevice& vgetDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+    WrpDescriptorSetLayout(WrpDevice& wrpDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
     ~WrpDescriptorSetLayout();
     WrpDescriptorSetLayout(const WrpDescriptorSetLayout&) = delete;
     WrpDescriptorSetLayout& operator=(const WrpDescriptorSetLayout&) = delete;
@@ -42,7 +42,7 @@ public:
     VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
 private:
-    WrpDevice& vgetDevice;
+    WrpDevice& wrpDevice;
     VkDescriptorSetLayout descriptorSetLayout;
     std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
@@ -57,7 +57,7 @@ public:
     class Builder
     {
     public:
-        Builder(WrpDevice& vgetDevice) : vgetDevice{vgetDevice} {}
+        Builder(WrpDevice& wrpDevice) : wrpDevice{wrpDevice} {}
 
         Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count); // кол-во дескрипторов заданного типа в данном пуле
         Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);		// флаги настройки поведения пула
@@ -66,14 +66,14 @@ public:
         std::unique_ptr<WrpDescriptorPool> build() const;
 
     private:
-        WrpDevice& vgetDevice;
+        WrpDevice& wrpDevice;
         std::vector<VkDescriptorPoolSize> poolSizes{};
         uint32_t maxSets = 1000;
         VkDescriptorPoolCreateFlags poolFlags = 0;
     };
 
     WrpDescriptorPool(
-        WrpDevice& vgetDevice,
+        WrpDevice& wrpDevice,
         uint32_t maxSets,
         VkDescriptorPoolCreateFlags poolFlags,
         const std::vector<VkDescriptorPoolSize>& poolSizes);
@@ -91,7 +91,7 @@ public:
     void resetPool();
 
 private:
-    WrpDevice& vgetDevice;
+    WrpDevice& wrpDevice;
     VkDescriptorPool descriptorPool;
 
     friend class WrpDescriptorWriter;

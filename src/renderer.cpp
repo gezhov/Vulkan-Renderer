@@ -10,7 +10,7 @@
 
 ENGINE_BEGIN
 
-WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : vgetWindow{ window }, vgetDevice{ device }
+WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : wrpWindown{ window }, wrpDevice{ device }
 {
     recreateSwapChain();
     createCommandBuffers();
@@ -24,7 +24,7 @@ WrpRenderer::~WrpRenderer()
 // Пересоздать SwapChain
 void WrpRenderer::recreateSwapChain()
 {
-    auto extent = vgetWindow.getExtent();
+    auto extent = wrpWindown.getExtent();
 
     // Если ширина или высота окна не имеют размера, то поток выполнения пристанавливается функцией glfwWaitEvents()
     // и ждёт пока не появится какое-либо событие на обработку. С появлением события размеры окна перепроверяются, и
@@ -32,7 +32,7 @@ void WrpRenderer::recreateSwapChain()
     // Этот цикл полезен, например, для случая минимизации (сворачивания) окна.
     while (extent.width == 0 || extent.height == 0)
     {
-        extent = vgetWindow.getExtent();
+        extent = wrpWindown.getExtent();
         glfwWaitEvents();
     }
 
@@ -40,7 +40,7 @@ void WrpRenderer::recreateSwapChain()
     {
         std::cout << "Creating SwapChain for the first time." << std::endl;
         // Стандартное создание цепи обмена в первый раз
-        vgetSwapChain = std::make_unique<WrpSwapChain>(vgetDevice, vgetWindow);
+        vgetSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown);
     }
     else
     {
@@ -49,7 +49,7 @@ void WrpRenderer::recreateSwapChain()
         // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
         // std::move() перемещает уникальный указатель в данный shared указатель.
         std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(vgetSwapChain);
-        vgetSwapChain = std::make_unique<WrpSwapChain>(vgetDevice, vgetWindow, oldSwapChain);
+        vgetSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown, oldSwapChain);
 
         if (!oldSwapChain->compareSwapChainFormats(*vgetSwapChain.get()))
         {
@@ -68,10 +68,10 @@ void WrpRenderer::createCommandBuffers()
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = vgetDevice.getCommandPool();
+    allocInfo.commandPool = wrpDevice.getCommandPool();
     allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-    if (vkAllocateCommandBuffers(vgetDevice.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(wrpDevice.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate command buffers!");
     }
@@ -81,8 +81,8 @@ void WrpRenderer::createCommandBuffers()
 void WrpRenderer::freeCommandBuffers()
 {
     vkFreeCommandBuffers(
-        vgetDevice.device(),
-        vgetDevice.getCommandPool(),
+        wrpDevice.device(),
+        wrpDevice.getCommandPool(),
         static_cast<uint32_t>(commandBuffers.size()),
         commandBuffers.data()
     );
@@ -145,9 +145,9 @@ void WrpRenderer::endFrame()
     /* Проверка изменения размеров окна, сброс флага, пересоздание цепи обмена.
        Результат SUBOPTIMAL_KHR указывает на случай, когда свойства поверхности изменились, но SwapChain
        по прежнему может продолжать вывод изображения. Здесь мы избавляемся от таких ситуаций тоже. */
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vgetWindow.wasWindowResized())
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wrpWindown.wasWindowResized())
     {
-        vgetWindow.resetWindowsResizedFlag();
+        wrpWindown.resetWindowsResizedFlag();
         recreateSwapChain();
     }
     else if (result != VK_SUCCESS)

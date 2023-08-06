@@ -26,7 +26,7 @@ struct TextureSystemPushConstantData
 };
 
 TextureRenderSystem::TextureRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
-	: vgetDevice{ device }
+	: wrpDevice{ device }
 {
 	createUboBuffers();
 	fillModelsIds(frameInfo.gameObjects);
@@ -37,7 +37,7 @@ TextureRenderSystem::TextureRenderSystem(WrpDevice& device, VkRenderPass renderP
 
 TextureRenderSystem::~TextureRenderSystem()
 {
-	vkDestroyPipelineLayout(vgetDevice.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(wrpDevice.device(), pipelineLayout, nullptr);
 }
 
 void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
@@ -57,7 +57,7 @@ void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLa
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	if (vkCreatePipelineLayout(vgetDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(wrpDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
@@ -73,7 +73,7 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
 	vgetPipeline = std::make_unique<WrpPipeline>(
-		vgetDevice,
+		wrpDevice,
 		"shaders/texture_shader.vert.spv",
 		"shaders/texture_shader.frag.spv",
 		pipelineConfig);
@@ -84,7 +84,7 @@ void TextureRenderSystem::createUboBuffers()
 	for (int i = 0; i < uboBuffers.size(); ++i)
 	{
 		uboBuffers[i] = std::make_unique<WrpBuffer>(
-			vgetDevice,
+			wrpDevice,
 			sizeof(TextureSystemUbo),
 			1,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -133,14 +133,14 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 		}
 	}
 
-	systemDescriptorPool = WrpDescriptorPool::Builder(vgetDevice)
+	systemDescriptorPool = WrpDescriptorPool::Builder(wrpDevice)
 		.setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
 		//.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * 1000)
 		.build();
 
-	systemDescriptorSetLayout = WrpDescriptorSetLayout::Builder(vgetDevice)
+	systemDescriptorSetLayout = WrpDescriptorSetLayout::Builder(wrpDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount)
 		//.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1000)
