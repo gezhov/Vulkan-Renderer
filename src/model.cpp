@@ -13,14 +13,6 @@
 #include <iostream>
 #include <unordered_map>
 
-#ifndef ENGINE_DIR
-#define ENGINE_DIR "../../../"
-#endif
-
-#ifndef MODELS_DIR
-#define MODELS_DIR "../../../models/"
-#endif
-
 namespace std
 {
     template<>
@@ -139,7 +131,7 @@ void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
             hasTextures = true;
         }
         else {
-            // TEMPORARY(?): если дифузной текстуры не было у материала, то тогда текстура получит nullptr по данному индексу
+            // todo: исправить(?) если дифузной текстуры не было у материала, то тогда текстура получит nullptr по данному индексу
             textures.push_back(nullptr);
         }
     }
@@ -304,10 +296,10 @@ void WrpModel::bind(VkCommandBuffer commandBuffer)
 // Returning binding descriptions for the vertex buffer
 std::vector<VkVertexInputBindingDescription> WrpModel::Vertex::getBindingDescriptions()
 {
-    // there are only one binding in vector for now, cause for now all of vertex data is packed into one array
+    // there are only one binding in the vector for now, cause for now all of the vertex data is packed into one array
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
     bindingDescriptions[0].binding = 0;										// this bindings' index
-    bindingDescriptions[0].stride = sizeof(Vertex);							// вершины расположены с шагом в sizeof(Vertex) байт
+    bindingDescriptions[0].stride = sizeof(Vertex);
     bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;         // load data per vertex
     return bindingDescriptions;
 }
@@ -319,10 +311,10 @@ std::vector<VkVertexInputAttributeDescription> WrpModel::Vertex::getAttributeDes
     
     // position attribute
     VkVertexInputAttributeDescription attribDescription{};
-    attribDescription.location = 0;								// input data location index for this attribute in vertex shader
+    attribDescription.location = 0;								// input data location index for this attribute in a vertex shader
     attribDescription.binding = 0;								// from which binding this attribute will be taken
     attribDescription.format = VK_FORMAT_R32G32B32_SFLOAT;		// attribute data type 
-    attribDescription.offset = offsetof(Vertex, position);		// offset from start of per-vertex data to this attribute 
+    attribDescription.offset = offsetof(Vertex, position);		// offset from the start of per-vertex data to this attribute 
     attributeDescriptions.push_back(attribDescription);
 
     // initialization of the rest attributes

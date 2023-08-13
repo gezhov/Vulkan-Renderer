@@ -169,11 +169,7 @@ VkResult WrpBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset)
  */
 VkDescriptorBufferInfo WrpBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset)
 {
-    return VkDescriptorBufferInfo {
-        buffer,
-        offset,
-        size,
-    };
+    return VkDescriptorBufferInfo{buffer, offset, size,};
 }
 
 /**

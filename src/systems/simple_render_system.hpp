@@ -15,22 +15,22 @@ ENGINE_BEGIN
 class SimpleRenderSystem
 {
 public:
-	SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-	~SimpleRenderSystem();
+    SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+    ~SimpleRenderSystem();
 
-	SimpleRenderSystem(const SimpleRenderSystem&) = delete;
-	SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
+    SimpleRenderSystem(const SimpleRenderSystem&) = delete;
+    SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-	void renderGameObjects(FrameInfo& frameInfo);
+    void renderGameObjects(FrameInfo& frameInfo);
 
 private:
-	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-	void createPipeline(VkRenderPass renderPass);
+    void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+    void createPipeline(VkRenderPass renderPass);
 
-	WrpDevice& wrpDevice;
+    WrpDevice& wrpDevice;
 
-	std::unique_ptr<WrpPipeline> vgetPipeline;
-	VkPipelineLayout pipelineLayout;
+    std::unique_ptr<WrpPipeline> vgetPipeline;
+    VkPipelineLayout pipelineLayout;
 };
 
 ENGINE_END

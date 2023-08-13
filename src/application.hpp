@@ -1,6 +1,5 @@
 #pragma once
 
-#include "hcore.hpp"
 #include "window.hpp"
 #include "device.hpp"
 #include "game_object.hpp"
@@ -11,21 +10,21 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN // todo : FirstApp shoudn't be in engine namespace
+ENGINE_BEGIN // todo : Target applications shoudn't be in the engine namespace i guess
 
-class FirstApp
+class App
 {
 public:
     static constexpr int WIDTH = 1600;
     static constexpr int HEIGHT = 1000;
 
-    FirstApp();
-    ~FirstApp();
+    App();
+    ~App();
 
-    // Избавляемся от copy operator и copy constrcutor, т.к. FirstApp хранит в себе указатели
+    // Избавляемся от copy operator и copy constrcutor, т.к. App хранит в себе указатели
     // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
-    FirstApp(const FirstApp&) = delete;
-    FirstApp& operator=(const FirstApp&) = delete;
+    App(const App&) = delete;
+    App& operator=(const App&) = delete;
 
     void run();
 
@@ -35,7 +34,7 @@ private:
     // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
     // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
     // быть объявлен после девайса.
-    WrpWindow wrpWindown{ WIDTH, HEIGHT, "Graphics_w/Vulkan" };
+    WrpWindow wrpWindown{ WIDTH, HEIGHT, "Vulkan PPG" };
     WrpDevice wrpDevice{ wrpWindown };
     WrpRenderer wrpRenderer{ wrpWindown, wrpDevice };
 

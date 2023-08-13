@@ -360,7 +360,7 @@ void WrpDevice::createCommandPool()
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-    // Флаги говорят, что буфер команд будет перезаписываться часто и в индивидуальном порядке
+    // Флаги указывают, что буфер команд будет перезаписываться часто и в индивидуальном порядке
     poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
@@ -499,7 +499,8 @@ VkFormat WrpDevice::findSupportedFormat(const std::vector<VkFormat>& candidates,
     throw std::runtime_error("Failed to find supported format!");
 }
 
-uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties) {
+uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties)
+{
     // getting available memory types and heaps on this device
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
@@ -555,7 +556,7 @@ void WrpDevice::createBuffer(
 
 VkCommandBuffer WrpDevice::beginSingleTimeCommands()
 {
-    /* todo: [possible improvement] using distinct commandPool for
+    /* todo: [possible improvement] use distinct commandPool for
        transient command buffers like this one */
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -599,7 +600,7 @@ void WrpDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 */
 void WrpDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-    // allocating commandBuffer to perform this single copying operation
+    // allocating and start commandBuffer to perform this single copying operation
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferCopy copyRegion{};
@@ -615,26 +616,27 @@ void WrpDevice::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
 
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = layerCount;
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.imageSubresource.mipLevel = 0;
+    copyRegion.imageSubresource.baseArrayLayer = 0;
+    copyRegion.imageSubresource.layerCount = layerCount;
 
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {width, height, 1};
+    copyRegion.imageOffset = {0, 0, 0};
+    copyRegion.imageExtent = {width, height, 1};
 
     vkCmdCopyBufferToImage(
         commandBuffer,
         buffer,
         image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // схема, которая исп. в изображении в данный момент
-        1,									  // кол-во VkBufferImageCopy структур для копирования определённых областей
-        &region);							  // непосредственно структуры
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // current image layout
+        1,	// there can be multiple copyRegions to create specific pixels layout in the target image 
+        &copyRegion
+    );
 
     endSingleTimeCommands(commandBuffer);
 }
@@ -647,14 +649,12 @@ void WrpDevice::createImageWithInfo(
 {
     if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create image!");
+        throw std::runtime_error("Failed to create image!");
     }
 
-    // Запрос требований к размещению данного изображения в памяти.
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device_, image, &memRequirements);
 
-    // Выделение памяти для изображения в соответствии с требованиями
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
@@ -662,13 +662,13 @@ void WrpDevice::createImageWithInfo(
 
     if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to allocate image memory!");
+        throw std::runtime_error("Failed to allocate image memory!");
     }
 
-    // Связывание объектов изображения и памяти девайса
+    // Binding image and allocated memory
     if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to bind image memory!");
+        throw std::runtime_error("Failed to bind image memory!");
     }
 }
 

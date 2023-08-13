@@ -1,4 +1,4 @@
-#include "first_app.hpp"
+#include "application.hpp"
 
 // std library
 #include <cstdlib>
@@ -9,7 +9,7 @@ int main()
 {
     try
     {
-        engine::FirstApp app{};
+        engine::App app{};
 
         app.run();
     }

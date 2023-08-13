@@ -3,7 +3,7 @@ message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
 cmake_minimum_required(VERSION 3.11.0)
 
-set(NAME Graphics_with_Vulkan) # Название выходного exe файла
+set(NAME VulkanPPG) # Название выходного exe файла
 
 # Пути до MinGW компиляторов, если генератор будет использовать эту среду
 message(STATUS "using ${CMAKE_GENERATOR}")
@@ -63,7 +63,6 @@ endif()
 
 include_directories(external) # включить в сборку директории с заголовками
 
-# If TINYOBJ_PATH not specified in .env.cmake, try fetching from git repo
 # Если путь до tinyobjloader не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT TINYOBJ_PATH)
     message(STATUS "TINYOBJ_PATH not specified in .env.cmake, using external/tinyobjloader")
@@ -92,8 +91,8 @@ endif()
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
                           ${PROJECT_SOURCE_DIR}/external/*.cpp)
 
-add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8 /ZI>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8 /ZI>")
 
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 

@@ -128,7 +128,7 @@ bool WrpDescriptorPool::allocateDescriptorSet(
 	// a new pool whenever an old pool fills up. But this is beyond our current scope
 	if (vkAllocateDescriptorSets(wrpDevice.device(), &allocInfo, &descriptorSet) != VK_SUCCESS)
 	{
-		std::cerr << "Failed to allocate descriptor sets!" << std::endl; // поменять на exeception, если потребуется
+		std::cerr << "Failed to allocate descriptor sets!" << std::endl;
 		return false;
 	}
 	return true;
@@ -208,7 +208,6 @@ WrpDescriptorWriter& WrpDescriptorWriter::writeImage(
 bool WrpDescriptorWriter::build(VkDescriptorSet& set)
 {
 	bool success = pool.allocateDescriptorSet(setLayout.getDescriptorSetLayout(), set);
-	// todo: нужны ли тут bool возвраты или можно выбрасывать runtime_error исключение?
 	if (!success)
 	{
 		return false;
