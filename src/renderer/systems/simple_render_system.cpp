@@ -72,8 +72,8 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 
     vgetPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
-        "./shaders/simple_shader.vert.spv",
-        "./shaders/simple_shader.frag.spv",
+        "src/renderer/shaders/simple_shader.vert.spv",
+        "src/renderer/shaders/simple_shader.frag.spv",
         pipelineConfig);
 }
 

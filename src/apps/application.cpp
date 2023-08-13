@@ -1,12 +1,12 @@
 #include "application.hpp"
 
-#include "imgui.hpp"
-#include "systems/simple_render_system.hpp"
-#include "systems/texture_render_system.hpp"
-#include "systems/point_light_system.hpp"
-#include "camera.hpp"
-#include "keyboard_movement_controller.hpp"
-#include "buffer.hpp"
+#include "../renderer/imgui.hpp"
+#include "../renderer/systems/simple_render_system.hpp"
+#include "../renderer/systems/texture_render_system.hpp"
+#include "../renderer/systems/point_light_system.hpp"
+#include "../renderer/camera.hpp"
+#include "../renderer/keyboard_movement_controller.hpp"
+#include "../renderer/buffer.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами

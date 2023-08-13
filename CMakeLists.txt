@@ -89,10 +89,13 @@ endif()
 
 # GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
-                          ${PROJECT_SOURCE_DIR}/external/*.cpp)
+                          ${PROJECT_SOURCE_DIR}/external/*.cpp
+                          ${PROJECT_SOURCE_DIR}/apps/*cpp)
 
-add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8 /ZI>")
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8 /ZI>")
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/ZI>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/ZI>")
 
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 
@@ -160,13 +163,13 @@ find_program(GLSL_VALIDATOR glslangValidator HINTS
 
 # get all .vert and .frag files in shaders directory
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-	"${PROJECT_SOURCE_DIR}/shaders/*.frag"
-	"${PROJECT_SOURCE_DIR}/shaders/*.vert"
+	"${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.frag"
+	"${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.vert"
 )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
 	get_filename_component(FILE_NAME ${GLSL} NAME)
-	set(SPIRV "${PROJECT_SOURCE_DIR}/shaders/${FILE_NAME}.spv")
+	set(SPIRV "${PROJECT_SOURCE_DIR}/src/renderer/shaders/${FILE_NAME}.spv")
 	add_custom_command(
 		OUTPUT ${SPIRV}
 		COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}

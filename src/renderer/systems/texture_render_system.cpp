@@ -74,8 +74,8 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
 
     vgetPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
-        "shaders/texture_shader.vert.spv",
-        "shaders/texture_shader.frag.spv",
+        "src/renderer/shaders/texture_shader.vert.spv",
+        "src/renderer/shaders/texture_shader.frag.spv",
         pipelineConfig);
 }
 

@@ -8,10 +8,6 @@
 #include <iostream>
 #include <cassert>
 
-#ifndef ENGINE_DIR
-#define ENGINE_DIR "../../../"
-#endif
-
 ENGINE_BEGIN
 
 WrpPipeline::WrpPipeline(
@@ -30,14 +26,14 @@ WrpPipeline::~WrpPipeline()
 
 std::vector<char> WrpPipeline::readFile(const std::string& filepath)
 {
-    std::string enginePath = ENGINE_DIR + filepath;
+    std::string targetPath = ENGINE_DIR + filepath;
 
     // флаг ate устанавливает указатель в конец файла, чтобы сразу считать его размер
-    std::ifstream file(enginePath, std::ios::ate | std::ios::binary);
+    std::ifstream file(targetPath, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())
     {
-        throw std::runtime_error("Failed to open file: " + enginePath);
+        throw std::runtime_error("Failed to open file: " + targetPath);
     }
 
     size_t fileSize = static_cast<size_t>(file.tellg());
