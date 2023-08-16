@@ -187,7 +187,7 @@ void WrpPipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
     configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;  // сбрасывать примитивы перед этапом растеризации (VK_TRUE отключит любой вывод в буфер кадра)
     configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;  // режим генерации фрагментов для полигонов (вершины, края или весь треугольник)
     configInfo.rasterizationInfo.lineWidth = 1.0f;					  // ширина линии
-    configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;	  // режим отбраковки треугольников (можно отбрасывать треугольники, которые отображаются задней стороной и т.п.)
+    configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;	  // режим отбраковки треугольников (можно отбрасывать треугольники, которые отображаются задней стороной и т.п.)
     configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // определение winding order (порядка намотки) вершин треугольника, который будет использоваться для определения его лицевой стороны
     configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;		  // смещение значения глубины (VK_FALSE = отключено)
     configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional. Множитель смещения глубины
@@ -232,7 +232,7 @@ void WrpPipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
 
     // Информация для этапа Depth Stencil (проверка глубины и проверка трафарета).
     // На этапе проверки глубины отбрасываются те фрагменты изображения, которые были перекрыты другим, более близким фрагментом.
-    // Глубина самого близкого фрагмента добавляется в буфер глубины для дальнейших сравнений.
+    // Глубина самого близкого фрагмента записывается в буфер глубины для дальнейших сравнений.
     // На этапе проверки трафарета фрагменты изображения затеняются в соответствии с полученным для них значением из Depth Buffer.
     // Проверка трафарета отключена в данный момент.
     configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;

@@ -478,20 +478,21 @@ SwapChainSupportDetails WrpDevice::querySwapChainSupport(VkPhysicalDevice physic
     return details;
 }
 
-// Поиск первого подходящего формата из переданного списка кандидатов
-VkFormat WrpDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+// Candidate formats are checking in order from most to least desirable
+VkFormat WrpDevice::findSupportedFormat(const std::vector<VkFormat>& candidates,
+    VkImageTiling tiling, VkFormatFeatureFlags features)
 {
     for (VkFormat format : candidates)
     {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice_, format, &props);
+        VkFormatProperties prprts;
+        vkGetPhysicalDeviceFormatProperties(physicalDevice_, format, &prprts);
 
-        // Формат проверяется на соответствие нужному типу тайлинга и на наличие нужных фич
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        // Checking if format contains needed features, depends on the type of desired image tiling 
+        if (tiling == VK_IMAGE_TILING_LINEAR && (prprts.linearTilingFeatures & features) == features)
         {
             return format;
         }
-        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (prprts.optimalTilingFeatures & features) == features)
         {
             return format;
         }

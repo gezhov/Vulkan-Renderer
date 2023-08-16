@@ -131,7 +131,7 @@ void WrpTexture::transitionImageLayout(VkImage image, VkFormat format, VkImageLa
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
     {
         barrier.srcAccessMask = 0;								// operations with the resource to happen before the barrier 
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;   // ops w/ the res to wait on the barrier
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;   // ops w/ the resource to wait on the barrier
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;		// on which stage to perform initial ops 
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;		// on which stage target ops need to wait

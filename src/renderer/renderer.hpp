@@ -23,8 +23,8 @@ public:
     WrpRenderer(const WrpRenderer&) = delete;
     WrpRenderer& operator=(const WrpRenderer&) = delete;
 
-    VkRenderPass getSwapChainRenderPass() const { return vgetSwapChain->getRenderPass(); }
-    float getAspectRatio() const {return vgetSwapChain->extentAspectRatio();}
+    VkRenderPass getSwapChainRenderPass() const { return wrpSwapChain->getRenderPass(); }
+    float getAspectRatio() const {return wrpSwapChain->extentAspectRatio();}
     bool isFrameInProgress() const { return isFrameStarted; }
 
     VkCommandBuffer getCurrentCommandBuffer() const
@@ -53,7 +53,7 @@ private:
 
     WrpWindow& wrpWindown;
     WrpDevice& wrpDevice;
-    std::unique_ptr<WrpSwapChain> vgetSwapChain;
+    std::unique_ptr<WrpSwapChain> wrpSwapChain;
     std::vector<VkCommandBuffer> commandBuffers;
 
     uint32_t currentImageIndex;

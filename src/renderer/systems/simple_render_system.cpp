@@ -96,7 +96,7 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         push.modelMatrix = obj.transform.mat4();
         push.normalMatrix = obj.transform.normalMatrix();
 
-        for (auto& info : obj.model->getSubObjectsInfo())
+        for (auto& info : obj.model->getSubObjectsInfos())
         {
             push.diffuseColor = info.diffuseColor;
 
@@ -115,7 +115,7 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         }
 
         // для простейших obj без подобъектов
-        if (obj.model->getSubObjectsInfo().size() == 1) {
+        if (obj.model->getSubObjectsInfos().size() == 1) {
             push.diffuseColor = {1.f, 1.f, 1.f};
 
             vkCmdPushConstants(

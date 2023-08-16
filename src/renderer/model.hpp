@@ -23,7 +23,7 @@ public:
         glm::vec3 position;
         glm::vec3 color;
         glm::vec3 normal;
-        glm::vec2 uv;		// координаты текстуры
+        glm::vec2 uv;
 
         static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -36,10 +36,10 @@ public:
     };
 
     // вспомогательная структура, которая хранит в себе буферы вершин и индексов
-    struct Builder
+    struct Builder // rename ModelBuilder ??
     {
         // структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
-        struct SubObjectInfo
+        struct SubObjectInfo // todo: rename shapeInfo ?
         {
             uint32_t indexCount;
             uint32_t indexStart;
@@ -50,7 +50,7 @@ public:
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
         std::vector<std::string> texturePaths{};
-        std::vector<SubObjectInfo> subObjectsInfo{};
+        std::vector<SubObjectInfo> subObjectsInfos{};
 
         void loadModel(const std::string& filepath);
     };
@@ -63,14 +63,16 @@ public:
     WrpModel(const WrpModel&) = delete;
     WrpModel& operator=(const WrpModel&) = delete;
 
-    static std::unique_ptr<WrpModel> createModelFromFile(WrpDevice& device, const std::string& filepath);
+    static std::unique_ptr<WrpModel> createModelFromObjMtl(WrpDevice& device, const std::string& filepath);
+    static std::unique_ptr<WrpModel> WrpModel::createModelFromObjTexture
+        (WrpDevice& device, const std::string& modelPath, const std::string& texturePath);
 
     void bind(VkCommandBuffer commandBuffer);
     // todo подумать как можно объединить draw и drawIndexed
     void draw(VkCommandBuffer commandBuffer);
     void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
 
-    std::vector<Builder::SubObjectInfo>& getSubObjectsInfo() {return subObjectsInfo;}
+    std::vector<Builder::SubObjectInfo>& getSubObjectsInfos() {return subObjectsInfos;}
     std::vector<std::unique_ptr<WrpTexture>>& getTextures() {return textures;}
 
     bool hasTextures = false;
@@ -89,7 +91,7 @@ private:
     std::unique_ptr<WrpBuffer> indexBuffer;
     uint32_t indexCount;
 
-    std::vector<Builder::SubObjectInfo> subObjectsInfo;
+    std::vector<Builder::SubObjectInfo> subObjectsInfos;
     std::vector<std::unique_ptr<WrpTexture>> textures;
 };
 

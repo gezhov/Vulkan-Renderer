@@ -24,23 +24,22 @@ WrpRenderer::~WrpRenderer()
 // Пересоздать SwapChain
 void WrpRenderer::recreateSwapChain()
 {
-    auto extent = wrpWindown.getExtent();
-
     // Если ширина или высота окна не имеют размера, то поток выполнения пристанавливается функцией glfwWaitEvents()
     // и ждёт пока не появится какое-либо событие на обработку. С появлением события размеры окна перепроверяются, и
     // так, пока окно не приобретёт какую-то двумерную размерность.
     // Этот цикл полезен, например, для случая минимизации (сворачивания) окна.
+    auto extent = wrpWindown.getExtent();
     while (extent.width == 0 || extent.height == 0)
     {
         extent = wrpWindown.getExtent();
         glfwWaitEvents();
     }
 
-    if (vgetSwapChain == nullptr)
+    if (wrpSwapChain == nullptr)
     {
         std::cout << "Creating SwapChain for the first time." << std::endl;
         // Стандартное создание цепи обмена в первый раз
-        vgetSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown);
+        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown);
     }
     else
     {
@@ -48,10 +47,10 @@ void WrpRenderer::recreateSwapChain()
         
         // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
         // std::move() перемещает уникальный указатель в данный shared указатель.
-        std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(vgetSwapChain);
-        vgetSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown, oldSwapChain);
+        std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(wrpSwapChain);
+        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown, oldSwapChain);
 
-        if (!oldSwapChain->compareSwapChainFormats(*vgetSwapChain.get()))
+        if (!oldSwapChain->compareSwapChainFormats(*wrpSwapChain.get()))
         {
             throw std::runtime_error("Swap chain image (or depth) format has changed!");
         }
@@ -95,7 +94,7 @@ VkCommandBuffer WrpRenderer::beginFrame()
     assert(!isFrameStarted && "Can't call beginFrame while already in progress.");
 
     // функция возврашает в currentImageIndex номер следующего FrameBuffer'а для рендеринга
-    auto result = vgetSwapChain->acquireNextImage(&currentImageIndex);
+    auto result = wrpSwapChain->acquireNextImage(&currentImageIndex);
 
     // Если result получил ошибку OUT_OF_DATE, значит свойства поверхности, на которую выводятся кадры, изменились.
     // Например, изменился размер окна. В этом случае swapchain пересоздаётся для новых размеров.
@@ -140,7 +139,7 @@ void WrpRenderer::endFrame()
 
     // Отправка буфера команд для соответствующего кадра в очередь на выполнение девайсом (с учётом синхронизации работы CPU и GPU).
     // Команды выполняются и SwapChain предоставляет полученное из Color attachment'а изображение дисплею в нужное время (в зависимости от выбранного PRESENT MODE).
-    auto result = vgetSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+    auto result = wrpSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
 
     /* Проверка изменения размеров окна, сброс флага, пересоздание цепи обмена.
        Результат SUBOPTIMAL_KHR указывает на случай, когда свойства поверхности изменились, но SwapChain
@@ -167,18 +166,19 @@ void WrpRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4
     // Первой записывается команда старта RenderPass, поэтому заполняем информацию о ней
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = vgetSwapChain->getRenderPass();
-    renderPassInfo.framebuffer = vgetSwapChain->getFrameBuffer(currentImageIndex);
+    renderPassInfo.renderPass = wrpSwapChain->getRenderPass();
+    renderPassInfo.framebuffer = wrpSwapChain->getFrameBuffer(currentImageIndex);
 
     renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = vgetSwapChain->getSwapChainExtent();
+    renderPassInfo.renderArea.extent = wrpSwapChain->getSwapChainExtent();
 
     // clear values задают начальные значения вложений (attachments) у FrameBuffer
     // буферы вложений заполняются этими значениями во время операции очистки перед новым проходом рендера
     std::array<VkClearValue, 2> clearValues{};
-    // 0 - color attachment, 1 - depth attachment
+    // 0 - для color attachment'а, 1 - для depth stencil attachment'а
+    // порядок clearValues должен быть идентичен порядку вложений FrameBuffer'а 
     clearValues[0].color = { clearColors.x, clearColors.y, clearColors.z, 1.0f};
-    clearValues[1].depthStencil = { 1.0f, 0 };    // порядок присвоения значений зависит от выбранной структуры FrameBuffer'а
+    clearValues[1].depthStencil = { 1.0f, 0 };
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
@@ -193,12 +193,12 @@ void WrpRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(vgetSwapChain->getSwapChainExtent().width);
-    viewport.height = static_cast<float>(vgetSwapChain->getSwapChainExtent().height);
+    viewport.width = static_cast<float>(wrpSwapChain->getSwapChainExtent().width);
+    viewport.height = static_cast<float>(wrpSwapChain->getSwapChainExtent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     // Scissor (ножницы) - обрезка выводимых пикселей вне заданного Scissor Rectangle
-    VkRect2D scissor{ {0, 0}, vgetSwapChain->getSwapChainExtent() };
+    VkRect2D scissor{ {0, 0}, wrpSwapChain->getSwapChainExtent() };
 
     // Запись команд
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);  // установка viewport объекта

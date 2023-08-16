@@ -15,8 +15,8 @@
 
 namespace std
 {
-    template<>
-    struct hash<engine::WrpModel::Vertex>
+    // хэш-функция для Vertex, чтобы хранить его в мапе
+    template<> struct hash<engine::WrpModel::Vertex>
     {
         size_t operator()(engine::WrpModel::Vertex const& vertex) const
         {
@@ -29,7 +29,8 @@ namespace std
 
 ENGINE_BEGIN
 
-WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder) : wrpDevice{device}, subObjectsInfo{builder.subObjectsInfo}
+WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder)
+    : wrpDevice{device}, subObjectsInfos{builder.subObjectsInfos}
 {
     createVertexBuffers(builder.vertices);
     createIndexBuffers(builder.indices);
@@ -38,11 +39,22 @@ WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder) : wrpDev
 
 WrpModel::~WrpModel(){}
 
-std::unique_ptr<WrpModel> WrpModel::createModelFromFile(WrpDevice& device, const std::string& filepath)
+std::unique_ptr<WrpModel> WrpModel::createModelFromObjMtl(WrpDevice& device, const std::string& filepath)
 {
     Builder builder{};
     builder.loadModel(filepath);
     std::cout << "Vertex count: " << builder.vertices.size() << "\n";
+    return std::make_unique<WrpModel>(device, builder);
+}
+
+std::unique_ptr<WrpModel>
+WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelPath, const std::string& texturePath)
+{
+    Builder builder{};
+    builder.loadModel(modelPath);
+    std::cout << "Vertex count: " << builder.vertices.size() << "\n";
+    builder.texturePaths.push_back(texturePath);
+    
     return std::make_unique<WrpModel>(device, builder);
 }
 
@@ -139,13 +151,15 @@ void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
 
 void WrpModel::Builder::loadModel(const std::string& filepath)
 {
-    tinyobj::attrib_t attrib;						// содержит данные позиций, цветов, нормалей и координат текстур
-    std::vector<tinyobj::shape_t> shapes;			// shapes хранит значения индексов для каждого из face элементов каждой составной фигуры
-    std::vector<tinyobj::material_t> materials;		// materials хранит данные о материалах
-    std::string warn, err;
+    // obj файл состоит из атрибут и граней. грани состоят из вершин, включающих индексы своих атрибутов
+    // tinyObjLoader парсит в следующую вложенность: shapes -> shape.mesh -> indices -> index_t.attribute 
+    // все фигуры -> меш отдельной фигуры -> все вершины (индексы) этого меша ->
+    // -> index_t хранит индексы всех атрибутов отдельной вершины 
+    tinyobj::attrib_t attrib;						// данные позиций, цветов, нормалей и координат текстур
+    std::vector<tinyobj::shape_t> shapes;			// все отдельные фигуры составной модели
+    std::vector<tinyobj::material_t> materials;		// данные о материалах
+    std::string warn, err;                          // предупреждения и ошибки
 
-    // После успешного выполнения функции LoadObj() переданные локальные переменные заполнятся
-    // данными из предоставленного .obj файла
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), MODELS_DIR))
     {
         throw std::runtime_error(warn + err);
@@ -163,7 +177,6 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
     auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
     int materialId = 0;
     //int currentMat = 0; // the current OBJ material being used in face loop
-    SubObjectInfo info{};
 
     for (const auto& mat : materials)
     {
@@ -178,18 +191,19 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
     // Мапа хранит уникальные вершины с их индексами. С её помощью составляется буфер индексов.
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-    // Итерирование по каждой фигуре из obj файла (объект может состоять из нескольких фигур)
+    // Итерирование по каждой фигуре из obj файла
     for (const auto &shape : shapes)
     {
+        // эти две переменные нужны, чтобы обозначить границы текущей фигуры
         indexCount = 0;
         indexStart = static_cast<uint32_t>(indices.size());
 
-        // Итерирование по всем индексам текущей фигуры
+        // Итерирование по всем индексам вершин текущей фигуры
         for (const auto &index : shape.mesh.indices)
         {
             Vertex vertex{};
 
-            if (index.vertex_index >= 0) // отрицательный индекс означает, что позиция не была предоставлена
+            if (index.vertex_index >= 0) // отрицательный индекс означает, что атрибут не был представлен
             {
                 // с помощью текущего индекса позиции извлекаем из атрибутов позицию вершины
                 vertex.position = {
@@ -198,7 +212,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                     attrib.vertices[3 * index.vertex_index + 2], // z
                 };
 
-                // по таким же индексам из атрибутов извелкается цвет вершины, если он был представлен в файле
+                // по таким же индексам из атрибутов извлекается цвет вершины, если он был представлен в файле
                 vertex.color = {
                     attrib.colors[3 * index.vertex_index + 0], // r
                     attrib.colors[3 * index.vertex_index + 1], // g
@@ -206,7 +220,6 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 };
             }
 
-            // извлекаем из атрибутов позицию нормали
             if (index.normal_index >= 0)
             {
                 vertex.normal = {
@@ -216,7 +229,6 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 };
             }
 
-            // извлекаем из атрибутов координаты текстуры
             if (index.texcoord_index >= 0)
             {
                 vertex.uv = {
@@ -225,19 +237,19 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 };
             }
 
-            // Если считанная вершина не найдена в мапе, то она добавляется в неё и получает
-            // свой индекс, а затем добавляется в вектор builder'а
+            // Ведётся сохранение только уникальных вершин при помощи мапы
             if (uniqueVertices.count(vertex) == 0)
             {
                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
                 vertices.push_back(vertex);
             }
-            indices.push_back(uniqueVertices[vertex]); // Буфер индексов добавляет индекс считанной вершины
+            indices.push_back(uniqueVertices[vertex]); // добавляется индекс уникальной вершины
 
             ++indexCount;
         }
 
-        // Условие на наличие материала, позволяет поддерживать .obj модели без текстур и подобъектов
+        // todo: тут заполняется инфа по подобъекту в зависимости от наличия материалов. просится рефактор
+        SubObjectInfo info{};
         if (materials.size() != 0) {
             // Индекс текстуры для данной фигуры берётся по индексу её материала
             materialId = shape.mesh.material_ids.at(0);
@@ -250,7 +262,10 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 glm::vec3(materials.at(materialId).diffuse[0],materials.at(materialId).diffuse[1],materials.at(materialId).diffuse[2])
             };
         }
-        subObjectsInfo.push_back(info);
+        else {
+            info = {indexCount, indexStart, 0, glm::vec3{}};
+        }
+        subObjectsInfos.push_back(info);
     }
 }
 
@@ -296,7 +311,7 @@ void WrpModel::bind(VkCommandBuffer commandBuffer)
 // Returning binding descriptions for the vertex buffer
 std::vector<VkVertexInputBindingDescription> WrpModel::Vertex::getBindingDescriptions()
 {
-    // there are only one binding in the vector for now, cause for now all of the vertex data is packed into one array
+    // there are only one binding in the vector, cause for now all of the vertex data is packed into one array
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
     bindingDescriptions[0].binding = 0;										// this bindings' index
     bindingDescriptions[0].stride = sizeof(Vertex);

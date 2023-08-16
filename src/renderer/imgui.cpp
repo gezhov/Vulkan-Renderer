@@ -228,7 +228,7 @@ void WrpImgui::showModelsFromDirectory()
         }
 
         if (ImGui::Button("Add to the scene")) {
-            std::shared_ptr<WrpModel> model = WrpModel::createModelFromFile(wrpDevice, objectsPaths.at(item_current_idx));
+            std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(item_current_idx));
             auto newObj = WrpGameObject::createGameObject();
             newObj.model = model;
             gameObjects.emplace(newObj.getId(), std::move(newObj));

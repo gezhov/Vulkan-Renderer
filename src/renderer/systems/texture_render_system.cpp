@@ -202,7 +202,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         push.normalMatrix = obj.transform.normalMatrix();
 
         // Отрисовка каждого подобъекта .obj модели по отдельности с передачей своего индекса текстуры
-        for (auto& info : obj.model->getSubObjectsInfo())
+        for (auto& info : obj.model->getSubObjectsInfos())
         {
             // Передача в пуш константу индекса текстуры. Если её нет у данного подобъекта, то будет передано -1.
             if (obj.model->getTextures().at(info.textureIndex) != nullptr)
@@ -223,6 +223,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
             );
 
             // прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
+            // todo: зачем я для каждой фигуры прикрепляю один и тот же буфер. может вне цикла можно привязать его только один раз
             obj.model->bind(frameInfo.commandBuffer);
             // отрисовка буфера вершин
             obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);

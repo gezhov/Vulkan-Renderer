@@ -31,8 +31,8 @@ void WrpSwapChain::init()
 {
     createSwapChain();       // создание SwapChain объекта
     createImageViews();      // создание VkImageView представлений для изображений SwapChain'а
+    createDepthResources();  // создание изображений для Depth Buffer вложения
     createRenderPass();      // subpass с его привязками и дальнейшее создание RenderPassa'а
-    createDepthResources();
     createFramebuffers();
     createSyncObjects();
 }
@@ -267,7 +267,7 @@ void WrpSwapChain::createRenderPass()
 
     // Описание depthBuffer привязки для подпрохода
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
+    depthAttachment.format = swapChainDepthFormat;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -289,18 +289,18 @@ void WrpSwapChain::createRenderPass()
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     // Subpass dependencies are specifying transition properties between subpasses.
-    // Even if we have only one subpass we need to describe dependencies for implicit starter and ending subpasses.
-    // This dependency will prevent the image transition from happening until we actually want to write to it.
+    // Even if we have only one subpass we need to describe dependency from implicit external subpass.
+    // This dependency will prevent the image transition between subpasses from happening until we actually want to write to it.
     VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // implicit starter subpass
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // implicit subpass which denote subpass from a previous/next renderpass
     dependency.dstSubpass = 0;                   // 0 means our subpass
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages to wait until
-    dependency.srcAccessMask = 0;
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages that needs to complete on the srcSubpass before moving to dstSubpass 
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages to activate operations
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // stages to wait on the dstSubpass untill srcSubpass is busy with srcStageMask
+    dependency.srcAccessMask = 0;                     // bitmask for memory access types used by srcSubpass 
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // operations to perform on these stages
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // memory access types to use in dstSubpass 
 
     // указанные в reference'ах индексы вложений относятся именно к этому массиву
     std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
@@ -328,6 +328,7 @@ void WrpSwapChain::createFramebuffers()
     for (size_t i = 0; i < imageCount(); i++)
     {
         // swapChainImageViews для colorAttachment'ов, depthImageViews для depthAttachment'ов
+        // данные ImageViews будут связываться с соответствующими VkAttachmentReference'ами сабпасса
         std::array<VkImageView, 2> attachments = {swapChainImageViews[i], depthImageViews[i]};
 
         VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -338,16 +339,13 @@ void WrpSwapChain::createFramebuffers()
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data(); // данные ImageViews будут связываться с соответствующими VkAttachmentReference сабпасса
+        framebufferInfo.pAttachments = attachments.data(); 
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(
-            wrpDevice.device(),
-            &framebufferInfo,
-            nullptr,
-            &swapChainFramebuffers[i]) != VK_SUCCESS)
+        if (vkCreateFramebuffer(wrpDevice.device(), &framebufferInfo, nullptr, &swapChainFramebuffers[i])
+            != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create framebuffer!");
         }
@@ -357,9 +355,7 @@ void WrpSwapChain::createFramebuffers()
 // Создание изображений глубины для их использования в качестве вложения глубины (Depth Attachment)
 void WrpSwapChain::createDepthResources()
 {
-    VkFormat depthFormat = findDepthFormat();
-    swapChainDepthFormat = depthFormat;
-    VkExtent2D swapChainExtent = getSwapChainExtent();
+    swapChainDepthFormat = findDepthFormat();
 
     depthImages.resize(imageCount());
     depthImageMemories.resize(imageCount());
@@ -375,7 +371,7 @@ void WrpSwapChain::createDepthResources()
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
-        imageInfo.format = depthFormat;
+        imageInfo.format = swapChainDepthFormat;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -387,13 +383,14 @@ void WrpSwapChain::createDepthResources()
             imageInfo,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             depthImages[i],
-            depthImageMemories[i]);
+            depthImageMemories[i]
+        );
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = depthImages[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = depthFormat;
+        viewInfo.format = swapChainDepthFormat;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
@@ -402,7 +399,7 @@ void WrpSwapChain::createDepthResources()
 
         if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create texture image view!");
+            throw std::runtime_error("Failed to create texture image view!");
         }
     }
 }
@@ -499,7 +496,7 @@ VkExtent2D WrpSwapChain::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& c
 // Поиск поддерживаемого девайсом формата глубины из переданного списка
 VkFormat WrpSwapChain::findDepthFormat()
 {
-    // поиск поддерживаемого формата с компоненотом глубины и поддержкой использования в качестве depth stencil аттачмента
+    // ищутся форматы с depth компонентом и с поддержкой depth stencil attachment использования
     return wrpDevice.findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
