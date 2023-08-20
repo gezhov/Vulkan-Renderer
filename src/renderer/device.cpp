@@ -497,7 +497,7 @@ VkFormat WrpDevice::findSupportedFormat(const std::vector<VkFormat>& candidates,
             return format;
         }
     }
-    throw std::runtime_error("Failed to find supported format!");
+    throw std::runtime_error("Failed to find supported image format!");
 }
 
 uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties)

@@ -37,6 +37,8 @@ void WrpWindow::initWindow()
 	window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
 	glfwSetWindowUserPointer(window, this);  // Связывание указателя GLFWwindow* и указателя на текущий экземпляр WrpWindow*.
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);  // Установка callback функции на изменение размера окна (буфера кадра)
+
+    glfwMaximizeWindow(window); // максимизировать окно сразу после создания
 }
 
 void WrpWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height)

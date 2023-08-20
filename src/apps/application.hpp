@@ -34,7 +34,7 @@ private:
     // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
     // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
     // быть объявлен после девайса.
-    WrpWindow wrpWindown{ WIDTH, HEIGHT, "Vulkan PPG" };
+    WrpWindow wrpWindown{ WIDTH, HEIGHT, "Vulkan Renderer" };
     WrpDevice wrpDevice{ wrpWindown };
     WrpRenderer wrpRenderer{ wrpWindown, wrpDevice };
 
