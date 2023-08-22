@@ -85,6 +85,7 @@ WrpImgui::WrpImgui(
     init_info.Allocator = VK_NULL_HANDLE;
     init_info.MinImageCount = 2;
     init_info.ImageCount = imageCount;
+    init_info.MSAASamples = wrpDevice.getMaxUsableMSAASampleCount();
     init_info.CheckVkResultFn = check_vk_result;
     ImGui_ImplVulkan_Init(&init_info, renderPass);
 

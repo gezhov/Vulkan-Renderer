@@ -58,6 +58,7 @@ const bool enableValidationLayers = true;
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     QueueFamilyIndices getQueueFamilies() { return findQueueFamilies(physicalDevice_); }
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkSampleCountFlagBits getMaxUsableMSAASampleCount();
 
     // Buffer Helper Functions
     void createBuffer(

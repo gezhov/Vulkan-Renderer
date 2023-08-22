@@ -51,6 +51,7 @@ private:
     void init();
     void createSwapChain();
     void createImageViews();
+    void createColorResources();
     void createDepthResources();
     void createRenderPass();
     void createFramebuffers();
@@ -68,9 +69,16 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
     VkRenderPass renderPass;
 
+    // color buffer used for multisampling
+    VkImage colorImage;
+    VkDeviceMemory colorImageMemory;
+    VkImageView colorImageView;
+    VkSampleCountFlagBits msaaSampleCount;
+
     std::vector<VkImage> depthImages;
     std::vector<VkDeviceMemory> depthImageMemories;
     std::vector<VkImageView> depthImageViews;
+
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 

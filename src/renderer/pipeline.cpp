@@ -14,7 +14,7 @@ WrpPipeline::WrpPipeline(
     WrpDevice& device,
     const std::string& vertFilepath,
     const std::string& fragFilepath,
-    const PipelineConfigInfo& configInfo) : wrpDevice(device)
+    PipelineConfigInfo& configInfo) : wrpDevice(device)
 {
     createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
@@ -49,7 +49,7 @@ std::vector<char> WrpPipeline::readFile(const std::string& filepath)
 void WrpPipeline::createGraphicsPipeline(
     const std::string& vertFilepath,
     const std::string& fragFilepath,
-    const PipelineConfigInfo& configInfo)
+    PipelineConfigInfo& configInfo)
 {
     // Явные проверки на наличие объектов pipelineLayout и renderPass в структуре конфигурационной информации (configInfo)
     assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
@@ -98,6 +98,10 @@ void WrpPipeline::createGraphicsPipeline(
     vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
     vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+
+    // Информация для мультисэмплинга
+    // todo: не логично, конечно, изменять здесь конфиг, который назван дефолтным. можно обдумать этот момент - как вносить правки в параметры пайплайна
+    configInfo.multisampleInfo.rasterizationSamples = wrpDevice.getMaxUsableMSAASampleCount();
 
     // Информация для самого Графического Пайплайна
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -194,11 +198,11 @@ void WrpPipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
     configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional. Тиски для зажима смещения глубины
     configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional. Множитель смещения глубины для фрагмента в наклоне
 
-    // Информация для этапа мультисемплирования (обработка краёв полигонов во время растеризации ради антиэлиасинга)
+    // Информация для этапа мультисемплирования (множественная выборка цвета для фрагментов, чтобы устранить зубчатость краёв)
     configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
-    configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    configInfo.multisampleInfo.minSampleShading = 1.0f;           // Optional
+    configInfo.multisampleInfo.sampleShadingEnable = VK_TRUE;
+    //configInfo.multisampleInfo.rasterizationSamples; этот параметр дописывается при создании пайплайна (из статик контекста не могу достать девайс)
+    configInfo.multisampleInfo.minSampleShading = .2f;            // min fraction for sample shading; closer to one is smoother
     configInfo.multisampleInfo.pSampleMask = nullptr;             // Optional
     configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE;  // Optional
     configInfo.multisampleInfo.alphaToOneEnable = VK_FALSE;       // Optional

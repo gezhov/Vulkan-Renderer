@@ -319,6 +319,7 @@ void WrpDevice::createLogicalDevice()
 
     VkPhysicalDeviceFeatures deviceFeatures = {}; // возможности ус-ва для активации
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;   // sample shading feature
 
     VkDeviceCreateInfo createInfo = {}; // структура для создания логического ус-ва
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -498,6 +499,24 @@ VkFormat WrpDevice::findSupportedFormat(const std::vector<VkFormat>& candidates,
         }
     }
     throw std::runtime_error("Failed to find supported image format!");
+}
+
+VkSampleCountFlagBits WrpDevice::getMaxUsableMSAASampleCount()
+{
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice_, &physicalDeviceProperties);
+
+    // looking for the same sample count for both color and depth buffers
+    VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+        physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+    if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+    if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+    if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+    if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+    if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+    return VK_SAMPLE_COUNT_1_BIT;
 }
 
 uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties)

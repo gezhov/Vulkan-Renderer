@@ -52,7 +52,7 @@ public:
     void renderTransformGizmo(TransformComponent& transform);
 
     // data
-    float directionalLightIntensity = .0f;
+    float directionalLightIntensity = 1.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
 
     std::vector<std::string> objectsPaths;
