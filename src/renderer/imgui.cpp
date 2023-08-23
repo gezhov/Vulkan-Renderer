@@ -182,7 +182,7 @@ void WrpImgui::showPointLightCreator()
     ImGui::Text("Radius");
     ImGui::SliderFloat("##Point Light radius", &pointLightRadius, 0.01f, 10.0f);
 
-    ImGui::Text("Clear Color");
+    ImGui::Text("Point Light Color");
     ImGui::ColorEdit3("##Point Light color", (float*)&pointLightColor);
 
     if (ImGui::Button("Add Point Light"))
