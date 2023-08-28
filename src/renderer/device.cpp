@@ -34,18 +34,18 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     }
 
     switch (messageType) {
-    case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
-        std::cerr << "[GENERAL] ";
-        break;
-    case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
-        std::cerr << "[VALIDATION] ";
-        break;
-    case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
-        std::cerr << "[PERFORMANCE] ";
-        break;
+        case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+            std::cerr << "[GENERAL] ";
+            break;
+        case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+            std::cerr << "[VALIDATION] ";
+            break;
+        case VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+            std::cerr << "[PERFORMANCE] ";
+            break;
     }
 
-    std::cerr << "Validation layer says: \"" << pCallbackData->pMessage << "\"" << std::endl;
+    std::cerr << "Validation layer says: \"" << pCallbackData->pMessage << "\"\n" << std::endl;
     return VK_FALSE;
     /* Если функция будет возвращать VK_TRUE, то вызов Vulkan'а, который инициировал данное сообщение проверки будет прерван.
        Такое прерывание через слой проверки не используется в полноценной отладке, поэтому тут всегда VK_FALSE. */

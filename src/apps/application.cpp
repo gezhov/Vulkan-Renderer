@@ -81,7 +81,7 @@ void App::run()
     };
     TextureRenderSystem textureRenderSystem{
         wrpDevice,
-        wrpRenderer.getSwapChainRenderPass(),
+        wrpRenderer,
         globalDescriptorSetLayout->getDescriptorSetLayout(),
         FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, gameObjects}
     };

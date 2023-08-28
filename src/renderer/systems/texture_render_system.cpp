@@ -25,14 +25,14 @@ struct TextureSystemPushConstantData
     alignas(16) glm::vec3 diffuseColor{};
 };
 
-TextureRenderSystem::TextureRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo)
-    : wrpDevice{ device }
+TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer,
+    VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo) : wrpDevice{device}, wrpRenderer{renderer}, globalSetLayout{globalSetLayout}
 {
     createUboBuffers();
     prevModelCount = fillModelsIds(frameInfo.gameObjects);
     createDescriptorSets(frameInfo);
     createPipelineLayout(globalSetLayout);
-    createPipeline(renderPass);
+    createPipeline(renderer.getSwapChainRenderPass());
 }
 
 TextureRenderSystem::~TextureRenderSystem()
@@ -59,7 +59,7 @@ void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLa
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     if (vkCreatePipelineLayout(wrpDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("Failed to create pipeline layout!");
     }
 }
 
@@ -71,6 +71,9 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
     WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
+
+    // wait for all of commands in graphics queue to complete before creating new pipeline
+    vkQueueWaitIdle(wrpDevice.graphicsQueue());
 
     vgetPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
@@ -133,18 +136,20 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         }
     }
 
-    systemDescriptorPool = WrpDescriptorPool::Builder(wrpDevice)
+    WrpDescriptorPool::Builder poolBuilder = WrpDescriptorPool::Builder(wrpDevice)
         .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount)
-        //.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * 1000)
-        .build();
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+    if (texturesCount != 0) {
+        poolBuilder.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount);
+    }
+    systemDescriptorPool = poolBuilder.build();
 
-    systemDescriptorSetLayout = WrpDescriptorSetLayout::Builder(wrpDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount)
-        //.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1000)
-        .build();
+    WrpDescriptorSetLayout::Builder setLayoutBuilder = WrpDescriptorSetLayout::Builder(wrpDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    if (texturesCount != 0) {
+        setLayoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount);
+    }
+    systemDescriptorSetLayout = setLayoutBuilder.build();
 
     for (int i = 0; i < systemDescriptorSets.size(); ++i)
     {
@@ -155,10 +160,12 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
-        WrpDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool)
-            .writeBuffer(0, &bufferInfo)
-            .writeImage(1, descriptorImageInfos.data(), texturesCount)
-            .build(systemDescriptorSets[i]);
+        WrpDescriptorWriter descriptorWriter = WrpDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool)
+            .writeBuffer(0, &bufferInfo);
+        if (texturesCount != 0) {
+            descriptorWriter.writeImage(1, descriptorImageInfos.data(), texturesCount);
+        }
+        descriptorWriter.build(systemDescriptorSets[i]);
     }
 }
 
@@ -169,15 +176,16 @@ void TextureRenderSystem::update(FrameInfo& frameInfo, TextureSystemUbo& ubo)
 
 void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
-    vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
-
-    // Заполняется вектор id'шников объектов с текстурами и
-    // если их кол-во изменилось, то наборы дескрипторов для этих
-    // объектов пересоздаются.
+    // Заполняется вектор идентификаторов объектов с текстурами, и если их кол-во изменилось, то
+    // наборы дескрипторов для этих объектов пересоздаются, а вместе с ними и пайплайн, т.к. изменяется его схема.
     if (prevModelCount != fillModelsIds(frameInfo.gameObjects)) {
         createDescriptorSets(frameInfo);
+        createPipelineLayout(globalSetLayout);
+        createPipeline(wrpRenderer.getSwapChainRenderPass());
     }
     prevModelCount = modelObjectsIds.size();
+
+    vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
     std::vector<VkDescriptorSet> descriptorSets{ frameInfo.globalDescriptorSet, systemDescriptorSets[frameInfo.frameIndex] };
     // Привязываем наборы дескрипторов к пайплайну

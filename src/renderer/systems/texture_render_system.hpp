@@ -2,6 +2,7 @@
 
 #include "../pipeline.hpp"
 #include "../device.hpp"
+#include "../renderer.hpp"
 #include "../game_object.hpp"
 #include "../camera.hpp"
 #include "../frame_info.hpp"
@@ -17,7 +18,7 @@ ENGINE_BEGIN
 class TextureRenderSystem
 {
 public:
-    TextureRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
+    TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
     ~TextureRenderSystem();
 
     // Избавляемся от copy operator и copy constrcutor, т.к. TextureRenderSystem хранит в себе указатели
@@ -37,6 +38,8 @@ private:
     void createDescriptorSets(FrameInfo& frameInfo);
 
     WrpDevice& wrpDevice;
+    WrpRenderer& wrpRenderer;
+    VkDescriptorSetLayout globalSetLayout;
 
     std::unique_ptr<WrpPipeline> vgetPipeline;
     VkPipelineLayout pipelineLayout;

@@ -211,7 +211,7 @@ void WrpImgui::showModelsFromDirectory()
         static int item_current_idx = 0; // В статической переменной функции хранится номер выбранного из списка айтема
         ImGui::Text("Available models to add to the scene:");
         ImGui::Text(selectedObjPath.c_str());
-        if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 5 * ImGui::GetTextLineHeightWithSpacing())))
+        if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing())))
         {
             for (int n = 0; n < objectsPaths.size(); n++)
             {

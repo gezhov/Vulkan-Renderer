@@ -19,7 +19,7 @@ public:
     public:
         Builder(WrpDevice& wrpDevice) : wrpDevice{wrpDevice} {}
 
-        // Добавление новой привязки дескрпитора в мапу
+        // Добавление новой привязки дескриптора в мапу
         Builder& addBinding(
             uint32_t binding,
             VkDescriptorType descriptorType,
