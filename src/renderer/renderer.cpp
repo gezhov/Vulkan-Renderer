@@ -10,7 +10,7 @@
 
 ENGINE_BEGIN
 
-WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : wrpWindown{ window }, wrpDevice{ device }
+WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : wrpWindow{ window }, wrpDevice{ device }
 {
     recreateSwapChain();
     createCommandBuffers();
@@ -28,10 +28,10 @@ void WrpRenderer::recreateSwapChain()
     // и ждёт пока не появится какое-либо событие на обработку. С появлением события размеры окна перепроверяются, и
     // так, пока окно не приобретёт какую-то двумерную размерность.
     // Этот цикл полезен, например, для случая минимизации (сворачивания) окна.
-    auto extent = wrpWindown.getExtent();
+    auto extent = wrpWindow.getExtent();
     while (extent.width == 0 || extent.height == 0)
     {
-        extent = wrpWindown.getExtent();
+        extent = wrpWindow.getExtent();
         glfwWaitEvents();
     }
 
@@ -39,7 +39,7 @@ void WrpRenderer::recreateSwapChain()
     {
         std::cout << "Creating SwapChain for the first time." << std::endl;
         // Стандартное создание цепи обмена в первый раз
-        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown);
+        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindow);
     }
     else
     {
@@ -48,7 +48,7 @@ void WrpRenderer::recreateSwapChain()
         // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
         // std::move() перемещает уникальный указатель в данный shared указатель.
         std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(wrpSwapChain);
-        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindown, oldSwapChain);
+        wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindow, oldSwapChain);
 
         if (!oldSwapChain->compareSwapChainFormats(*wrpSwapChain.get()))
         {
@@ -144,9 +144,9 @@ void WrpRenderer::endFrame()
     /* Проверка изменения размеров окна, сброс флага, пересоздание цепи обмена.
        Результат SUBOPTIMAL_KHR указывает на случай, когда свойства поверхности изменились, но SwapChain
        по прежнему может продолжать вывод изображения. Здесь мы избавляемся от таких ситуаций тоже. */
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wrpWindown.wasWindowResized())
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wrpWindow.wasWindowResized())
     {
-        wrpWindown.resetWindowsResizedFlag();
+        wrpWindow.resetWindowsResizedFlag();
         recreateSwapChain();
     }
     else if (result != VK_SUCCESS)

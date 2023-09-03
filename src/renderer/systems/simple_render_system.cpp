@@ -70,7 +70,7 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
 
-    vgetPipeline = std::make_unique<WrpPipeline>(
+    wrpPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
         "src/renderer/shaders/simple_shader.vert.spv",
         "src/renderer/shaders/simple_shader.frag.spv",
@@ -79,7 +79,7 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 
 void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
-    vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
+    wrpPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
     // привязываем набор дескрипторов к пайплайну
     vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

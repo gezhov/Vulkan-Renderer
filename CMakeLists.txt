@@ -22,6 +22,7 @@ project(${NAME} VERSION 0.23.0) # Создание проекта с задан�
 if (DEFINED VULKAN_SDK_PATH)
     set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include") # 1.1 Make sure this include path is correct
     set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib") # 1.2 Make sure lib path is correct
+    set(Vulkan_DLLS "${VULKAN_SDK_PATH}/Bin")
     set(Vulkan_FOUND "True")
 # Если Vulkan SDK не будет указан в .env.cmake файле вручную, то CMake предпримет попытку
 # самостоятельно обнаружить место установки Vulkan SDK с помощью функции find_package().
@@ -34,8 +35,8 @@ if (NOT Vulkan_FOUND)
     message(FATAL_ERROR "Could not find Vulkan library!")
 else()
     message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
+    message(STATUS "Using vulkan dlls at: ${Vulkan_DLLS}")
 endif()
-
 
 # 2. Set GLFW_PATH in .env.cmake to target specific glfw
 # Поиск GLFW библиотеки следует по примерно такому же паттерну, что и поиск Vulkan SDK
@@ -45,7 +46,7 @@ if (DEFINED GLFW_PATH)
     # Поиск MSVC или MinGW версии либы
     if (MSVC)
         message(STATUS "USING MSVC")
-        set(GLFW_LIB "${GLFW_PATH}/lib-vc2022") # 2.1 Update lib-vc2019 to use same version as your visual studio
+        set(GLFW_LIB "${GLFW_PATH}/lib-vc2022") # 2.1 Update lib to use same version as your visual studio
     elseif (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
         message(STATUS "USING MINGW")
         set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64") # 2.1 make sure matches glfw mingw subdirectory
@@ -132,10 +133,15 @@ endif()
 
 	target_link_directories(${PROJECT_NAME} PUBLIC
 		${Vulkan_LIBRARIES}
+        ${Vulkan_DLLS}
 		${GLFW_LIB}
 	)
 
-	target_link_libraries(${PROJECT_NAME} glfw3 vulkan-1)
+	target_link_libraries(${PROJECT_NAME}
+        shaderc_shared
+		glfw3
+		vulkan-1
+    )
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
     target_include_directories(${PROJECT_NAME} PUBLIC

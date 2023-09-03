@@ -51,7 +51,7 @@ private:
 
     std::string getTimeStampStr(); // todo: take out to standalone logging system
 
-    WrpWindow& wrpWindown;
+    WrpWindow& wrpWindow;
     WrpDevice& wrpDevice;
     std::unique_ptr<WrpSwapChain> wrpSwapChain;
     std::vector<VkCommandBuffer> commandBuffers;

@@ -67,7 +67,7 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
 
-    vgetPipeline = std::make_unique<WrpPipeline>(
+    wrpPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
         "src/renderer/shaders/point_light.vert.spv",
         "src/renderer/shaders/point_light.frag.spv",
@@ -125,7 +125,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
     }
 
     // render objects
-    vgetPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
+    wrpPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 
     // привязываем набор дескрипторов к пайплайну
     vkCmdBindDescriptorSets(

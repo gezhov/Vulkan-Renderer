@@ -45,11 +45,11 @@ void WrpWindow::framebufferResizeCallback(GLFWwindow* window, int width, int hei
 {
 	// Используя приведение reinterpret_cast(), получаем из указателя на окно GLFWwindow*
 	// связанный с ним указатель на пользовательский тип окна WrpWindow*
-	auto wrpWindown = reinterpret_cast<WrpWindow*>(glfwGetWindowUserPointer(window));
+	auto wrpWindow = reinterpret_cast<WrpWindow*>(glfwGetWindowUserPointer(window));
 
-	wrpWindown->framebufferResized = true;
-	wrpWindown->width = width;
-	wrpWindown->height = height;
+	wrpWindow->framebufferResized = true;
+	wrpWindow->width = width;
+	wrpWindow->height = height;
 }
 
 ENGINE_END

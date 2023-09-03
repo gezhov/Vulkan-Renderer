@@ -42,7 +42,9 @@ public:
         WrpDevice& device,
         const std::string& vertFilepath,
         const std::string& fragFilepath,
-        PipelineConfigInfo& configInfo);
+        PipelineConfigInfo& configInfo,
+        VkShaderModule vertShaderModule = nullptr,
+        VkShaderModule fragShaderModule = nullptr);
 
     ~WrpPipeline();
 
@@ -55,12 +57,17 @@ public:
     static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
     static void enableAlphaBlending(PipelineConfigInfo& configInfo);
 
-private:
     static std::vector<char> readFile(const std::string& filepath);
-
-    void createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath,  PipelineConfigInfo& configInfo);
-
     void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+
+private:
+    void createGraphicsPipeline(
+        const std::string& vertFilepath,
+        const std::string& fragFilepath,
+        PipelineConfigInfo& configInfo,
+        VkShaderModule vertShaderModule = nullptr,
+        VkShaderModule fragShaderModule = nullptr
+    );
 
     WrpDevice& wrpDevice;				// девайс
     VkPipeline graphicsPipeline;		// Vulkan Graphics Pipeline (это указатель, сам тип определён через typedef)

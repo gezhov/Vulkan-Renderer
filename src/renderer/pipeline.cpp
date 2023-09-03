@@ -14,9 +14,11 @@ WrpPipeline::WrpPipeline(
     WrpDevice& device,
     const std::string& vertFilepath,
     const std::string& fragFilepath,
-    PipelineConfigInfo& configInfo) : wrpDevice(device)
+    PipelineConfigInfo& configInfo,
+    VkShaderModule vertShaderModule,
+    VkShaderModule fragShaderModule) : wrpDevice(device)
 {
-    createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
+    createGraphicsPipeline(vertFilepath, fragFilepath, configInfo, vertShaderModule, fragShaderModule);
 }
 
 WrpPipeline::~WrpPipeline()
@@ -49,7 +51,9 @@ std::vector<char> WrpPipeline::readFile(const std::string& filepath)
 void WrpPipeline::createGraphicsPipeline(
     const std::string& vertFilepath,
     const std::string& fragFilepath,
-    PipelineConfigInfo& configInfo)
+    PipelineConfigInfo& configInfo,
+    VkShaderModule vertShaderModule,
+    VkShaderModule fragShaderModule)
 {
     // Явные проверки на наличие объектов pipelineLayout и renderPass в структуре конфигурационной информации (configInfo)
     assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
@@ -59,14 +63,16 @@ void WrpPipeline::createGraphicsPipeline(
     std::vector<char> vertCode = readFile(vertFilepath);
     std::vector<char> fragCode = readFile(fragFilepath);
 
-    std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';   // можно удалить
-    std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n'; // можно удалить
+    std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
+    std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
 
     // создание шейдерных модулей
-    VkShaderModule vertShaderModule;	// шейдерный модуль для шейдера вершины
-    VkShaderModule fragShaderModule;	// для шейдера фрагмента
-    createShaderModule(vertCode, &vertShaderModule);
-    createShaderModule(fragCode, &fragShaderModule);
+    if (!vertShaderModule) {
+        createShaderModule(vertCode, &vertShaderModule);
+    }
+    if (!fragShaderModule) {
+        createShaderModule(fragCode, &fragShaderModule);
+    }
 
     VkPipelineShaderStageCreateInfo shaderStages[2];
     // Информация для шейдера вершин
@@ -153,7 +159,7 @@ void WrpPipeline::createShaderModule(const std::vector<char>& code, VkShaderModu
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create shader module");
+        throw std::runtime_error("Failed to create shader module.");
 }
 
 void WrpPipeline::bind(VkCommandBuffer commandBuffer)

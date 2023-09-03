@@ -32,7 +32,7 @@ private:
 
     WrpDevice& wrpDevice;
 
-    std::unique_ptr<WrpPipeline> vgetPipeline;
+    std::unique_ptr<WrpPipeline> wrpPipeline;
     VkPipelineLayout pipelineLayout;
 };
 

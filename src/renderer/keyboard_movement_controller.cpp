@@ -13,9 +13,9 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Wrp
     if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
     if (glfwGetMouseButton(window, keys.mouseCamera) == GLFW_PRESS) {
-        auto wrpWindown = reinterpret_cast<WrpWindow*>(glfwGetWindowUserPointer(window));
-        halfWidth = static_cast<double>(wrpWindown->getExtent().width);
-        halfHeight = static_cast<double>(wrpWindown->getExtent().height);
+        auto wrpWindow = reinterpret_cast<WrpWindow*>(glfwGetWindowUserPointer(window));
+        halfWidth = static_cast<double>(wrpWindow->getExtent().width);
+        halfHeight = static_cast<double>(wrpWindow->getExtent().height);
 
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwGetCursorPos(window, &xpos, &ypos);

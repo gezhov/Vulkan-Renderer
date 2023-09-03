@@ -101,7 +101,7 @@ void App::run()
     KeyboardMovementController cameraController{};
 
     WrpImgui wrpImgui{
-        wrpWindown,
+        wrpWindow,
         wrpDevice,
         wrpRenderer.getSwapChainRenderPass(),
         WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
@@ -113,7 +113,7 @@ void App::run()
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     // Обработка событий происходит, пока окно не должно быть закрыто.
-    while (!wrpWindown.shouldClose())
+    while (!wrpWindow.shouldClose())
     {
         glfwPollEvents(); // Обработка событий из очереди (нажатие клавиш, взаимодействие с окном и т.п.)
 
@@ -127,7 +127,7 @@ void App::run()
         frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
         // двигаем/вращаем объект теоретической камеры в зависимости от ввода с клавиатуры
-        cameraController.moveInPlaneXZ(wrpWindown.getGLFWwindow(), frameTime, cameraObject);
+        cameraController.moveInPlaneXZ(wrpWindow.getGLFWwindow(), frameTime, cameraObject);
         camera.setViewYXZ(cameraObject.transform.translation, cameraObject.transform.rotation);
 
         // Матрица ортогонального проецирования перестраивается каждый кадр, чтобы размеры ортогонального объёма просмотра

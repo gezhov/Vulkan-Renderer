@@ -39,10 +39,17 @@ struct GlobalUbo // global uniform buffer object
 	int numLights; // кол-во активных точечных источников света
 };
 
+struct TextureSystemPushConstantData
+{
+    glm::mat4 modelMatrix{ 1.f }; // такой конструктор создаёт единичную матрицу
+    glm::mat4 normalMatrix{1.f};
+    // 128 byte min limit is reached. next fields will be limited by maxPushConstantSize
+    int textureIndex;
+    alignas(16) glm::vec3 diffuseColor{};
+};
+
 struct TextureSystemUbo
 {
-	//alignas(16)int texturesCount;
-	int texturesCount;
 	float directionalLightIntensity;
 	alignas(16) glm::vec4 directionalLightPosition;
 };

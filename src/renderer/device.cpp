@@ -18,6 +18,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData)
 {
+    std::cerr << "\n";
     switch (messageSeverity) {
         case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
             std::cerr << "[VERBOSE] ";
@@ -257,7 +258,9 @@ bool WrpDevice::isDeviceSuitable(VkPhysicalDevice physicalDevice)
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
-    return indices.isComplete() && extensionsSupported && isSwapChainAdequate && supportedFeatures.samplerAnisotropy;
+    return indices.isComplete() && extensionsSupported && isSwapChainAdequate
+        && supportedFeatures.samplerAnisotropy
+        && supportedFeatures.sampleRateShading;
 }
 
 // Функция для заполнения структуры, которая хранит индексы нужных нам семейств очередей.

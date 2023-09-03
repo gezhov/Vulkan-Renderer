@@ -1,6 +1,8 @@
 #version 450
 
-#define TEXTURES_COUNT 0
+#define TEXTURES_COUNT 25
+#define TEXTURES
+layout(set = 1, binding = 1) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler дескрипторы
 
 // Входные интерполированные от трёх вершин переменные. Location и тип данных должны совпадать с выходными переменными из шейдера вершин.
 layout (location = 0) in vec3 fragColor;

@@ -13,13 +13,13 @@
 ENGINE_BEGIN
 
 WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window)
-    : wrpDevice{device}, wrpWindown{window}
+    : wrpDevice{device}, wrpWindow{window}
 {
     init();
 }
 
 WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window, std::shared_ptr<WrpSwapChain> previous)
-    : wrpDevice{device}, wrpWindown{window}, oldSwapChain{previous}
+    : wrpDevice{device}, wrpWindow{window}, oldSwapChain{previous}
 {
     init();
 
@@ -549,7 +549,7 @@ VkExtent2D WrpSwapChain::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& c
     else
     {
         int width, height;
-        glfwGetFramebufferSize(wrpWindown.getGLFWwindow(), &width, &height);
+        glfwGetFramebufferSize(wrpWindow.getGLFWwindow(), &width, &height);
 
         VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);

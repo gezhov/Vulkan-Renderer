@@ -36,12 +36,14 @@ private:
 
     int fillModelsIds(WrpGameObject::Map& gameObjects);
     void createDescriptorSets(FrameInfo& frameInfo);
+    void rewriteAndRecompileFragShader(int texturesCount);
 
     WrpDevice& wrpDevice;
     WrpRenderer& wrpRenderer;
     VkDescriptorSetLayout globalSetLayout;
 
-    std::unique_ptr<WrpPipeline> vgetPipeline;
+    VkShaderModule fragShaderModule = nullptr;
+    std::unique_ptr<WrpPipeline> wrpPipeline;
     VkPipelineLayout pipelineLayout;
 
     std::vector<WrpGameObject::id_t> modelObjectsIds{};
