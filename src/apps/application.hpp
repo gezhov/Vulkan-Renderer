@@ -29,7 +29,7 @@ public:
     void run();
 
 private:
-    void loadGameObjects();
+    void loadSceneObjects();
 
     // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
     // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
@@ -39,7 +39,7 @@ private:
     WrpRenderer wrpRenderer{ wrpWindow, wrpDevice };
 
     std::unique_ptr<WrpDescriptorPool> globalPool{};
-    WrpGameObject::Map gameObjects;
+    WrpGameObject::Map sceneObjects;
 };
 
 ENGINE_END

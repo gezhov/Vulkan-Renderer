@@ -36,7 +36,7 @@ App::App()
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
         .build();
 
-    loadGameObjects();
+    loadSceneObjects(); // load predefined objects
 }
 
 App::~App() {}
@@ -83,7 +83,7 @@ void App::run()
         wrpDevice,
         wrpRenderer,
         globalDescriptorSetLayout->getDescriptorSetLayout(),
-        FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, gameObjects}
+        FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, sceneObjects}
     };
     PointLightSystem pointLightSystem{
         wrpDevice,
@@ -97,7 +97,7 @@ void App::run()
     //camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
     auto cameraObject = WrpGameObject::createGameObject("Camera"); // объект без модели для хранения текущего состояния камеры
-    gameObjects.emplace(cameraObject.getId(), std::move(cameraObject));
+    sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
 
     WrpImgui wrpImgui{
@@ -107,7 +107,7 @@ void App::run()
         WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
         camera,
         cameraController,
-        gameObjects
+        sceneObjects
     };
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -152,7 +152,7 @@ void App::run()
 
             int frameIndex = wrpRenderer.getFrameIndex();
             FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
-                globalDescriptorSets[frameIndex], gameObjects};
+                globalDescriptorSets[frameIndex], sceneObjects};
 
             // UPDATE SECTION
             // Обновление данных внутри uniform buffer объектов для текущего кадра
@@ -195,7 +195,7 @@ void App::run()
     vkDeviceWaitIdle(wrpDevice.device());  // ожидать завершения всех операций на GPU перед закрытием программы и очисткой всех ресурсов
 }
 
-void App::loadGameObjects()
+void App::loadSceneObjects()
 {
     // Viking Room model
    /* std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromObjTexture(
@@ -205,7 +205,7 @@ void App::loadGameObjects()
     vikingRoomObj.transform.translation = {.0f, .0f, 0.f};
     vikingRoomObj.transform.scale = glm::vec3(1.f, 1.f, 1.f);
     vikingRoomObj.transform.rotation = glm::vec3(1.57f, 2.f, 0.f);
-    gameObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
+    sceneObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
     // Sponza model
     /*std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
@@ -214,116 +214,7 @@ void App::loadGameObjects()
     sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
     sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
     sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-    gameObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
-
-    // Living room model
-    /*std::shared_ptr<WrpModel> container = WrpModel::createModelFromObjMtl(wrpDevice, "../models/living_room.obj");
-    auto containerObj = WrpGameObject::createGameObject("LivingRoom");
-    containerObj.model = container;
-    containerObj.transform.translation = {1.f, 1.0f, 20.f};
-    containerObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
-    containerObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-    gameObjects.emplace(containerObj.getId(), std::move(containerObj));*/
-
-    // Conference model
-    //std::shared_ptr<WrpModel> conference = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/iscv2.obj");
-    //auto conferenceObj = WrpGameObject::createGameObject("Room");
-    //conferenceObj.model = conference;
-    //conferenceObj.transform.translation = { 1.f, 1.0f, 20.f };
-    //conferenceObj.transform.scale = glm::vec3(1.01f, 1.01f, 1.01f);
-    //conferenceObj.transform.rotation = glm::vec3(1.560f, 0.f, 0.f); //x: 1.560 (iscv2)
-    //gameObjects.emplace(conferenceObj.getId(), std::move(conferenceObj));
-
-    // texture mapping test (single quad with image)
-    //WrpModel::Builder textureModelBuilder{};
-    ///*
-    //// один четырёхугольник
-    //const std::vector<WrpModel::Vertex> vertices = {
-    //    {{-0.5f, -0.5f, 0.f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    //    {{0.5f, -0.5f, 0.f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    //    {{0.5f, 0.5f, 0.f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    //    {{-0.5f, 0.5f, 0.f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}}
-    //};
-    //const std::vector<uint32_t> indices = {
-    //    0, 1, 2, 2, 3, 0
-    //};*/
-    //const std::vector<WrpModel::Vertex> vertices = {
-    //    {{-0.5f, -0.5f, 0.f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    //    {{0.5f, -0.5f, 0.f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    //    {{0.5f, 0.5f, 0.f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    //    {{-0.5f, 0.5f, 0.f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-
-    //    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    //    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    //    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    //    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    //};
-    //const std::vector<uint32_t> indices = {
-    //    0, 1, 2, 2, 3, 0,
-    //    4, 5, 6, 6, 7, 4
-    //};
-    //textureModelBuilder.vertices = vertices;
-    //textureModelBuilder.indices = indices;
-    //textureModelBuilder.texturePaths.push_back(std::string{MODELS_DIR} + "tokitori1.png");
-    //textureModelBuilder.subObjectsInfos.push_back(
-    //    WrpModel::Builder::SubObjectInfo{static_cast<uint32_t>(indices.size()), 0, 0, glm::vec3{}}
-    //);
-    //std::shared_ptr<WrpModel> vgetTextureModel = std::make_unique<WrpModel>(wrpDevice, textureModelBuilder);
-    //auto textureObject = WrpGameObject::createGameObject();
-    //textureObject.model = vgetTextureModel;
-    //textureObject.transform.scale = glm::vec3{2.f, 2.f, 2.f};
-    //gameObjects.emplace(textureObject.getId(), std::move(textureObject));
-
-    // ******* сцена из vget ********
-    //std::shared_ptr<WrpModel> vgetModel = WrpModel::createModelFromObjMtl(wrpDevice, "models/flat_vase.obj");
-    //auto flatVase = WrpGameObject::createGameObject();
-    //flatVase.model = vgetModel;
-    //flatVase.transform.translation = {-.5f, .5f, 0.f}; // в глубину объект двигается внутри ортогонального объёма просмотра, поэтому он не ограничен каноническим диапазоном [0;1]
-    //flatVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
-    //gameObjects.emplace(flatVase.getId(), std::move(flatVase));
-
-    //vgetModel = WrpModel::createModelFromObjMtl(wrpDevice, "models/smooth_vase.obj");
-    //auto smoothVase = WrpGameObject::createGameObject();
-    //smoothVase.model = vgetModel;
-    //smoothVase.transform.translation = {.5f, .5f, 0.f};
-    //smoothVase.transform.scale = glm::vec3(3.f, 1.5f, 3.f);
-    //gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
-
-    //vgetModel = WrpModel::createModelFromObjMtl(wrpDevice, "models/quad.obj");
-    //auto floor = WrpGameObject::createGameObject();
-    //floor.model = vgetModel;
-    //floor.transform.translation = {0.f, .5f, 0.f};
-    //floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-    //gameObjects.emplace(floor.getId(), std::move(floor));
-
-    //std::vector<glm::vec3> lightColors {
-    //	{1.f, .1f, .1f},
-    //	{.1f, .1f, 1.f},
-    //	{.1f, 1.f, .1f},
-    //	{1.f, 1.f, .1f},
-    //	{.1f, 1.f, 1.f},
-    //	{1.f, 1.f, 1.f}
-    //};
-
-    //// Создаётся по одному Point Light'у на каждый цвет
-    //for (int i = 0; i < lightColors.size(); ++i)
-    //{
-    //	auto pointLight = WrpGameObject::makePointLight(0.2f);
-    //	pointLight.color = lightColors[i];
-
-    //	// создаётся матрица преобразования для расстановки объектов точечного света по кругу
-    //	auto rotateLight = glm::rotate(
-    //		glm::mat4(1.f),	// инициализируем единичную матрицу
-    //		// каждый PointLight располагается под своим углом, который задан определённой частью от окружности (360 град. == 2*pi)
-    //		(i * glm::two_pi<float>()) / lightColors.size(),
-    //		{0.f, -1.f, 0.f} // ось вращения (y == -1, значит объекты будут расставлены вокруг Up-вектора)
-    //	);
-
-    //	pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
-    //	// само вращение реализовано в функции update() системы PointLightSystem
-
-    //	gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    //}
+    sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
 }
 
 ENGINE_END

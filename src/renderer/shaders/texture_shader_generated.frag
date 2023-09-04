@@ -1,6 +1,6 @@
 #version 450
 
-#define TEXTURES_COUNT 25
+#define TEXTURES_COUNT 65
 #define TEXTURES
 layout(set = 1, binding = 1) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler дескрипторы
 

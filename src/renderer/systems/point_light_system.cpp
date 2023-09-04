@@ -84,7 +84,7 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo)
     );
 
     int lightIndex = 0;
-    for (auto& kv : frameInfo.gameObjects)
+    for (auto& kv : frameInfo.sceneObjects)
     {
         auto& obj = kv.second;
         if (obj.pointLight == nullptr) continue;
@@ -113,7 +113,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
     // Это нужно для поочерёдного порядка их отрисовки, начиная с дальних билбордов,
     // а затем для их дальнейшего правильного смешивания цветов в ColorBlend этапе.
     std::map<float, WrpGameObject::id_t> sorted;
-    for (auto& kv : frameInfo.gameObjects)
+    for (auto& kv : frameInfo.sceneObjects)
     {
         auto& obj = kv.second;
         if (obj.pointLight == nullptr) continue;
@@ -142,7 +142,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
     // Отрисовываем билборды поинт лайтов в обратном порядке (от самого дальнего, до самого близкого к камере)
     for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
-        auto& obj = frameInfo.gameObjects.at(it->second);
+        auto& obj = frameInfo.sceneObjects.at(it->second);
 
         PointLightPushConstants push{};
         push.position = glm::vec4(obj.transform.translation, 1.f);

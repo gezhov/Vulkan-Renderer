@@ -21,7 +21,7 @@ TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& rendere
     VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo) : wrpDevice{device}, wrpRenderer{renderer}, globalSetLayout{globalSetLayout}
 {
     createUboBuffers();
-    prevModelCount = fillModelsIds(frameInfo.gameObjects);
+    prevModelCount = fillModelsIds(frameInfo.sceneObjects);
     createDescriptorSets(frameInfo);
     createPipelineLayout(globalSetLayout);
     createPipeline(renderer.getSwapChainRenderPass());
@@ -89,10 +89,10 @@ void TextureRenderSystem::createUboBuffers()
     }
 }
 
-int TextureRenderSystem::fillModelsIds(WrpGameObject::Map& gameObjects)
+int TextureRenderSystem::fillModelsIds(WrpGameObject::Map& sceneObjects)
 {
     modelObjectsIds.clear();
-    for (auto& kv : gameObjects)
+    for (auto& kv : sceneObjects)
     {
         auto& obj = kv.second; // ссылка на объект из мапы
         if (obj.model != nullptr && obj.model->hasTextures == true) {
@@ -109,11 +109,11 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 
     for (auto& id : modelObjectsIds)
     {
-        texturesCount += frameInfo.gameObjects[id].model->getTextures().size();
+        texturesCount += frameInfo.sceneObjects[id].model->getTextures().size();
 
         // Заполнение инфорамации по дескрипторам текстур для каждой модели
         // todo сделать рефактор
-        for (auto& texture : frameInfo.gameObjects.at(id).model->getTextures())
+        for (auto& texture : frameInfo.sceneObjects.at(id).model->getTextures())
         {
             if (texture != nullptr)
             {
@@ -123,7 +123,7 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
             else
             {
                 // todo: добавление объектов с текстурами не будет корректно работать, пока не будет исправлен этот момент
-                descriptorImageInfos.push_back(frameInfo.gameObjects.at(id).model->getTextures().at(0)->descriptorInfo());
+                descriptorImageInfos.push_back(frameInfo.sceneObjects.at(id).model->getTextures().at(0)->descriptorInfo());
             }
         }
     }
@@ -236,7 +236,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
     // Заполняется вектор идентификаторов объектов с текстурами, и если их кол-во изменилось, то
     // наборы дескрипторов для этих объектов пересоздаются, а вместе с ними и пайплайн, т.к. изменяется его схема.
-    if (prevModelCount != fillModelsIds(frameInfo.gameObjects)) {
+    if (prevModelCount != fillModelsIds(frameInfo.sceneObjects)) {
         createDescriptorSets(frameInfo);
         createPipelineLayout(globalSetLayout);
         createPipeline(wrpRenderer.getSwapChainRenderPass());
@@ -254,7 +254,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
     int textureIndexOffset = 0; // отступ в массиве текстур для текущего объекта
     for (auto& id : modelObjectsIds)
     {
-        auto& obj = frameInfo.gameObjects[id];
+        auto& obj = frameInfo.sceneObjects[id];
 
         TextureSystemPushConstantData push{};
         push.modelMatrix = obj.transform.mat4();

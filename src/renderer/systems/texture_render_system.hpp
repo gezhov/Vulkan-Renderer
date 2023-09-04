@@ -34,7 +34,7 @@ private:
     void createPipeline(VkRenderPass renderPass);
     void createUboBuffers();
 
-    int fillModelsIds(WrpGameObject::Map& gameObjects);
+    int fillModelsIds(WrpGameObject::Map& sceneObjects);
     void createDescriptorSets(FrameInfo& frameInfo);
     void rewriteAndRecompileFragShader(int texturesCount);
 

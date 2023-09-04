@@ -30,7 +30,7 @@ static void check_vk_result(VkResult err) {
 class WrpImgui {
 public:
     WrpImgui(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& gameObjects);
+        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& sceneObjects);
     ~WrpImgui();
 
     WrpImgui() = default;
@@ -66,7 +66,7 @@ private:
     WrpDevice& wrpDevice;
     WrpCamera& camera;
     KeyboardMovementController& kmc;
-    WrpGameObject::Map& gameObjects;
+    WrpGameObject::Map& sceneObjects;
 
     VkDescriptorPool descriptorPool; // ImGui's descriptor pool
 };

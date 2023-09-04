@@ -27,8 +27,8 @@ ENGINE_BEGIN
 // using.
 WrpImgui::WrpImgui(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& gameObjects)
-    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, gameObjects{ gameObjects } {
+    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& sceneObjects)
+    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects } {
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -188,7 +188,7 @@ void WrpImgui::showPointLightCreator()
     if (ImGui::Button("Add Point Light"))
     {
         WrpGameObject pointLight = WrpGameObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
-        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+        sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
 
     ImGui::End();
@@ -232,7 +232,7 @@ void WrpImgui::showModelsFromDirectory()
             std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(item_current_idx));
             auto newObj = WrpGameObject::createGameObject();
             newObj.model = model;
-            gameObjects.emplace(newObj.getId(), std::move(newObj));
+            sceneObjects.emplace(newObj.getId(), std::move(newObj));
         }
     }
     ImGui::End();
@@ -244,7 +244,7 @@ void WrpImgui::enumerateObjectsInTheScene()
         static int item_current_idx = 0; // Здесь список подобен тому, что есть в Object Loader'е
         if (ImGui::BeginListBox("All Objects", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
         {
-            for (auto& obj : gameObjects)
+            for (auto& obj : sceneObjects)
             {
                 const bool is_selected = (item_current_idx == obj.second.getId());
                 if (ImGui::Selectable(obj.second.getName().c_str(), is_selected)) {
@@ -256,11 +256,11 @@ void WrpImgui::enumerateObjectsInTheScene()
             ImGui::EndListBox();
         }
 
-        if (gameObjects[item_current_idx].pointLight != nullptr) {
-            inspectObject(gameObjects[item_current_idx], true);
+        if (sceneObjects[item_current_idx].pointLight != nullptr) {
+            inspectObject(sceneObjects[item_current_idx], true);
         }
         else {
-            inspectObject(gameObjects[item_current_idx], false);
+            inspectObject(sceneObjects[item_current_idx], false);
         }
     }
     ImGui::End();

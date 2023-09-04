@@ -25,7 +25,7 @@ struct FrameInfo
 	VkCommandBuffer commandBuffer;
 	WrpCamera& camera;
 	VkDescriptorSet globalDescriptorSet;
-	WrpGameObject::Map& gameObjects;
+	WrpGameObject::Map& sceneObjects;
 };
 
 struct GlobalUbo // global uniform buffer object
