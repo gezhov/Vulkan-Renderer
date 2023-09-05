@@ -153,8 +153,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 {
     // obj файл состоит из атрибут и граней. грани состоят из вершин, включающих индексы своих атрибутов
     // tinyObjLoader парсит в следующую вложенность: shapes -> shape.mesh -> indices -> index_t.attribute 
-    // все фигуры -> меш отдельной фигуры -> все вершины (индексы) этого меша ->
-    // -> index_t хранит индексы всех атрибутов отдельной вершины 
+    // все фигуры -> меш отдельной фигуры -> все вершины (индексы) этого меша -> index_t хранит индексы всех атрибутов отдельной вершины 
     tinyobj::attrib_t attrib;						// данные позиций, цветов, нормалей и координат текстур
     std::vector<tinyobj::shape_t> shapes;			// все отдельные фигуры составной модели
     std::vector<tinyobj::material_t> materials;		// данные о материалах
@@ -172,7 +171,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 
     // Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
     // https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
-    auto textureStart = 0; // first free slot in texture array
+    //auto textureStart = 0; // first free slot in texture array
     uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
     auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
     int materialId = 0;
@@ -184,12 +183,10 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
         // note: if you are loading multiple textures per material (i.e. diffuse + normal textures), 
         // you'll need to track this better than just a single index variable. Also, this
         // method here does not account for materials with no textures, it's work in progress.
-        //loadTexture(baseDir + mat.diffuse_texname, textureIndex);
         texturePaths.push_back(MODELS_DIR + mat.diffuse_texname);
     }
 
-    // Мапа хранит уникальные вершины с их индексами. С её помощью составляется буфер индексов.
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{}; // helps with index buffer creation
 
     // Итерирование по каждой фигуре из obj файла
     for (const auto &shape : shapes)
@@ -259,11 +256,11 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 indexCount,
                 indexStart,
                 materialId, // исп. как textureIndex в структуре подобъекта
-                glm::vec3(materials.at(materialId).diffuse[0],materials.at(materialId).diffuse[1],materials.at(materialId).diffuse[2])
+                glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
             };
         }
         else {
-            info = {indexCount, indexStart, 0, glm::vec3{}};
+            info = {indexCount, indexStart, -1, glm::vec3{}};
         }
         subObjectsInfos.push_back(info);
     }
@@ -273,12 +270,10 @@ void WrpModel::draw(VkCommandBuffer commandBuffer)
 {
     if (hasIndexBuffer)
     {
-        // Запись команды на отрисовку с применением буфера индексов
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
     else
     {
-        // Запись команды на отрисовку. (vertexCount вершин, 1 экземпляр, без смещений)
         vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
     }
 }

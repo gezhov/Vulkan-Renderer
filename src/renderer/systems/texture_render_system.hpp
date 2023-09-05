@@ -44,7 +44,7 @@ private:
 
     VkShaderModule fragShaderModule = nullptr;
     std::unique_ptr<WrpPipeline> wrpPipeline;
-    VkPipelineLayout pipelineLayout;
+    VkPipelineLayout pipelineLayout = nullptr;
 
     std::vector<WrpGameObject::id_t> modelObjectsIds{};
     size_t prevModelCount = 0;

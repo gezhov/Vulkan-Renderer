@@ -36,10 +36,10 @@ public:
     };
 
     // вспомогательная структура, которая хранит в себе буферы вершин и индексов
-    struct Builder // rename ModelBuilder ??
+    struct Builder
     {
         // структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
-        struct SubObjectInfo // todo: rename shapeInfo ?
+        struct SubObjectInfo
         {
             uint32_t indexCount;
             uint32_t indexStart;
@@ -68,7 +68,6 @@ public:
         (WrpDevice& device, const std::string& modelPath, const std::string& texturePath);
 
     void bind(VkCommandBuffer commandBuffer);
-    // todo подумать как можно объединить draw и drawIndexed
     void draw(VkCommandBuffer commandBuffer);
     void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
 

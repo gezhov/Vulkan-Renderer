@@ -34,13 +34,14 @@ TextureRenderSystem::~TextureRenderSystem()
 
 void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
-    // описание диапазона пуш-констант
+    // destroy the old one if it exists
+    if (pipelineLayout != nullptr) vkDestroyPipelineLayout(wrpDevice.device(), pipelineLayout, nullptr);
+
     VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; // доступ к данным констант из обоих шейдеров
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; // access to push constanf from both VS and FS 
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(TextureSystemPushConstantData);
 
-    // вектор используемых схем для наборов дескрипторов
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts{globalSetLayout, systemDescriptorSetLayout->getDescriptorSetLayout()};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -111,7 +112,7 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
     {
         texturesCount += frameInfo.sceneObjects[id].model->getTextures().size();
 
-        // Заполнение инфорамации по дескрипторам текстур для каждой модели
+        // Заполнение информации по дескрипторам текстур для каждой модели
         // todo сделать рефактор
         for (auto& texture : frameInfo.sceneObjects.at(id).model->getTextures())
         {

@@ -21,8 +21,7 @@ public:
     App();
     ~App();
 
-    // Избавляемся от copy operator и copy constrcutor, т.к. App хранит в себе указатели
-    // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
+    // RAII
     App(const App&) = delete;
     App& operator=(const App&) = delete;
 
@@ -31,9 +30,7 @@ public:
 private:
     void loadSceneObjects();
 
-    // Порядок объявления перменных-членов имеет значение. Так, они будут инициализироваться
-    // сверху вниз, а уничтожаться снизу вверх. Пул дескрипторов, таким образом, должен
-    // быть объявлен после девайса.
+    // Fields are initializing from top to bottom and destroying from bottom to top
     WrpWindow wrpWindow{ WIDTH, HEIGHT, "Vulkan Renderer" };
     WrpDevice wrpDevice{ wrpWindow };
     WrpRenderer wrpRenderer{ wrpWindow, wrpDevice };

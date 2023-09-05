@@ -91,8 +91,6 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo)
 
         assert(lightIndex < MAX_LIGHTS && "Point Lights exceed maximum specified");
 
-        // todo: IF carouselEnabled == true { обновление позиции }
-
         // обновление позиции PointLight'а в карусели, если она включена
         if (obj.pointLight->carouselEnabled == true)
             obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));

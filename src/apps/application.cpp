@@ -30,7 +30,7 @@ ENGINE_BEGIN
 
 App::App()
 {
-    // Создаётся глобальный пул дескрипторов для всего приложения
+    // global descriptor pool designed for the entire app 
     globalPool = WrpDescriptorPool::Builder(wrpDevice)
         .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
@@ -92,7 +92,7 @@ void App::run()
     };
 
     WrpCamera camera{};
-    // установка положения "теоретической камеры"
+    // default camera transform
     //camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
     //camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
@@ -112,7 +112,7 @@ void App::run()
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 
-    // Обработка событий происходит, пока окно не должно быть закрыто.
+    // MAIN LOOP
     while (!wrpWindow.shouldClose())
     {
         glfwPollEvents(); // Обработка событий из очереди (нажатие клавиш, взаимодействие с окном и т.п.)
@@ -126,23 +126,13 @@ void App::run()
         // потому что была зажата клавиша, а экран находился в режиме ресайза (время кадра становилось большим).
         frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
-        // двигаем/вращаем объект теоретической камеры в зависимости от ввода с клавиатуры
+        // двигаем/вращаем объект камеры в зависимости от ввода с клавиатуры
         cameraController.moveInPlaneXZ(wrpWindow.getGLFWwindow(), frameTime, cameraObject);
         camera.setViewYXZ(cameraObject.transform.translation, cameraObject.transform.rotation);
 
-        // Матрица ортогонального проецирования перестраивается каждый кадр, чтобы размеры ортогонального объёма просмотра
-        // всегда соответствовали текущему значению соотношения сторон окна.
-        // Aspect ratio подставляется именно в -left и right, чтобы соответствовать выражению: right - left = aspect * (bottom - top)
-        // И в таком случае ортогональный объём просмотра будет иметь такое же соотношение сторон, что и окно.
-        // Это избавляет отображаемый объект от искажений, связанных с соотношением сторон.
         float aspect = wrpRenderer.getAspectRatio();
         //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
 
-        // Установка матрицы проецирования перспективы.
-        // Первый аргумент - vertical field of view (обычно в диапазоне от 45 до 60 градусов), далее соотношение сторон окна,
-        // далее расстояние до ближней и затем дальней плоскости отсечения.
-        // Главное отличие от простого ортогонального проецирования - объект становится тем меньше, чем он дальше от передней плоскости.
-        // Это тип проецирования чаще всего используется в играх.
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
         // отрисовка кадра
@@ -169,30 +159,26 @@ void App::run()
             textureRenderSystem.update(frameInfo, textureSystemUbo);
 
             // RENDER SECTION
-            /* Начало и конец прохода рендера и кадра отделены друг от друга для упрощения в дальнейшем
-               интеграции сразу нескольких проходов рендера (Render passes) для создания отражений,
-               теней и эффектов пост-процесса. */
             wrpRenderer.beginSwapChainRenderPass(commandBuffer, wrpImgui.clear_color);
 
-            // Порядок отрисовки объектов важен, так как сначала надо отрисовать непрозрачные объекты с помощью textureRenderSystem, а
-            // затем полупрозрачные билборды поинт лайтов с помощью PointLightSystem.
+            // Order of objects render is matter, because we need to ensure that we rendered
+            // fully opaque objects (like textured models) before rendering translucent objects (like point lights)
             simpleRenderSystem.renderGameObjects(frameInfo);
             textureRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
-
-            // Описание элементов интерфейса ImGUI для отрисовки
+            // imgui ui elements
             wrpImgui.runExample();
             wrpImgui.showPointLightCreator();
             wrpImgui.showModelsFromDirectory();
             wrpImgui.enumerateObjectsInTheScene();
-            wrpImgui.render(commandBuffer); // as last step in render pass, record the imgui draw commands
+            wrpImgui.render(commandBuffer);
 
             wrpRenderer.endSwapChainRenderPass(commandBuffer);
             wrpRenderer.endFrame();
         }
     }
 
-    vkDeviceWaitIdle(wrpDevice.device());  // ожидать завершения всех операций на GPU перед закрытием программы и очисткой всех ресурсов
+    vkDeviceWaitIdle(wrpDevice.device());
 }
 
 void App::loadSceneObjects()
@@ -208,13 +194,13 @@ void App::loadSceneObjects()
     sceneObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
     // Sponza model
-    /*std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
+    std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
     auto sponzaObj = WrpGameObject::createGameObject("Sponza");
     sponzaObj.model = sponza;
     sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
     sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
     sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-    sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));*/
+    sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 }
 
 ENGINE_END

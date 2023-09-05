@@ -23,7 +23,7 @@ public:
         int mouseCamera = GLFW_MOUSE_BUTTON_RIGHT;
     };
 
-    // gameObject - ссылка на контроллируемый объект
+    // gameObject is controllable object 
     void moveInPlaneXZ(GLFWwindow* window, float dt, WrpGameObject& gameObject);
 
     KeyMappings keys{};
@@ -31,7 +31,7 @@ public:
     double halfHeight;
     double xpos;
     double ypos;
-    float moveSpeed{5.f};	// для настройки скорости перемещения
+    float moveSpeed{5.f};  // для настройки скорости перемещения
     float lookSpeed{2.f};  // для настройки скорости поворота
 };
 

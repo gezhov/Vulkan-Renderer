@@ -6,6 +6,11 @@
 
 ENGINE_BEGIN
 
+// Матрица ортогонального проецирования перестраивается каждый кадр, чтобы размеры ортогонального объёма просмотра
+// всегда соответствовали текущему значению соотношения сторон окна.
+// Aspect ratio подставляется именно в -left и right, чтобы соответствовать выражению: right - left = aspect * (bottom - top)
+// И в таком случае ортогональный объём просмотра будет иметь такое же соотношение сторон, что и окно.
+// Это избавляет отображаемый объект от искажений, связанных с соотношением сторон.
 void WrpCamera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far)
 {
     projectionMatrix = glm::mat4{1.0f};
@@ -17,6 +22,11 @@ void WrpCamera::setOrthographicProjection(float left, float right, float top, fl
     projectionMatrix[3][2] = -near / (far - near);
 }
 
+// Установка матрицы проецирования перспективы.
+// Первый аргумент - vertical field of view (обычно в диапазоне от 45 до 60 градусов), далее соотношение сторон окна,
+// далее расстояние до ближней и затем дальней плоскости отсечения.
+// Главное отличие от простого ортогонального проецирования - объект становится тем меньше, чем он дальше от передней плоскости.
+// Это тип проецирования чаще всего используется в играх.
 void WrpCamera::setPerspectiveProjection(float fovy, float aspect, float near, float far)
 {
     assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
