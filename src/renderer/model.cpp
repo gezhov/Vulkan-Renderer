@@ -53,7 +53,7 @@ WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelP
     Builder builder{};
     builder.loadModel(modelPath);
     std::cout << "Vertex count: " << builder.vertices.size() << "\n";
-    builder.texturePaths.push_back(texturePath);
+    builder.texturePaths.emplace(texturePath, 0);
     
     return std::make_unique<WrpModel>(device, builder);
 }
@@ -134,18 +134,14 @@ void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
     wrpDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
-void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
+void WrpModel::createTextures(const std::unordered_map<std::string, int>& texturePaths)
 {
+    if (!texturePaths.empty()) hasTextures = true;
+    else hasTextures = false;
+
     for (auto& path : texturePaths)
     {
-        if (path != MODELS_DIR) {
-            textures.push_back(std::make_unique<WrpTexture>(path, wrpDevice));
-            hasTextures = true;
-        }
-        else {
-            // todo: исправить(?) если дифузной текстуры не было у материала, то тогда текстура получит nullptr по данному индексу
-            textures.push_back(nullptr);
-        }
+        textures.push_back(std::make_unique<WrpTexture>(path.first, wrpDevice));
     }
 }
 
@@ -171,19 +167,23 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 
     // Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
     // https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
-    //auto textureStart = 0; // first free slot in texture array
     uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
     auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
-    int materialId = 0;
-    //int currentMat = 0; // the current OBJ material being used in face loop
+    int textureId = 0;
+    bool isThereMaterials = false;
+
+    if (materials.size() != 0) isThereMaterials = !isThereMaterials;
 
     for (const auto& mat : materials)
     {
-        // loads a texture and adds it to the global array. also increments textureIndex.
-        // note: if you are loading multiple textures per material (i.e. diffuse + normal textures), 
-        // you'll need to track this better than just a single index variable. Also, this
-        // method here does not account for materials with no textures, it's work in progress.
-        texturePaths.push_back(MODELS_DIR + mat.diffuse_texname);
+        if (mat.diffuse_texname != "")
+        {
+            std::string path = MODELS_DIR + mat.diffuse_texname;
+            if (texturePaths.find(path) == texturePaths.end()) {
+                texturePaths.emplace(path, textureId);
+                ++textureId;
+            }
+        }
     }
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{}; // helps with index buffer creation
@@ -245,22 +245,25 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
             ++indexCount;
         }
 
-        // todo: тут заполняется инфа по подобъекту в зависимости от наличия материалов. просится рефактор
-        SubObjectInfo info{};
-        if (materials.size() != 0) {
-            // Индекс текстуры для данной фигуры берётся по индексу её материала
-            materialId = shape.mesh.material_ids.at(0);
+        SubObjectInfo info{indexCount, indexStart, -1, glm::vec3{}};
+        if (isThereMaterials) {
+            int materialId = shape.mesh.material_ids.at(0); // пока не встречал подобъекты с разными материалами на сетке, поэтому беру первый id
+            int textureId = 0;
+            std::string current_shape_texname = materials.at(materialId).diffuse_texname;
+            if (texturePaths.find(MODELS_DIR + current_shape_texname) == texturePaths.end()) {
+                textureId = -1;
+            }
+            else {
+                textureId = texturePaths[MODELS_DIR + current_shape_texname];
+            }
 
-            // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из списка текстур и диффузный цвет
+            // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из мапы текстур и диффузный цвет
             info = {
                 indexCount,
                 indexStart,
-                materialId, // исп. как textureIndex в структуре подобъекта
+                textureId,
                 glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
             };
-        }
-        else {
-            info = {indexCount, indexStart, -1, glm::vec3{}};
         }
         subObjectsInfos.push_back(info);
     }

@@ -116,16 +116,8 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         // todo сделать рефактор
         for (auto& texture : frameInfo.sceneObjects.at(id).model->getTextures())
         {
-            if (texture != nullptr)
-            {
-                auto& imageInfo = texture->descriptorInfo();
-                descriptorImageInfos.push_back(imageInfo);
-            }
-            else
-            {
-                // todo: добавление объектов с текстурами не будет корректно работать, пока не будет исправлен этот момент
-                descriptorImageInfos.push_back(frameInfo.sceneObjects.at(id).model->getTextures().at(0)->descriptorInfo());
-            }
+            auto& imageInfo = texture->descriptorInfo();
+            descriptorImageInfos.push_back(imageInfo);
         }
     }
 
@@ -265,16 +257,15 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         obj.model->bind(frameInfo.commandBuffer);
 
         // Отрисовка каждого подобъекта .obj модели по отдельности с передачей своего индекса текстуры
-        for (auto& info : obj.model->getSubObjectsInfos())
+        for (auto& subObjInfo : obj.model->getSubObjectsInfos())
         {
-            // Передача в пуш константу индекса текстуры. Если её нет у данного подобъекта, то будет передано -1.
-            if (obj.model->getTextures().at(info.textureIndex) != nullptr)
-                push.textureIndex = textureIndexOffset + info.textureIndex;
-            else
-            {
-                push.textureIndex = -1;
-                push.diffuseColor = info.diffuseColor;	
+            if (subObjInfo.textureIndex != -1) {
+                push.textureIndex = textureIndexOffset + subObjInfo.textureIndex;
             }
+            else {
+                push.textureIndex = -1;
+            }
+            push.diffuseColor = subObjInfo.diffuseColor;	
 
             vkCmdPushConstants(frameInfo.commandBuffer, pipelineLayout,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -282,7 +273,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
             );
 
             // отрисовка буфера вершин
-            obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);
+            obj.model->drawIndexed(frameInfo.commandBuffer, subObjInfo.indexCount, subObjInfo.indexStart);
         }
         textureIndexOffset += obj.model->getTextures().size();
     }

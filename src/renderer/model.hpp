@@ -12,6 +12,7 @@
 // std
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 ENGINE_BEGIN
 
@@ -49,7 +50,7 @@ public:
 
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
-        std::vector<std::string> texturePaths{};
+        std::unordered_map<std::string, int> texturePaths{};
         std::vector<SubObjectInfo> subObjectsInfos{};
 
         void loadModel(const std::string& filepath);
@@ -79,7 +80,7 @@ public:
 private:
     void createVertexBuffers(const std::vector<Vertex>& vertices);
     void createIndexBuffers(const std::vector<uint32_t>& indices);
-    void createTextures(const std::vector<std::string>& texturePaths);
+    void createTextures(const std::unordered_map<std::string, int>& texturePaths);
 
     WrpDevice& wrpDevice;
 
