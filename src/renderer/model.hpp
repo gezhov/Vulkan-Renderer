@@ -36,7 +36,7 @@ public:
         }
     };
 
-    // вспомогательная структура, которая хранит в себе буферы вершин и индексов
+    // вспомогательная структура для распределния данных загруженной модели 
     struct Builder
     {
         // структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
@@ -50,7 +50,8 @@ public:
 
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
-        std::unordered_map<std::string, int> texturePaths{};
+        std::unordered_map<std::string, int> texturePathsMap{}; // чтобы мапить текстуры материалов на индексы реального массива путей
+        std::vector<std::string> texturePaths{};
         std::vector<SubObjectInfo> subObjectsInfos{};
 
         void loadModel(const std::string& filepath);
@@ -80,7 +81,7 @@ public:
 private:
     void createVertexBuffers(const std::vector<Vertex>& vertices);
     void createIndexBuffers(const std::vector<uint32_t>& indices);
-    void createTextures(const std::unordered_map<std::string, int>& texturePaths);
+    void createTextures(const std::vector<std::string>& texturePaths);
 
     WrpDevice& wrpDevice;
 

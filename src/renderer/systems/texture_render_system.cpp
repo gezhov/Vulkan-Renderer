@@ -113,7 +113,6 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         texturesCount += frameInfo.sceneObjects[id].model->getTextures().size();
 
         // Заполнение информации по дескрипторам текстур для каждой модели
-        // todo сделать рефактор
         for (auto& texture : frameInfo.sceneObjects.at(id).model->getTextures())
         {
             auto& imageInfo = texture->descriptorInfo();

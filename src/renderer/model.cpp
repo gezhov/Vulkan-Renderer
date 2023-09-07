@@ -53,7 +53,7 @@ WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelP
     Builder builder{};
     builder.loadModel(modelPath);
     std::cout << "Vertex count: " << builder.vertices.size() << "\n";
-    builder.texturePaths.emplace(texturePath, 0);
+    builder.texturePaths.push_back(texturePath);
     
     return std::make_unique<WrpModel>(device, builder);
 }
@@ -134,14 +134,14 @@ void WrpModel::createIndexBuffers(const std::vector<uint32_t>& indices)
     wrpDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
-void WrpModel::createTextures(const std::unordered_map<std::string, int>& texturePaths)
+void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
 {
     if (!texturePaths.empty()) hasTextures = true;
     else hasTextures = false;
 
     for (auto& path : texturePaths)
     {
-        textures.push_back(std::make_unique<WrpTexture>(path.first, wrpDevice));
+        textures.push_back(std::make_unique<WrpTexture>(path, wrpDevice));
     }
 }
 
@@ -163,25 +163,27 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
     // очистка текущей структуры Builder перед загрузкой новой модели
     vertices.clear();
     indices.clear();
+    texturePathsMap.clear();
     texturePaths.clear();
 
     // Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
     // https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
     uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
     auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
-    int textureId = 0;
     bool isThereMaterials = false;
 
     if (materials.size() != 0) isThereMaterials = !isThereMaterials;
 
-    for (const auto& mat : materials)
+    int i = 0;
+    for (auto& mat : materials)
     {
         if (mat.diffuse_texname != "")
         {
             std::string path = MODELS_DIR + mat.diffuse_texname;
-            if (texturePaths.find(path) == texturePaths.end()) {
-                texturePaths.emplace(path, textureId);
-                ++textureId;
+            if (texturePathsMap.find(path) == texturePathsMap.end()) {
+                texturePathsMap.emplace(path, i);
+                texturePaths.push_back(path);
+                ++i;
             }
         }
     }
@@ -247,14 +249,16 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 
         SubObjectInfo info{indexCount, indexStart, -1, glm::vec3{}};
         if (isThereMaterials) {
+            int textureId{};
+            // todo: (про sponza) видимо ваза включает в себя несколько материалов, поэтому там растянута текстура травы
+            // похоже, что для полной поддержки материалов, индексы вершин подобъетов дополнительно дробить по индексам материалов
             int materialId = shape.mesh.material_ids.at(0); // пока не встречал подобъекты с разными материалами на сетке, поэтому беру первый id
-            int textureId = 0;
             std::string current_shape_texname = materials.at(materialId).diffuse_texname;
-            if (texturePaths.find(MODELS_DIR + current_shape_texname) == texturePaths.end()) {
+            if (current_shape_texname == "") {
                 textureId = -1;
             }
             else {
-                textureId = texturePaths[MODELS_DIR + current_shape_texname];
+                textureId = texturePathsMap[MODELS_DIR + current_shape_texname]; // индекс в реальный массив texturePaths
             }
 
             // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из мапы текстур и диффузный цвет
@@ -264,8 +268,11 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
                 textureId,
                 glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
             };
+            subObjectsInfos.push_back(info);
         }
-        subObjectsInfos.push_back(info);
+        else {
+            subObjectsInfos.push_back(info);
+        }
     }
 }
 
