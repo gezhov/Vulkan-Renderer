@@ -2,10 +2,10 @@
 #include "utils.hpp"
 
 // libs
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 // std
 #include <cassert>
@@ -30,7 +30,7 @@ namespace std
 ENGINE_BEGIN
 
 WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder)
-    : wrpDevice{device}, subObjectsInfos{builder.subObjectsInfos}
+    : wrpDevice{device}, subMeshesInfos{builder.subMeshesInfos}
 {
     createVertexBuffers(builder.vertices);
     createIndexBuffers(builder.indices);
@@ -56,6 +56,153 @@ WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelP
     builder.texturePaths.push_back(texturePath);
     
     return std::make_unique<WrpModel>(device, builder);
+}
+
+void WrpModel::Builder::loadModel(const std::string& filepath)
+{
+    // obj файл состоит из атрибутов и граней. грани состоят из вершин, включающих индексы своих атрибутов
+    // tinyObjLoader парсит в следующую вложенность: shapes -> shape.mesh -> indices -> index_t.attribute 
+    // все фигуры -> меш отдельной фигуры -> все вершины (индексы) этого меша -> index_t хранит индексы всех атрибутов отдельной вершины 
+
+    // У каждой отдельной фигуры есть вектор id материалов shape.mesh.material_ids
+    // Каждый отдельный id задаёт материал для отдельной грани (face). Если у грани нет материала, то id хранит -1.
+    tinyobj::attrib_t attrib;						// данные позиций, цветов, нормалей и координат текстур
+    std::vector<tinyobj::shape_t> shapes;			// все отдельные фигуры составной модели
+    std::vector<tinyobj::material_t> materials;		// данные о материалах (size == 0, if there is no materials)
+    std::string warn, err;                          // предупреждения и ошибки
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), MODELS_DIR, true))
+    {
+        throw std::runtime_error(warn + err);
+    }
+
+    // очистка текущей структуры Builder перед загрузкой новой модели
+    vertices.clear();
+    indices.clear();
+    texturePaths.clear();
+
+    int i = 0;
+    std::unordered_map<std::string, int> difTexPathsMap{}; // чтобы мапить текстуры материалов на индексы реального массива путей
+    for (auto& mat : materials)
+    {
+        if (mat.diffuse_texname != "")
+        {
+            std::string path = MODELS_DIR + mat.diffuse_texname;
+            if (difTexPathsMap.find(path) == difTexPathsMap.end()) {
+                difTexPathsMap[path] = i;
+                texturePaths.push_back(path); // only unique non-blank paths to diffuse textures
+                ++i;
+            }
+        }
+    }
+
+    // loop through shapes (submeshes)
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{}; // helps with index buffer creation
+    for (const auto& shape : shapes)
+    {
+        // Indices for index buffer (don't confuse with vertex indices from the face down below).
+        // Being used as boundaries for submeshes per material.
+        uint32_t indexStart = static_cast<uint32_t>(indices.size());
+        uint32_t indexCount = 0;
+
+        // through faces (polygons) of the current shape
+        size_t facesNumber = shape.mesh.num_face_vertices.size();
+        size_t indexOffset = 0;
+        for (size_t face = 0; face < facesNumber; ++face)
+        {
+            size_t faceVerticesNumber = shape.mesh.num_face_vertices.at(face); // always 3, if triangulation was enabled
+
+            // through indices of the face
+            for (size_t i = 0; i < faceVerticesNumber; ++i)
+            {
+                tinyobj::index_t index = shape.mesh.indices.at(indexOffset + i);
+                Vertex vertex{};
+
+                // negative index means attribute is not present
+                if (index.vertex_index >= 0) {
+                    vertex.position = {
+                        attrib.vertices[3 * index.vertex_index + 0], // x
+                        attrib.vertices[3 * index.vertex_index + 1], // y
+                        attrib.vertices[3 * index.vertex_index + 2], // z
+                    };
+
+                    // same indices for the color attribute (if it's present)
+                    vertex.color = {
+                        attrib.colors[3 * index.vertex_index + 0], // r
+                        attrib.colors[3 * index.vertex_index + 1], // g
+                        attrib.colors[3 * index.vertex_index + 2], // b
+                    };
+                }
+
+                if (index.texcoord_index >= 0) {
+                    vertex.uv = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],        // u
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1], // v (reverse Y for Vulkan coordinate system)
+                    };
+                }
+
+                if (index.normal_index >= 0) {
+                    vertex.normal = {
+                        attrib.normals[3 * index.normal_index + 0], // x
+                        attrib.normals[3 * index.normal_index + 1], // y
+                        attrib.normals[3 * index.normal_index + 2], // z
+                    };
+                }
+
+                // save only unique vertices leveraging map
+                if (uniqueVertices.count(vertex) == 0)
+                {
+                    uniqueVertices[vertex] = uniqueVertices.size();
+                    vertices.push_back(vertex);
+                }
+                indices.push_back(uniqueVertices[vertex]); // push_back index for current vertex
+                ++indexCount;
+            }
+            indexOffset += faceVerticesNumber;
+
+            // adding the submesh if the next face will use another material
+            int currentFaceMaterialId = shape.mesh.material_ids.at(face);
+            if (face + 1 != facesNumber && shape.mesh.material_ids.at(face + 1) != currentFaceMaterialId)
+            {
+                SubMesh subMesh = createSubMesh(indexStart, indexCount, currentFaceMaterialId, difTexPathsMap, materials);
+                subMeshesInfos.push_back(subMesh);
+                uint32_t indexStart = static_cast<uint32_t>(indices.size());
+                uint32_t indexCount = 0;
+            }
+        }
+
+        // adding the remaining faces to the submesh
+        SubMesh subMesh = createSubMesh(indexStart, indexCount,
+            shape.mesh.material_ids.at(shape.mesh.material_ids.size()-1), difTexPathsMap, materials);
+        subMeshesInfos.push_back(subMesh);
+    }
+}
+
+WrpModel::Builder::SubMesh WrpModel::Builder::createSubMesh(
+    uint32_t indexStart, uint32_t indexCount, int materialId,
+    std::unordered_map<std::string, int>& difTexPathsMap,
+    std::vector<tinyobj::material_t>& materials)
+{
+    SubMesh subMesh = {indexStart, indexCount, -1, glm::vec3{}};
+    if (materialId != -1) {
+        int diffuseTextureId;
+        std::string difTexName = materials.at(materialId).diffuse_texname;
+        if (difTexName == "") {
+            diffuseTextureId = -1;
+        }
+        else {
+            diffuseTextureId = difTexPathsMap[MODELS_DIR + difTexName]; // индекс в реальный массив texturePaths
+        }
+
+        // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из мапы текстур и диффузный цвет
+        subMesh = {
+            indexStart,
+            indexCount,
+            diffuseTextureId,
+            glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
+        };
+    }
+    return subMesh;
 }
 
 void WrpModel::createVertexBuffers(const std::vector<Vertex>& vertices)
@@ -142,137 +289,6 @@ void WrpModel::createTextures(const std::vector<std::string>& texturePaths)
     for (auto& path : texturePaths)
     {
         textures.push_back(std::make_unique<WrpTexture>(path, wrpDevice));
-    }
-}
-
-void WrpModel::Builder::loadModel(const std::string& filepath)
-{
-    // obj файл состоит из атрибут и граней. грани состоят из вершин, включающих индексы своих атрибутов
-    // tinyObjLoader парсит в следующую вложенность: shapes -> shape.mesh -> indices -> index_t.attribute 
-    // все фигуры -> меш отдельной фигуры -> все вершины (индексы) этого меша -> index_t хранит индексы всех атрибутов отдельной вершины 
-    tinyobj::attrib_t attrib;						// данные позиций, цветов, нормалей и координат текстур
-    std::vector<tinyobj::shape_t> shapes;			// все отдельные фигуры составной модели
-    std::vector<tinyobj::material_t> materials;		// данные о материалах
-    std::string warn, err;                          // предупреждения и ошибки
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), MODELS_DIR))
-    {
-        throw std::runtime_error(warn + err);
-    }
-
-    // очистка текущей структуры Builder перед загрузкой новой модели
-    vertices.clear();
-    indices.clear();
-    texturePathsMap.clear();
-    texturePaths.clear();
-
-    // Данный способ считывания .obj объекта со множеством текстур в материале основан на данном топике:
-    // https://www.reddit.com/r/vulkan/comments/826w5d/what_needs_to_be_done_in_order_to_load_obj_model/
-    uint32_t indexCount = 0; // the number of indices to be drawn in one bundle
-    auto indexStart = static_cast<uint32_t>(indices.size()); // index offset for drawing
-    bool isThereMaterials = false;
-
-    if (materials.size() != 0) isThereMaterials = !isThereMaterials;
-
-    int i = 0;
-    for (auto& mat : materials)
-    {
-        if (mat.diffuse_texname != "")
-        {
-            std::string path = MODELS_DIR + mat.diffuse_texname;
-            if (texturePathsMap.find(path) == texturePathsMap.end()) {
-                texturePathsMap.emplace(path, i);
-                texturePaths.push_back(path);
-                ++i;
-            }
-        }
-    }
-
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{}; // helps with index buffer creation
-
-    // Итерирование по каждой фигуре из obj файла
-    for (const auto &shape : shapes)
-    {
-        // эти две переменные нужны, чтобы обозначить границы текущей фигуры
-        indexCount = 0;
-        indexStart = static_cast<uint32_t>(indices.size());
-
-        // Итерирование по всем индексам вершин текущей фигуры
-        for (const auto &index : shape.mesh.indices)
-        {
-            Vertex vertex{};
-
-            if (index.vertex_index >= 0) // отрицательный индекс означает, что атрибут не был представлен
-            {
-                // с помощью текущего индекса позиции извлекаем из атрибутов позицию вершины
-                vertex.position = {
-                    attrib.vertices[3 * index.vertex_index + 0], // x
-                    attrib.vertices[3 * index.vertex_index + 1], // y
-                    attrib.vertices[3 * index.vertex_index + 2], // z
-                };
-
-                // по таким же индексам из атрибутов извлекается цвет вершины, если он был представлен в файле
-                vertex.color = {
-                    attrib.colors[3 * index.vertex_index + 0], // r
-                    attrib.colors[3 * index.vertex_index + 1], // g
-                    attrib.colors[3 * index.vertex_index + 2], // b
-                };
-            }
-
-            if (index.normal_index >= 0)
-            {
-                vertex.normal = {
-                    attrib.normals[3 * index.normal_index + 0], // x
-                    attrib.normals[3 * index.normal_index + 1], // y
-                    attrib.normals[3 * index.normal_index + 2], // z
-                };
-            }
-
-            if (index.texcoord_index >= 0)
-            {
-                vertex.uv = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],		   // u
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1], // v (координата по Y переворачивается для коорд. системы вулкана)
-                };
-            }
-
-            // Ведётся сохранение только уникальных вершин при помощи мапы
-            if (uniqueVertices.count(vertex) == 0)
-            {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-            indices.push_back(uniqueVertices[vertex]); // добавляется индекс уникальной вершины
-
-            ++indexCount;
-        }
-
-        SubObjectInfo info{indexCount, indexStart, -1, glm::vec3{}};
-        if (isThereMaterials) {
-            int textureId{};
-            // todo: (про sponza) видимо ваза включает в себя несколько материалов, поэтому там растянута текстура травы
-            // похоже, что для полной поддержки материалов, индексы вершин подобъетов дополнительно дробить по индексам материалов
-            int materialId = shape.mesh.material_ids.at(0); // пока не встречал подобъекты с разными материалами на сетке, поэтому беру первый id
-            std::string current_shape_texname = materials.at(materialId).diffuse_texname;
-            if (current_shape_texname == "") {
-                textureId = -1;
-            }
-            else {
-                textureId = texturePathsMap[MODELS_DIR + current_shape_texname]; // индекс в реальный массив texturePaths
-            }
-
-            // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из мапы текстур и диффузный цвет
-            info = {
-                indexCount,
-                indexStart,
-                textureId,
-                glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
-            };
-            subObjectsInfos.push_back(info);
-        }
-        else {
-            subObjectsInfos.push_back(info);
-        }
     }
 }
 

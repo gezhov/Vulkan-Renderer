@@ -256,15 +256,15 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         obj.model->bind(frameInfo.commandBuffer);
 
         // Отрисовка каждого подобъекта .obj модели по отдельности с передачей своего индекса текстуры
-        for (auto& subObjInfo : obj.model->getSubObjectsInfos())
+        for (auto& subMesh : obj.model->getSubMeshesInfos())
         {
-            if (subObjInfo.textureIndex != -1) {
-                push.textureIndex = textureIndexOffset + subObjInfo.textureIndex;
+            if (subMesh.diffuseTextureIndex != -1) {
+                push.textureIndex = textureIndexOffset + subMesh.diffuseTextureIndex;
             }
             else {
                 push.textureIndex = -1;
             }
-            push.diffuseColor = subObjInfo.diffuseColor;	
+            push.diffuseColor = subMesh.diffuseColor;	
 
             vkCmdPushConstants(frameInfo.commandBuffer, pipelineLayout,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -272,7 +272,7 @@ void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
             );
 
             // отрисовка буфера вершин
-            obj.model->drawIndexed(frameInfo.commandBuffer, subObjInfo.indexCount, subObjInfo.indexStart);
+            obj.model->drawIndexed(frameInfo.commandBuffer, subMesh.indexCount, subMesh.indexStart);
         }
         textureIndexOffset += obj.model->getTextures().size();
     }

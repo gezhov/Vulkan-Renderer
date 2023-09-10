@@ -8,6 +8,7 @@
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE   // GLM будет ожидать интервал нашего буфера глубины от 0 до 1 (например, для OpenGL используется интервал от -1 до 1)
 #include <glm/glm.hpp>
+#include <tiny_obj_loader.h>
 
 // std
 #include <memory>
@@ -40,21 +41,22 @@ public:
     struct Builder
     {
         // структура, описывающая место появления нового подобъекта из .obj модели и индекс его текстуры
-        struct SubObjectInfo
+        struct SubMesh
         {
-            uint32_t indexCount;
             uint32_t indexStart;
-            int textureIndex;
+            uint32_t indexCount;
+            int diffuseTextureIndex;
             glm::vec3 diffuseColor;
         };
 
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> indices{};
-        std::unordered_map<std::string, int> texturePathsMap{}; // чтобы мапить текстуры материалов на индексы реального массива путей
         std::vector<std::string> texturePaths{};
-        std::vector<SubObjectInfo> subObjectsInfos{};
+        std::vector<SubMesh> subMeshesInfos{};
 
         void loadModel(const std::string& filepath);
+        SubMesh createSubMesh(uint32_t indexStart, uint32_t indexCount, int materialId,
+            std::unordered_map<std::string, int>& difTexPathsMap, std::vector<tinyobj::material_t>& materials);
     };
 
     WrpModel(WrpDevice& device, const WrpModel::Builder& builder);
@@ -73,7 +75,7 @@ public:
     void draw(VkCommandBuffer commandBuffer);
     void drawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexStart = 0);
 
-    std::vector<Builder::SubObjectInfo>& getSubObjectsInfos() {return subObjectsInfos;}
+    std::vector<Builder::SubMesh>& getSubMeshesInfos() {return subMeshesInfos;}
     std::vector<std::unique_ptr<WrpTexture>>& getTextures() {return textures;}
 
     bool hasTextures = false;
@@ -92,7 +94,7 @@ private:
     std::unique_ptr<WrpBuffer> indexBuffer;
     uint32_t indexCount;
 
-    std::vector<Builder::SubObjectInfo> subObjectsInfos;
+    std::vector<Builder::SubMesh> subMeshesInfos;
     std::vector<std::unique_ptr<WrpTexture>> textures;
 };
 
