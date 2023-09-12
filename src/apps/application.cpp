@@ -97,6 +97,7 @@ void App::run()
     //camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
     auto cameraObject = WrpGameObject::createGameObject("Camera"); // объект без модели для хранения текущего состояния камеры
+    cameraObject.transform.rotation = {.0f, .0f, .0f};
     sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
 

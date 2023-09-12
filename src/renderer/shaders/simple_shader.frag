@@ -31,7 +31,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 } globalUbo;
 
 // Directional Lighting
-//vec3 DIRECTION_TO_LIGHT = normalize(textureUbo.directionalLightPosition.xyz);
+vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 
 void main() {
     // Итоговое рассеянное освещение. Инициализируется сразу обвалакивающим освещением
@@ -46,7 +46,7 @@ void main() {
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
 
     // Вклад направленного источника света в рассеянное освещение
-    //diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + textureUbo.directionalLightIntensity;
+    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + globalUbo.directionalLightIntensity;
 
     // В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
     for (int i = 0; i < globalUbo.numLights; ++i) {
@@ -74,5 +74,13 @@ void main() {
         specularLight += intensity * blinnTerm;
     }
 
-    outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+    // Если "простая модель" пришла на вход без цвета, то используется серый оттенок,
+    // чтобы чёрный цвет не сводил к нулю все операции.
+    if (fragColor == vec3(0.0)) {
+        vec3 greyShadeColor = vec3(0.02);
+        outColor = vec4(diffuseLight * greyShadeColor + specularLight * greyShadeColor, 1.0);
+    }
+    else {
+        outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+    }
 }

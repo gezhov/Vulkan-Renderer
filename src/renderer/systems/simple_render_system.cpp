@@ -105,23 +105,6 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
             // отрисовка буфера вершин
             obj.model->drawIndexed(frameInfo.commandBuffer, info.indexCount, info.indexStart);
         }
-
-        // для простейших obj без подобъектов
-        // todo: мб удалить?
-        if (obj.model->getSubMeshesInfos().size() == 1) {
-            push.diffuseColor = {1.f, 1.f, 1.f};
-
-            vkCmdPushConstants(
-                frameInfo.commandBuffer,
-                pipelineLayout,
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(SimplePushConstantData),
-                &push);
-
-            obj.model->bind(frameInfo.commandBuffer);
-            obj.model->draw(frameInfo.commandBuffer);
-        }
     }
 }
 
