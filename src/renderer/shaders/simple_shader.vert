@@ -35,9 +35,11 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 invView;
     vec4 ambientLightColor;
+	float directionalLightIntensity;
+	vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
-} ubo;
+} globalUbo;
 
 // Блок, который получает значения из структуры пуш-констант. Блок пуш-констант должен быть
 // только один для одного шейдера, а его порядок полей должен совпадать со структурой, записанной в буфере команд.
@@ -53,7 +55,7 @@ void main() {
     vec4 positionWorld = push.modelMatrix * vec4(position, 1.0); // перевод позиции вершины в мировое пространство
 
     // Дополнительное применение аффинного преобразования (projectionViewMatrix * positionWorld).
-    gl_Position = ubo.projection * ubo.view * positionWorld;
+    gl_Position = globalUbo.projection * globalUbo.view * positionWorld;
 
     // Вектор нормали для вершины приводится в координаты мирового пространства.
     // Решение ниже работает только для случая, если scale модели равномерный, т.е. (s*x == s*y == s*z)

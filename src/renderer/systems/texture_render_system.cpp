@@ -20,7 +20,6 @@ ENGINE_BEGIN
 TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer,
     VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo) : wrpDevice{device}, wrpRenderer{renderer}, globalSetLayout{globalSetLayout}
 {
-    createUboBuffers();
     prevModelCount = fillModelsIds(frameInfo.sceneObjects);
     createDescriptorSets(frameInfo);
     createPipelineLayout(globalSetLayout);
@@ -75,21 +74,6 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
     );
 }
 
-void TextureRenderSystem::createUboBuffers()
-{
-    for (int i = 0; i < uboBuffers.size(); ++i)
-    {
-        uboBuffers[i] = std::make_unique<WrpBuffer>(
-            wrpDevice,
-            sizeof(TextureSystemUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
-        uboBuffers[i]->map();
-    }
-}
-
 int TextureRenderSystem::fillModelsIds(WrpGameObject::Map& sceneObjects)
 {
     modelObjectsIds.clear();
@@ -124,32 +108,23 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
     vkQueueWaitIdle(wrpDevice.graphicsQueue());
 
     WrpDescriptorPool::Builder poolBuilder = WrpDescriptorPool::Builder(wrpDevice)
-        .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+        .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
     if (texturesCount != 0) {
         poolBuilder.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount);
     }
     systemDescriptorPool = poolBuilder.build();
 
-    WrpDescriptorSetLayout::Builder setLayoutBuilder = WrpDescriptorSetLayout::Builder(wrpDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    WrpDescriptorSetLayout::Builder setLayoutBuilder = WrpDescriptorSetLayout::Builder(wrpDevice);
     if (texturesCount != 0) {
-        setLayoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount);
+        setLayoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, texturesCount);
     }
     systemDescriptorSetLayout = setLayoutBuilder.build();
 
     for (int i = 0; i < systemDescriptorSets.size(); ++i)
     {
-        // Запись количества текстур для каждого ubo буфера
-        TextureSystemUbo ubo{};
-        uboBuffers[i]->writeToBuffer(&ubo);
-
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-
-        WrpDescriptorWriter descriptorWriter = WrpDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool)
-            .writeBuffer(0, &bufferInfo);
+        WrpDescriptorWriter descriptorWriter = WrpDescriptorWriter(*systemDescriptorSetLayout, *systemDescriptorPool);
         if (texturesCount != 0) {
-            descriptorWriter.writeImage(1, descriptorImageInfos.data(), texturesCount);
+            descriptorWriter.writeImage(0, descriptorImageInfos.data(), texturesCount);
         }
         descriptorWriter.build(systemDescriptorSets[i]);
     }
@@ -182,7 +157,7 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
                 // single-time adding TEXTURES define and sampler2D array to activate code with texturing
                 if (!isTexturesDefined) {
                     shaderContent += "#define TEXTURES\n";
-                    shaderContent += "layout(set = 1, binding = 1) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler дескрипторы\n";
+                    shaderContent += "layout(set = 1, binding = 0) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler дескрипторы\n";
                 }
                 std::cout << line << std::endl;
             }
@@ -217,11 +192,6 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
 
     shaderc_result_release(result);
     shaderc_compiler_release(compiler);
-}
-
-void TextureRenderSystem::update(FrameInfo& frameInfo, TextureSystemUbo& ubo)
-{
-    uboBuffers[frameInfo.frameIndex]->writeToBuffer(&ubo);
 }
 
 void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)

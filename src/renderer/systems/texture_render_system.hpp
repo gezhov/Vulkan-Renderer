@@ -21,12 +21,9 @@ public:
     TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
     ~TextureRenderSystem();
 
-    // Избавляемся от copy operator и copy constrcutor, т.к. TextureRenderSystem хранит в себе указатели
-    // на VkPipelineLayout_T и VkCommandBuffer_T, которые лучше не копировать.
     TextureRenderSystem(const TextureRenderSystem&) = delete;
     TextureRenderSystem& operator=(const TextureRenderSystem&) = delete;
 
-    void update(FrameInfo& frameInfo, TextureSystemUbo& ubo);
     void renderGameObjects(FrameInfo& frameInfo);
 
 private:
@@ -48,7 +45,6 @@ private:
 
     std::vector<WrpGameObject::id_t> modelObjectsIds{};
     size_t prevModelCount = 0;
-    std::vector<std::unique_ptr<WrpBuffer>> uboBuffers{WrpSwapChain::MAX_FRAMES_IN_FLIGHT};
 
     std::unique_ptr<WrpDescriptorPool> systemDescriptorPool;
     std::unique_ptr<WrpDescriptorSetLayout> systemDescriptorSetLayout;

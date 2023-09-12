@@ -13,14 +13,6 @@
 
 ENGINE_BEGIN
 
-// структура пуш-константы здесь объявлена временно
-struct SimplePushConstantData
-{
-    glm::mat4 modelMatrix{ 1.f }; // такой конструктор создаёт единичную матрицу
-    glm::mat4 normalMatrix{ 1.f };
-    alignas(16) glm::vec3 diffuseColor{};
-};
-
 SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
     VkDescriptorSetLayout globalDescriptorSetLayout) : wrpDevice{ device }
 {
@@ -115,6 +107,7 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
         }
 
         // для простейших obj без подобъектов
+        // todo: мб удалить?
         if (obj.model->getSubMeshesInfos().size() == 1) {
             push.diffuseColor = {1.f, 1.f, 1.f};
 

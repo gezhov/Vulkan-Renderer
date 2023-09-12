@@ -27,36 +27,33 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 invView;
     vec4 ambientLightColor;
+	float directionalLightIntensity;
+	vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
-} globalubo;
-
-layout(set = 1, binding = 0) uniform TextureSystemUBO {
-    float directionalLightIntensity;
-    vec4 directionalLightPosition;
-} textureUbo;
+} globalUbo;
 
 // Directional Lighting
-vec3 DIRECTION_TO_LIGHT = normalize(textureUbo.directionalLightPosition.xyz);
+vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 
 void main() {
     // Итоговое рассеянное освещение. Инициализируется сразу обвалакивающим освещением
-    vec3 diffuseLight = globalubo.ambientLightColor.xyz * globalubo.ambientLightColor.w;
+    vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
     // Суммарное зеркальное освещение от каждого источника света
     vec3 specularLight = vec3(0.0);
     // Нормаль поверхности одинакова для всех источников света, поэтому она нормализуется вне цикла.
     // Нормализовывать её надо, потому что она пришла в шейдер фрагментов после интерполяции из нескольких нормалей вершин.
     vec3 surfaceNormal = normalize(fragNormalWorld);
 
-    vec3 cameraPosWorld = globalubo.invView[3].xyz; // извлекаем позицию наблюдателя в World Space из обратной матрицы просмотра
+    vec3 cameraPosWorld = globalUbo.invView[3].xyz; // извлекаем позицию наблюдателя в World Space из обратной матрицы просмотра
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
 
     // Вклад направленного источника света в рассеянное освещение
-    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + textureUbo.directionalLightIntensity;
+    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + globalUbo.directionalLightIntensity;
 
     // В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
-    for (int i = 0; i < globalubo.numLights; ++i) {
-        PointLight light = globalubo.pointLights[i]; // берём текущий точечный источник света
+    for (int i = 0; i < globalUbo.numLights; ++i) {
+        PointLight light = globalUbo.pointLights[i]; // берём текущий точечный источник света
 
         vec3 directionToLight = light.position.xyz - fragPosWorld; // ещё ненормализованное направление к ист. света
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // фактор ослабевания интенсивности света = 1 / квадрат расстояния до источника

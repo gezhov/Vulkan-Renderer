@@ -65,7 +65,7 @@ public:
     const id_t getId() { return id; }
     const std::string getName() { return name; }
 
-    glm::vec3 color{};
+    glm::vec3 color{}; // being used for point light color
     TransformComponent transform{};
 
     // Опциональные компоненты объекта в виде указателей.

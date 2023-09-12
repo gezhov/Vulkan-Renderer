@@ -150,13 +150,11 @@ void App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
+            ubo.directionalLightIntensity = wrpImgui.directionalLightIntensity;
+            ubo.directionalLightPosition = wrpImgui.directionalLightPosition;
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
-            TextureSystemUbo textureSystemUbo{};
-            textureSystemUbo.directionalLightIntensity = wrpImgui.directionalLightIntensity;
-            textureSystemUbo.directionalLightPosition = wrpImgui.directionalLightPosition;
-            textureRenderSystem.update(frameInfo, textureSystemUbo);
 
             // RENDER SECTION
             wrpRenderer.beginSwapChainRenderPass(commandBuffer, wrpImgui.clear_color);
