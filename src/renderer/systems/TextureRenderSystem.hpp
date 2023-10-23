@@ -31,7 +31,7 @@ private:
     void createPipeline(VkRenderPass renderPass);
     void createUboBuffers();
 
-    int fillModelsIds(WrpGameObject::Map& sceneObjects);
+    int fillModelsIds(SceneObject::Map& sceneObjects);
     void createDescriptorSets(FrameInfo& frameInfo);
     void rewriteAndRecompileFragShader(int texturesCount);
 
@@ -43,7 +43,7 @@ private:
     std::unique_ptr<WrpPipeline> wrpPipeline;
     VkPipelineLayout pipelineLayout = nullptr;
 
-    std::vector<WrpGameObject::id_t> modelObjectsIds{};
+    std::vector<SceneObject::id_t> modelObjectsIds{};
     size_t prevModelCount = 0;
 
     std::unique_ptr<WrpDescriptorPool> systemDescriptorPool;

@@ -35,32 +35,32 @@ struct PointLightComponent
     bool carouselEnabled = false;
 };
 
-class WrpGameObject
+class SceneObject
 {
 public:
     using id_t = unsigned int; // псевдоним для типа
-    using Map = std::unordered_map<id_t, WrpGameObject>;
+    using Map = std::unordered_map<id_t, SceneObject>;
 
-    WrpGameObject() = default; // Просит компилятор, хотя такой конструктор не используется
+    SceneObject() = default; // Просит компилятор, хотя такой конструктор не используется
 
     // статичный метод, который выпускает новый экземпляр игрового объекта
-    static WrpGameObject createGameObject(std::string name = "Object")
+    static SceneObject createSceneObject(std::string name = "Object")
     {
         static id_t currentId = 0;
-        return WrpGameObject{ currentId++, name };
+        return SceneObject{ currentId++, name };
     }
 
     // Метод для создания PointLight объекта
-    static WrpGameObject makePointLight(float intensity = 10.f, float radius = 0.1f, glm::vec3 color = glm::vec3(1.f));
+    static SceneObject makePointLight(float intensity = 10.f, float radius = 0.1f, glm::vec3 color = glm::vec3(1.f));
 
     // RAII
-    WrpGameObject(const WrpGameObject&) = delete;
-    WrpGameObject& operator=(const WrpGameObject&) = delete;
+    SceneObject(const SceneObject&) = delete;
+    SceneObject& operator=(const SceneObject&) = delete;
     
     // move constructor is default (используется для работы со ссылкой на объект через std::move)
     // например, чтобы добавить экземпляр объекта в коллекцию
-    WrpGameObject(WrpGameObject&&) = default;
-    WrpGameObject& operator=(WrpGameObject&&) = default;
+    SceneObject(SceneObject&&) = default;
+    SceneObject& operator=(SceneObject&&) = default;
 
     const id_t getId() { return id; }
     const std::string getName() { return name; }
@@ -69,12 +69,12 @@ public:
     TransformComponent transform{};
 
     // Опциональные компоненты объекта в виде указателей.
-    // Эти компоненты сигнализируют то, может ли данный объект исп. в конкретной системе движка.
+    // Эти компоненты сигнализируют то, может ли данный объект исп. в конкретной системе рендерера.
     std::shared_ptr<WrpModel> model{};
     std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
 private:
-    WrpGameObject(id_t objId, std::string name) : id{objId}, name{name} { this->name.append(std::to_string(this->id)); }
+    SceneObject(id_t objId, std::string name) : id{objId}, name{name} { this->name.append(std::to_string(this->id)); }
 
     id_t id;
     std::string name;

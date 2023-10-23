@@ -24,7 +24,7 @@ public:
     };
 
     // gameObject is controllable object 
-    void moveInPlaneXZ(GLFWwindow* window, float dt, WrpGameObject& gameObject);
+    void moveInPlaneXZ(GLFWwindow* window, float dt, SceneObject& gameObject);
 
     KeyMappings keys{};
     double halfWidth;

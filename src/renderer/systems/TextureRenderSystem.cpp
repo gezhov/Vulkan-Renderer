@@ -74,7 +74,7 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
     );
 }
 
-int TextureRenderSystem::fillModelsIds(WrpGameObject::Map& sceneObjects)
+int TextureRenderSystem::fillModelsIds(SceneObject::Map& sceneObjects)
 {
     modelObjectsIds.clear();
     for (auto& kv : sceneObjects)

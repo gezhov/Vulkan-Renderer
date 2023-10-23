@@ -96,7 +96,7 @@ void App::run()
     //camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
     //camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
-    auto cameraObject = WrpGameObject::createGameObject("Camera"); // объект без модели для хранения текущего состояния камеры
+    auto cameraObject = SceneObject::createSceneObject("Camera"); // объект без модели для хранения текущего состояния камеры
     cameraObject.transform.rotation = {.0f, .0f, .0f};
     sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
@@ -185,7 +185,7 @@ void App::loadSceneObjects()
     // Viking Room model
    /* std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromObjTexture(
         wrpDevice, ENGINE_DIR"models/viking_room.obj", MODELS_DIR"textures/viking_room.png");
-    auto vikingRoomObj = WrpGameObject::createGameObject();
+    auto vikingRoomObj = SceneObject::createSceneObject();
     vikingRoomObj.model = vikingRoom;
     vikingRoomObj.transform.translation = {.0f, .0f, 0.f};
     vikingRoomObj.transform.scale = glm::vec3(1.f, 1.f, 1.f);
@@ -194,7 +194,7 @@ void App::loadSceneObjects()
 
     // Sponza model
     std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
-    auto sponzaObj = WrpGameObject::createGameObject("Sponza");
+    auto sponzaObj = SceneObject::createSceneObject("Sponza");
     sponzaObj.model = sponza;
     sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
     sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);

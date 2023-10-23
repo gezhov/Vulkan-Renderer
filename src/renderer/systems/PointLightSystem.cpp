@@ -110,7 +110,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
     // Автоматическа сортировка PointLight'ов в мапе по их дистанции до камеры.
     // Это нужно для поочерёдного порядка их отрисовки, начиная с дальних билбордов,
     // а затем для их дальнейшего правильного смешивания цветов в ColorBlend этапе.
-    std::map<float, WrpGameObject::id_t> sorted;
+    std::map<float, SceneObject::id_t> sorted;
     for (auto& kv : frameInfo.sceneObjects)
     {
         auto& obj = kv.second;

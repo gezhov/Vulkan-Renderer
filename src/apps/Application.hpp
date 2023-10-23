@@ -36,7 +36,7 @@ private:
     WrpRenderer wrpRenderer{ wrpWindow, wrpDevice };
 
     std::unique_ptr<WrpDescriptorPool> globalPool{};
-    WrpGameObject::Map sceneObjects;
+    SceneObject::Map sceneObjects;
 };
 
 ENGINE_END

@@ -2,7 +2,7 @@
 
 ENGINE_BEGIN
 
-void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, WrpGameObject& gameObject)
+void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, SceneObject& sceneObject)
 {
     glm::vec3 rotate{0}; // хранит значение введённого поворота для объекта
     // Вектор поворота изменяет своё значение в зависимости от нажатой клавиши.
@@ -35,16 +35,16 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Wrp
         // На игровой объект применяется поворот с учётом настройки скорости и временного шага кадра.
         // Вектор поворота нормализуется, чтобы поворот по диагонали (зажаты две кнопки поворота)
         // не был быстрее поворота по одной из осей. Нормализация делает длину любого вектора равной единице.
-        gameObject.transform.rotation += lookSpeed * dt * glm::normalize(rotate);
+        sceneObject.transform.rotation += lookSpeed * dt * glm::normalize(rotate);
     }
 
     // Ограничение поворота тангажа в пределах примерно +/- 85 градусов
-    gameObject.transform.rotation.x = glm::clamp(gameObject.transform.rotation.x, -1.5f, 1.5f);
+    sceneObject.transform.rotation.x = glm::clamp(sceneObject.transform.rotation.x, -1.5f, 1.5f);
     // С помощью операции modulus значение поворота рыскания ограничивается значением 2pi, то есть полным оборотом в 360 градусов.
     // Это сделано для того, чтобы постоянное вращение в одном направлении не вызвало переполнение значения.
-    gameObject.transform.rotation.y = glm::mod(gameObject.transform.rotation.y, glm::two_pi<float>());
+    sceneObject.transform.rotation.y = glm::mod(sceneObject.transform.rotation.y, glm::two_pi<float>());
 
-    float yaw = gameObject.transform.rotation.y;
+    float yaw = sceneObject.transform.rotation.y;
     const glm::vec3 forwardDir{sin(yaw), 0.f, cos(yaw)}; // вектор направления "вперёд", в зависимости от того, куда "смотрит" объект
     const glm::vec3 rightDir{forwardDir.z, 0.f, -forwardDir.x}; // вектор "вправо" так же в зависимости от того, куда направлен объект
     const glm::vec3 upDir{0.f, -1.f, 0.f}; // направление вверх
@@ -61,7 +61,7 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Wrp
     {
         // На игровой объект применяется сдвиг с учётом настройки скорости и временного шага кадра.
         // Нормализация вектора смещения для случая движения сразу по нескольким осям.
-        gameObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
+        sceneObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
     }
 }
 

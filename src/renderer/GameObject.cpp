@@ -70,14 +70,14 @@ glm::mat3 TransformComponent::normalMatrix()
     };
 }
 
-WrpGameObject WrpGameObject::makePointLight(float intensity, float radius, glm::vec3 color)
+SceneObject SceneObject::makePointLight(float intensity, float radius, glm::vec3 color)
 {
-    WrpGameObject gameObj = WrpGameObject::createGameObject("PointLight");
-    gameObj.color = color;
-    gameObj.transform.scale.x = radius;  // радиус видимого билборда сохраняется в X-компоненту scale'а
-    gameObj.pointLight = std::make_unique<PointLightComponent>();
-    gameObj.pointLight->lightIntensity = intensity;
-    return gameObj;
+    SceneObject sceneObj = SceneObject::createSceneObject("PointLight");
+    sceneObj.color = color;
+    sceneObj.transform.scale.x = radius;  // радиус видимого билборда сохраняется в X-компоненту scale'а
+    sceneObj.pointLight = std::make_unique<PointLightComponent>();
+    sceneObj.pointLight->lightIntensity = intensity;
+    return sceneObj;
 }
 
 ENGINE_END

@@ -30,7 +30,7 @@ static void check_vk_result(VkResult err) {
 class WrpImgui {
 public:
     WrpImgui(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& sceneObjects);
+        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects);
     ~WrpImgui();
 
     WrpImgui() = default;
@@ -48,7 +48,7 @@ public:
     void showPointLightCreator();
     void showModelsFromDirectory();
     void enumerateObjectsInTheScene();
-    void inspectObject(WrpGameObject& object, bool isPointLight);
+    void inspectObject(SceneObject& object, bool isPointLight);
     void renderTransformGizmo(TransformComponent& transform);
 
     // data
@@ -66,7 +66,7 @@ private:
     WrpDevice& wrpDevice;
     WrpCamera& camera;
     KeyboardMovementController& kmc;
-    WrpGameObject::Map& sceneObjects;
+    SceneObject::Map& sceneObjects;
 
     VkDescriptorPool descriptorPool; // ImGui's descriptor pool
 };

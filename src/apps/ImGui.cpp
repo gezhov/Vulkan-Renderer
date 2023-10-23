@@ -22,7 +22,7 @@ ENGINE_BEGIN
 // using.
 WrpImgui::WrpImgui(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, WrpGameObject::Map& sceneObjects)
+    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects)
     : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects } {
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
@@ -182,7 +182,7 @@ void WrpImgui::showPointLightCreator()
 
     if (ImGui::Button("Add Point Light"))
     {
-        WrpGameObject pointLight = WrpGameObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
+        SceneObject pointLight = SceneObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
         sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
 
@@ -225,7 +225,7 @@ void WrpImgui::showModelsFromDirectory()
 
         if (ImGui::Button("Add to the scene")) {
             std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(item_current_idx));
-            auto newObj = WrpGameObject::createGameObject();
+            auto newObj = SceneObject::createSceneObject();
             newObj.model = model;
             sceneObjects.emplace(newObj.getId(), std::move(newObj));
         }
@@ -261,7 +261,7 @@ void WrpImgui::enumerateObjectsInTheScene()
     ImGui::End();
 }
 
-void WrpImgui::inspectObject(WrpGameObject& object, bool isPointLight)
+void WrpImgui::inspectObject(SceneObject& object, bool isPointLight)
 {
     if (ImGui::Begin("Inspector")) {
         /*if (Scene::selectedEntity != nullptr) {
