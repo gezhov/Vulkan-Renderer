@@ -3,7 +3,7 @@
 #include "../Pipeline.hpp"
 #include "../Device.hpp"
 #include "../Renderer.hpp"
-#include "../GameObject.hpp"
+#include "../SceneObject.hpp"
 #include "../Camera.hpp"
 #include "../FrameInfo.hpp"
 #include "../SwapChain.hpp"
@@ -24,7 +24,7 @@ public:
     TextureRenderSystem(const TextureRenderSystem&) = delete;
     TextureRenderSystem& operator=(const TextureRenderSystem&) = delete;
 
-    void renderGameObjects(FrameInfo& frameInfo);
+    void renderSceneObjects(FrameInfo& frameInfo);
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);

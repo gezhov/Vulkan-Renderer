@@ -2,7 +2,7 @@
 
 #include "../src/renderer/Device.hpp"
 #include "../src/renderer/Window.hpp"
-#include "../src/renderer/GameObject.hpp"
+#include "../src/renderer/SceneObject.hpp"
 #include "../src/renderer/Camera.hpp"
 #include "../src/renderer/KeyboardMovementController.hpp"
 

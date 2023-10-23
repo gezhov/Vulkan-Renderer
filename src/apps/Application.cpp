@@ -162,8 +162,8 @@ void App::run()
 
             // Order of objects render is matter, because we need to ensure that we rendered
             // fully opaque objects (like textured models) before rendering translucent objects (like point lights)
-            simpleRenderSystem.renderGameObjects(frameInfo);
-            textureRenderSystem.renderGameObjects(frameInfo);
+            simpleRenderSystem.renderSceneObjects(frameInfo);
+            textureRenderSystem.renderSceneObjects(frameInfo);
             pointLightSystem.render(frameInfo);
             // imgui ui elements
             wrpImgui.runExample();

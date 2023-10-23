@@ -2,7 +2,7 @@
 
 #include "../Pipeline.hpp"
 #include "../Device.hpp"
-#include "../GameObject.hpp"
+#include "../SceneObject.hpp"
 #include "../Camera.hpp"
 #include "../FrameInfo.hpp"
 

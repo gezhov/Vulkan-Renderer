@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameObject.hpp"
+#include "SceneObject.hpp"
 #include "Window.hpp"
 
 ENGINE_BEGIN
@@ -23,8 +23,8 @@ public:
         int mouseCamera = GLFW_MOUSE_BUTTON_RIGHT;
     };
 
-    // gameObject is controllable object 
-    void moveInPlaneXZ(GLFWwindow* window, float dt, SceneObject& gameObject);
+    // sceneObject is controllable object 
+    void moveInPlaneXZ(GLFWwindow* window, float dt, SceneObject& sceneObject);
 
     KeyMappings keys{};
     double halfWidth;

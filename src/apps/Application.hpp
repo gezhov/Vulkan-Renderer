@@ -2,7 +2,7 @@
 
 #include "../renderer/Window.hpp"
 #include "../renderer/Device.hpp"
-#include "../renderer/GameObject.hpp"
+#include "../renderer/SceneObject.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../renderer/Descriptors.hpp"
 

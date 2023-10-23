@@ -1,4 +1,4 @@
-#include "GameObject.hpp"
+#include "SceneObject.hpp"
 
 ENGINE_BEGIN
 

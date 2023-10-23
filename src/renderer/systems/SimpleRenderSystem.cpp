@@ -69,7 +69,7 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
         pipelineConfig);
 }
 
-void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
     wrpPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
 

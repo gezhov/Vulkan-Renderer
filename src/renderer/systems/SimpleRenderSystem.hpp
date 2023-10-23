@@ -2,7 +2,7 @@
 
 #include "../Pipeline.hpp"
 #include "../Device.hpp"
-#include "../GameObject.hpp"
+#include "../SceneObject.hpp"
 #include "../Camera.hpp"
 #include "../FrameInfo.hpp"
 
@@ -21,7 +21,7 @@ public:
     SimpleRenderSystem(const SimpleRenderSystem&) = delete;
     SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-    void renderGameObjects(FrameInfo& frameInfo);
+    void renderSceneObjects(FrameInfo& frameInfo);
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);

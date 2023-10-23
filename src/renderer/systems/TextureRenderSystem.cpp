@@ -194,7 +194,7 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     shaderc_compiler_release(compiler);
 }
 
-void TextureRenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
     // Заполняется вектор идентификаторов объектов с текстурами, и если их кол-во изменилось, то
     // наборы дескрипторов для этих объектов пересоздаются, а вместе с ними и пайплайн, т.к. изменяется его схема.
