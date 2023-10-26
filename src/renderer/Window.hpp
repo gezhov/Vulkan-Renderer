@@ -9,8 +9,6 @@
 // std
 #include <string>
 
-ENGINE_BEGIN
-
 class WrpWindow
 {
 public:
@@ -46,5 +44,3 @@ private:
     std::string windowName;
     GLFWwindow* window;
 };
-
-ENGINE_END

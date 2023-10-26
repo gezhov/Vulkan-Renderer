@@ -6,8 +6,6 @@
 // lib
 #include <vulkan/vulkan.h>
 
-ENGINE_BEGIN
-
 #define MAX_LIGHTS 10
 
 struct PointLight
@@ -58,5 +56,3 @@ struct TextureSystemPushConstantData
     int textureIndex;
     alignas(16) glm::vec3 diffuseColor{};
 };
-
-ENGINE_END

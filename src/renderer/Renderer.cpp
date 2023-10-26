@@ -8,8 +8,6 @@
 #include <chrono>
 #include <ctime>
 
-ENGINE_BEGIN
-
 WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : wrpWindow{ window }, wrpDevice{ device }
 {
     recreateSwapChain();
@@ -219,5 +217,3 @@ std::string WrpRenderer::getTimeStampStr()
     std::time_t timeStamp = std::chrono::system_clock::to_time_t(timePoint);
     return std::string(std::ctime(&timeStamp));
 }
-
-ENGINE_END

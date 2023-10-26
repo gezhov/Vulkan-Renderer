@@ -16,18 +16,16 @@
 namespace std
 {
     // хэш-функция для Vertex, чтобы хранить его в мапе
-    template<> struct hash<engine::WrpModel::Vertex>
+    template<> struct hash<WrpModel::Vertex>
     {
-        size_t operator()(engine::WrpModel::Vertex const& vertex) const
+        size_t operator()(WrpModel::Vertex const& vertex) const
         {
             size_t seed = 0;
-            engine::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+            hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
             return seed;
         }
     };
 }
-
-ENGINE_BEGIN
 
 WrpModel::WrpModel(WrpDevice& device, const WrpModel::Builder& builder)
     : wrpDevice{device}, subMeshesInfos{builder.subMeshesInfos}
@@ -360,5 +358,3 @@ std::vector<VkVertexInputAttributeDescription> WrpModel::Vertex::getAttributeDes
 
     return attributeDescriptions;
 }
-
-ENGINE_END

@@ -1,7 +1,5 @@
 #include "KeyboardMovementController.hpp"
 
-ENGINE_BEGIN
-
 void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, SceneObject& sceneObject)
 {
     glm::vec3 rotate{0}; // хранит значение введённого поворота для объекта
@@ -64,5 +62,3 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Sce
         sceneObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
     }
 }
-
-ENGINE_END

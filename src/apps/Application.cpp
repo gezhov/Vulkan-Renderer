@@ -26,8 +26,6 @@
 
 #define MAX_FRAME_TIME 0.5f
 
-ENGINE_BEGIN
-
 App::App()
 {
     // global descriptor pool designed for the entire app 
@@ -201,5 +199,3 @@ void App::loadSceneObjects()
     sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
     sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 }
-
-ENGINE_END

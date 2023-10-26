@@ -3,8 +3,6 @@
 #include "SceneObject.hpp"
 #include "Window.hpp"
 
-ENGINE_BEGIN
-
 class KeyboardMovementController
 {
 public:
@@ -34,5 +32,3 @@ public:
     float moveSpeed{5.f};  // для настройки скорости перемещения
     float lookSpeed{2.f};  // для настройки скорости поворота
 };
-
-ENGINE_END

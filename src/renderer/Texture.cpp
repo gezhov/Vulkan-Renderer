@@ -11,8 +11,6 @@
 #include <cmath>
 #include <stdexcept>
 
-ENGINE_BEGIN
-
 WrpTexture::WrpTexture(const std::string& path, WrpDevice& device) : wrpDevice{device}
 {
     createTexture(path);
@@ -332,5 +330,3 @@ VkDescriptorImageInfo WrpTexture::descriptorInfo()
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 }
-
-ENGINE_END

@@ -13,8 +13,6 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN
-
 class TextureRenderSystem
 {
 public:
@@ -50,5 +48,3 @@ private:
     std::unique_ptr<WrpDescriptorSetLayout> systemDescriptorSetLayout;
     std::vector<VkDescriptorSet> systemDescriptorSets{WrpSwapChain::MAX_FRAMES_IN_FLIGHT};
 };
-
-ENGINE_END

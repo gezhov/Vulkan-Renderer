@@ -2,8 +2,6 @@
 
 #include "Device.hpp"
 
-ENGINE_BEGIN
-
 class WrpBuffer
 {
 public:
@@ -56,5 +54,3 @@ private:
     VkBufferUsageFlags usageFlags;
     VkMemoryPropertyFlags memoryPropertyFlags;
 };
-
-ENGINE_END

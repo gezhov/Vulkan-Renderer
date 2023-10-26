@@ -15,8 +15,6 @@
 #include <fstream>
 #include <filesystem>
 
-ENGINE_BEGIN
-
 // ok this just initializes imgui using the provided integration files. So in our case we need to
 // initialize the vulkan and glfw imgui implementations, since that's what our engine is built
 // using.
@@ -363,5 +361,3 @@ void WrpImgui::renderTransformGizmo(TransformComponent& transform)
     // todo: поворот дёргается. нужен фикс
     //transform.rotation = glm::radians(transform.rotation);
 }
-
-ENGINE_END

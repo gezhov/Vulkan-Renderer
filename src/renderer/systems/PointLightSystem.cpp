@@ -12,8 +12,6 @@
 #include <array>
 #include <map>
 
-ENGINE_BEGIN
-
 struct PointLightPushConstants
 {
     glm::vec4 position{};
@@ -158,5 +156,3 @@ void PointLightSystem::render(FrameInfo& frameInfo)
         vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
     }
 }
-
-ENGINE_END

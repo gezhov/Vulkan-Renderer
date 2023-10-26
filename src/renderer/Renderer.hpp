@@ -12,8 +12,6 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN
-
 class WrpRenderer
 {
 public:
@@ -62,5 +60,3 @@ private:
     int currentFrameIndex{ 0 };           // [0, Max_Frames_In_Flight]
     bool isFrameStarted{ false };
 };
-
-ENGINE_END

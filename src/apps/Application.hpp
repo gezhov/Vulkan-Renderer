@@ -10,8 +10,6 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN // todo : Target applications shoudn't be in the engine namespace i guess
-
 class App
 {
 public:
@@ -38,5 +36,3 @@ private:
     std::unique_ptr<WrpDescriptorPool> globalPool{};
     SceneObject::Map sceneObjects;
 };
-
-ENGINE_END

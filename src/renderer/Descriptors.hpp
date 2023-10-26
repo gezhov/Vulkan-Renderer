@@ -7,8 +7,6 @@
 #include <unordered_map>
 #include <vector>
 
-ENGINE_BEGIN
-
 // Класс обёртка над VkDescriptorSetLayout для удобного управления им
 class WrpDescriptorSetLayout
 {
@@ -119,5 +117,3 @@ private:
     WrpDescriptorPool& pool;
     std::vector<VkWriteDescriptorSet> writes; // структуры-записи для обновления информации о ресурсах дескрипторов
 };
-
-ENGINE_END

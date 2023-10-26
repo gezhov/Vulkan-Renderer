@@ -16,8 +16,6 @@
 #include <stdexcept>
 #include <string>
 
-ENGINE_BEGIN
-
 static void check_vk_result(VkResult err) {
     if (err == 0) return;
     fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
@@ -70,5 +68,3 @@ private:
 
     VkDescriptorPool descriptorPool; // ImGui's descriptor pool
 };
-
-ENGINE_END

@@ -7,8 +7,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE   // GLM будет ожидать интервал нашего буфера глубины от 0 до 1 (например, для OpenGL используется интервал от -1 до 1)
 #include <glm/glm.hpp>
 
-ENGINE_BEGIN
-
 class WrpCamera
 {
 public:
@@ -38,5 +36,3 @@ private:
     glm::mat4 viewMatrix{1.f}; // матрица просмотра (камеры)
     glm::mat4 inverseViewMatrix{1.f}; // матрица для обратного преобразования позиций из camera space в world space
 };
-
-ENGINE_END

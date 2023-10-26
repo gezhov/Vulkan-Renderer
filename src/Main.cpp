@@ -9,7 +9,7 @@ int main()
 {
     try
     {
-        engine::App app{};
+        App app{};
 
         app.run();
     }

@@ -2,8 +2,6 @@
 
 #include "Device.hpp"
 
-ENGINE_BEGIN
-
 class WrpTexture
 {
 public:
@@ -40,5 +38,3 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
 };
-
-ENGINE_END

@@ -6,8 +6,6 @@
 #include <set>
 #include <unordered_set>
 
-ENGINE_BEGIN
-
 // Отладочная callback-функция, которая исп. отладочным мессенджером.
 // Её прототип соответствует требуемому типу PFN_vkDebugUtilsMessengerCallbackEXT.
 /* Чтобы увидеть вызов, который стриггерил callback, можно добавить точку останова на
@@ -694,5 +692,3 @@ void WrpDevice::createImageWithInfo(
         throw std::runtime_error("Failed to bind image memory!");
     }
 }
-
-ENGINE_END

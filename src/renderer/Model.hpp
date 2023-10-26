@@ -15,8 +15,6 @@
 #include <vector>
 #include <unordered_map>
 
-ENGINE_BEGIN
-
 class WrpModel
 {
 public:
@@ -97,5 +95,3 @@ private:
     std::vector<Builder::SubMesh> subMeshesInfos;
     std::vector<std::unique_ptr<WrpTexture>> textures;
 };
-
-ENGINE_END

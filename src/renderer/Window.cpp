@@ -3,8 +3,6 @@
 // std
 #include <stdexcept>
 
-ENGINE_BEGIN
-
 WrpWindow::WrpWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
 {
 	initWindow();
@@ -51,5 +49,3 @@ void WrpWindow::framebufferResizeCallback(GLFWwindow* window, int width, int hei
 	wrpWindow->width = width;
 	wrpWindow->height = height;
 }
-
-ENGINE_END

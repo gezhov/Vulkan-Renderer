@@ -10,8 +10,6 @@
 #include <set>
 #include <stdexcept>
 
-ENGINE_BEGIN
-
 WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window)
     : wrpDevice{device}, wrpWindow{window}
 {
@@ -568,5 +566,3 @@ VkFormat WrpSwapChain::findDepthFormat()
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
-
-ENGINE_END

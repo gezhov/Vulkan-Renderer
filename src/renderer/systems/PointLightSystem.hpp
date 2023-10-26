@@ -10,8 +10,6 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN
-
 class PointLightSystem
 {
 public:
@@ -35,5 +33,3 @@ private:
     std::unique_ptr<WrpPipeline> wrpPipeline;
     VkPipelineLayout pipelineLayout;
 };
-
-ENGINE_END

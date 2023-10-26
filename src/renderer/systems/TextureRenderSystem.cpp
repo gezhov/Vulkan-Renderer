@@ -15,8 +15,6 @@
 #include <iostream>
 #include <fstream>
 
-ENGINE_BEGIN
-
 TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer,
     VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo) : wrpDevice{device}, wrpRenderer{renderer}, globalSetLayout{globalSetLayout}
 {
@@ -247,5 +245,3 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         textureIndexOffset += obj.model->getTextures().size();
     }
 }
-
-ENGINE_END

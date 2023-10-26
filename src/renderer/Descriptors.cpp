@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <iostream>
 
-ENGINE_BEGIN
-
 // *************** Descriptor Set Layout Builder *********************
 
 WrpDescriptorSetLayout::Builder& WrpDescriptorSetLayout::Builder::addBinding(
@@ -226,5 +224,3 @@ void WrpDescriptorWriter::overwrite(VkDescriptorSet& set)
 	}
 	vkUpdateDescriptorSets(pool.wrpDevice.device(), writes.size(), writes.data(), 0, nullptr);
 }
-
-ENGINE_END

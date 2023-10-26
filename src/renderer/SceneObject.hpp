@@ -10,8 +10,6 @@
 #include <unordered_map>
 #include <string>
 
-ENGINE_BEGIN
-
 struct TransformComponent
 {
     glm::vec3 translation{};                  // отступ в позиции 
@@ -79,5 +77,3 @@ private:
     id_t id;
     std::string name;
 };
-
-ENGINE_END

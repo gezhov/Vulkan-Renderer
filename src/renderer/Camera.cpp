@@ -4,8 +4,6 @@
 #include <cassert>
 #include <limits>
 
-ENGINE_BEGIN
-
 // Матрица ортогонального проецирования перестраивается каждый кадр, чтобы размеры ортогонального объёма просмотра
 // всегда соответствовали текущему значению соотношения сторон окна.
 // Aspect ratio подставляется именно в -left и right, чтобы соответствовать выражению: right - left = aspect * (bottom - top)
@@ -125,5 +123,3 @@ void WrpCamera::setViewYXZ(glm::vec3 position, glm::vec3 rotation)
     inverseViewMatrix[3][1] = position.y;
     inverseViewMatrix[3][2] = position.z;
 }
-
-ENGINE_END

@@ -11,8 +11,6 @@
 #include <cassert>
 #include <array>
 
-ENGINE_BEGIN
-
 SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
     VkDescriptorSetLayout globalDescriptorSetLayout) : wrpDevice{ device }
 {
@@ -107,5 +105,3 @@ void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         }
     }
 }
-
-ENGINE_END

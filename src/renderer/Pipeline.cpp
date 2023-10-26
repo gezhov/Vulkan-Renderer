@@ -8,8 +8,6 @@
 #include <iostream>
 #include <cassert>
 
-ENGINE_BEGIN
-
 WrpPipeline::WrpPipeline(
     WrpDevice& device,
     const std::string& vertFilepath,
@@ -282,5 +280,3 @@ void WrpPipeline::enableAlphaBlending(PipelineConfigInfo & configInfo)
     configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // не исп.
     configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // не исп.
 }
-
-ENGINE_END

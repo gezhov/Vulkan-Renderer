@@ -10,8 +10,6 @@
 #include <string>
 #include <vector>
 
-ENGINE_BEGIN
-
 class WrpSwapChain
 {
 public:
@@ -94,5 +92,3 @@ private:
     std::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
 };
-
-ENGINE_END

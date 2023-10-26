@@ -6,8 +6,6 @@
 #include <string>
 #include <vector>
 
-ENGINE_BEGIN
-
 // Структура для хранения данных для конфигурирования пайплайна. Структура доступна
 // слою приложения, чтобы в его коде можно было конфигурировать графический пайплайн полностью.
 struct PipelineConfigInfo
@@ -72,5 +70,3 @@ private:
     WrpDevice& wrpDevice;				// девайс
     VkPipeline graphicsPipeline;		// Vulkan Graphics Pipeline (это указатель, сам тип определён через typedef)
 };
-
-ENGINE_END

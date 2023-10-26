@@ -1,7 +1,5 @@
 #include "SceneObject.hpp"
 
-ENGINE_BEGIN
-
 glm::mat4 TransformComponent::mat4()
 {
     // Ниже представлено оптимизированное создание матрицы афинных преобразований.
@@ -79,5 +77,3 @@ SceneObject SceneObject::makePointLight(float intensity, float radius, glm::vec3
     sceneObj.pointLight->lightIntensity = intensity;
     return sceneObj;
 }
-
-ENGINE_END

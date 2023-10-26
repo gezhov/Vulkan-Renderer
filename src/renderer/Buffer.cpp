@@ -11,8 +11,6 @@
 #include <cassert>
 #include <cstring>
 
-ENGINE_BEGIN
-
 /**
  * Returns the minimum instance size required to be compatible with devices minOffsetAlignment
  *
@@ -217,5 +215,3 @@ VkResult WrpBuffer::invalidateIndex(int index)
 {
     return invalidate(alignmentSize, index * alignmentSize);
 }
-
-ENGINE_END

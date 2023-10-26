@@ -10,8 +10,6 @@
 #include <memory>
 #include <vector>
 
-ENGINE_BEGIN
-
 class SimpleRenderSystem
 {
 public:
@@ -32,5 +30,3 @@ private:
     std::unique_ptr<WrpPipeline> wrpPipeline;
     VkPipelineLayout pipelineLayout;
 };
-
-ENGINE_END
