@@ -2,26 +2,26 @@
 
 #include "../renderer/Window.hpp"
 #include "../renderer/Device.hpp"
-#include "../renderer/SceneObject.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../renderer/Descriptors.hpp"
+#include "../renderer/SceneObject.hpp"
 
 // std
 #include <memory>
 #include <vector>
 
-class App
+class SceneEditorApp
 {
 public:
     static constexpr int WIDTH = 1600;
     static constexpr int HEIGHT = 1000;
 
-    App();
-    ~App();
+    SceneEditorApp();
+    ~SceneEditorApp();
 
     // RAII
-    App(const App&) = delete;
-    App& operator=(const App&) = delete;
+    SceneEditorApp(const SceneEditorApp&) = delete;
+    SceneEditorApp& operator=(const SceneEditorApp&) = delete;
 
     void run();
 

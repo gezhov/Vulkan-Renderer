@@ -1,4 +1,5 @@
-#include "ImGui.hpp"
+#include "SceneEditorGUI.hpp"
+
 #include "../src/renderer/Device.hpp"
 #include "../src/renderer/Window.hpp"
 
@@ -18,7 +19,7 @@
 // ok this just initializes imgui using the provided integration files. So in our case we need to
 // initialize the vulkan and glfw imgui implementations, since that's what our engine is built
 // using.
-WrpImgui::WrpImgui(
+SceneEditorGUI::SceneEditorGUI(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
     uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects)
     : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects } {
@@ -90,14 +91,14 @@ WrpImgui::WrpImgui(
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-WrpImgui::~WrpImgui() {
+SceneEditorGUI::~SceneEditorGUI() {
     vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void WrpImgui::newFrame() {
+void SceneEditorGUI::newFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -106,13 +107,13 @@ void WrpImgui::newFrame() {
 // this tells imgui that we're done setting up the current frame,
 // then gets the draw data from imgui and uses it to record to the provided
 // command buffer the necessary draw commands
-void WrpImgui::render(VkCommandBuffer commandBuffer) {
+void SceneEditorGUI::render(VkCommandBuffer commandBuffer) {
     ImGui::Render();
     ImDrawData* drawdata = ImGui::GetDrawData();
     ImGui_ImplVulkan_RenderDrawData(drawdata, commandBuffer);
 }
 
-void WrpImgui::runExample() {
+void SceneEditorGUI::runExample() {
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
     // You can browse its code to learn more about Dear ImGui!).
     if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
@@ -160,7 +161,7 @@ void WrpImgui::runExample() {
     }
 }
 
-void WrpImgui::showPointLightCreator()
+void SceneEditorGUI::showPointLightCreator()
 {
     if (!ImGui::Begin("Point Light Creator"))
     {
@@ -187,7 +188,7 @@ void WrpImgui::showPointLightCreator()
     ImGui::End();
 }
 
-void WrpImgui::showModelsFromDirectory()
+void SceneEditorGUI::showModelsFromDirectory()
 {
     std::string path(MODELS_DIR);
     std::string ext(".obj");
@@ -231,7 +232,7 @@ void WrpImgui::showModelsFromDirectory()
     ImGui::End();
 }
 
-void WrpImgui::enumerateObjectsInTheScene()
+void SceneEditorGUI::enumerateObjectsInTheScene()
 {
     if (ImGui::Begin("All Objects")) {
         static int item_current_idx = 0; // Здесь список подобен тому, что есть в Object Loader'е
@@ -259,7 +260,7 @@ void WrpImgui::enumerateObjectsInTheScene()
     ImGui::End();
 }
 
-void WrpImgui::inspectObject(SceneObject& object, bool isPointLight)
+void SceneEditorGUI::inspectObject(SceneObject& object, bool isPointLight)
 {
     if (ImGui::Begin("Inspector")) {
         /*if (Scene::selectedEntity != nullptr) {
@@ -291,7 +292,7 @@ void WrpImgui::inspectObject(SceneObject& object, bool isPointLight)
     ImGui::End();
 }
 
-void WrpImgui::renderTransformGizmo(TransformComponent& transform)
+void SceneEditorGUI::renderTransformGizmo(TransformComponent& transform)
 {
     ImGuizmo::BeginFrame();
     static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::ROTATE;

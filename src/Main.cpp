@@ -1,4 +1,4 @@
-#include "apps/Application.hpp"
+#include "apps/SceneEditorApp.hpp"
 
 // std library
 #include <cstdlib>
@@ -9,7 +9,7 @@ int main()
 {
     try
     {
-        App app{};
+        SceneEditorApp app{};
 
         app.run();
     }

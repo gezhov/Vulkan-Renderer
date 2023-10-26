@@ -5,7 +5,7 @@
 // std
 #include <functional>
 
-// из ответа на стэковерфлоу: https://stackoverflow.com/a/57595105
+// from the answer on StackOverflow: https://stackoverflow.com/a/57595105
 template <typename T, typename... Rest>
 void hashCombine(std::size_t& seed, const T& v, const Rest&... rest)
 {

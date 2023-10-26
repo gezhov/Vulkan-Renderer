@@ -1,12 +1,12 @@
-#include "application.hpp"
+#include "SceneEditorApp.hpp"
 
-#include "ImGui.hpp"
+#include "SceneEditorGUI.hpp"
 #include "../renderer/systems/SimpleRenderSystem.hpp"
 #include "../renderer/systems/TextureRenderSystem.hpp"
 #include "../renderer/systems/PointLightSystem.hpp"
-#include "../renderer/Camera.hpp"
-#include "../renderer/KeyboardMovementController.hpp"
 #include "../renderer/Buffer.hpp"
+#include "../renderer/Camera.hpp"
+#include "./common/KeyboardMovementController.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
@@ -26,7 +26,7 @@
 
 #define MAX_FRAME_TIME 0.5f
 
-App::App()
+SceneEditorApp::SceneEditorApp()
 {
     // global descriptor pool designed for the entire app 
     globalPool = WrpDescriptorPool::Builder(wrpDevice)
@@ -37,9 +37,9 @@ App::App()
     loadSceneObjects(); // load predefined objects
 }
 
-App::~App() {}
+SceneEditorApp::~SceneEditorApp() {}
 
-void App::run()
+void SceneEditorApp::run()
 {
     // Создание Uniform Buffer'ов. По одному на каждый одновременно рисующийся кадр.
     std::vector<std::unique_ptr<WrpBuffer>> uboBuffers(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -99,7 +99,7 @@ void App::run()
     sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
 
-    WrpImgui wrpImgui{
+    SceneEditorGUI appGUI{
         wrpWindow,
         wrpDevice,
         wrpRenderer.getSwapChainRenderPass(),
@@ -137,7 +137,7 @@ void App::run()
         // отрисовка кадра
         if (auto commandBuffer = wrpRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
         {
-            wrpImgui.newFrame(); // tell imgui that we're starting a new frame
+            appGUI.newFrame(); // tell imgui that we're starting a new frame
 
             int frameIndex = wrpRenderer.getFrameIndex();
             FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
@@ -149,14 +149,14 @@ void App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-            ubo.directionalLightIntensity = wrpImgui.directionalLightIntensity;
-            ubo.directionalLightPosition = wrpImgui.directionalLightPosition;
+            ubo.directionalLightIntensity = appGUI.directionalLightIntensity;
+            ubo.directionalLightPosition = appGUI.directionalLightPosition;
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
             // RENDER SECTION
-            wrpRenderer.beginSwapChainRenderPass(commandBuffer, wrpImgui.clear_color);
+            wrpRenderer.beginSwapChainRenderPass(commandBuffer, appGUI.clear_color);
 
             // Order of objects render is matter, because we need to ensure that we rendered
             // fully opaque objects (like textured models) before rendering translucent objects (like point lights)
@@ -164,11 +164,11 @@ void App::run()
             textureRenderSystem.renderSceneObjects(frameInfo);
             pointLightSystem.render(frameInfo);
             // imgui ui elements
-            wrpImgui.runExample();
-            wrpImgui.showPointLightCreator();
-            wrpImgui.showModelsFromDirectory();
-            wrpImgui.enumerateObjectsInTheScene();
-            wrpImgui.render(commandBuffer);
+            appGUI.runExample();
+            appGUI.showPointLightCreator();
+            appGUI.showModelsFromDirectory();
+            appGUI.enumerateObjectsInTheScene();
+            appGUI.render(commandBuffer);
 
             wrpRenderer.endSwapChainRenderPass(commandBuffer);
             wrpRenderer.endFrame();
@@ -178,7 +178,7 @@ void App::run()
     vkDeviceWaitIdle(wrpDevice.device());
 }
 
-void App::loadSceneObjects()
+void SceneEditorApp::loadSceneObjects()
 {
     // Viking Room model
    /* std::shared_ptr<WrpModel> vikingRoom = WrpModel::createModelFromObjTexture(

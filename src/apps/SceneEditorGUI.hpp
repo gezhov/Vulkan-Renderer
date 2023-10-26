@@ -4,7 +4,7 @@
 #include "../src/renderer/Window.hpp"
 #include "../src/renderer/SceneObject.hpp"
 #include "../src/renderer/Camera.hpp"
-#include "../src/renderer/KeyboardMovementController.hpp"
+#include "./common/KeyboardMovementController.hpp"
 
 // libs
 #include <imgui.h>
@@ -25,14 +25,14 @@ static void check_vk_result(VkResult err) {
 // This whole class is only necessary right now because it needs to manage the descriptor pool
 // because we haven't set one up anywhere else in the application, and we manage the
 // example state, otherwise all the functions could just be static helper functions if you prefered
-class WrpImgui {
+class SceneEditorGUI {
 public:
-    WrpImgui(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
+    SceneEditorGUI(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
         uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects);
-    ~WrpImgui();
+    ~SceneEditorGUI();
 
-    WrpImgui() = default;
-    WrpImgui& operator=(WrpImgui& imgui) { return imgui; }
+    SceneEditorGUI() = default;
+    SceneEditorGUI& operator=(SceneEditorGUI& imgui) { return imgui; }
 
     void newFrame();
 

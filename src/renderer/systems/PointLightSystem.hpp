@@ -3,8 +3,8 @@
 #include "../Pipeline.hpp"
 #include "../Device.hpp"
 #include "../SceneObject.hpp"
-#include "../Camera.hpp"
 #include "../FrameInfo.hpp"
+#include "../Camera.hpp"
 
 // std
 #include <memory>

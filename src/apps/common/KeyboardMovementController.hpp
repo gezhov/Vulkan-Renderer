@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SceneObject.hpp"
-#include "Window.hpp"
+#include "./../../renderer/SceneObject.hpp"
+#include "./../../renderer/Window.hpp"
 
 class KeyboardMovementController
 {
