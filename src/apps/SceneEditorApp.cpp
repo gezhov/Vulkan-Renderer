@@ -144,7 +144,6 @@ void SceneEditorApp::run()
                 globalDescriptorSets[frameIndex], sceneObjects};
 
             // UPDATE SECTION
-            // Обновление данных внутри uniform buffer объектов для текущего кадра
             GlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
@@ -156,18 +155,14 @@ void SceneEditorApp::run()
             uboBuffers[frameIndex]->flush();
 
             // RENDER SECTION
-            wrpRenderer.beginSwapChainRenderPass(commandBuffer, appGUI.clear_color);
+            wrpRenderer.beginSwapChainRenderPass(commandBuffer, appGUI.clearColor);
 
             // Order of objects render is matter, because we need to ensure that we rendered
             // fully opaque objects (like textured models) before rendering translucent objects (like point lights)
             simpleRenderSystem.renderSceneObjects(frameInfo);
             textureRenderSystem.renderSceneObjects(frameInfo);
             pointLightSystem.render(frameInfo);
-            // imgui ui elements
-            appGUI.runExample();
-            appGUI.showPointLightCreator();
-            appGUI.showModelsFromDirectory();
-            appGUI.enumerateObjectsInTheScene();
+            appGUI.setupGUI();
             appGUI.render(commandBuffer);
 
             wrpRenderer.endSwapChainRenderPass(commandBuffer);

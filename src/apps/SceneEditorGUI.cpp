@@ -5,6 +5,7 @@
 
 // libs
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
@@ -22,7 +23,8 @@
 SceneEditorGUI::SceneEditorGUI(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
     uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects)
-    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects } {
+    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects }
+{
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -84,21 +86,23 @@ SceneEditorGUI::SceneEditorGUI(
     ImGui_ImplVulkan_Init(&init_info, renderPass);
 
     // upload fonts, this is done by recording and submitting a one time use command buffer
-    // which can be done easily bye using some existing helper functions on the lve device object
+    // which can be done easily by using some existing helper functions on the device object
     auto commandBuffer = device.beginSingleTimeCommands();
     ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
     device.endSingleTimeCommands(commandBuffer);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-SceneEditorGUI::~SceneEditorGUI() {
+SceneEditorGUI::~SceneEditorGUI()
+{
     vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void SceneEditorGUI::newFrame() {
+void SceneEditorGUI::newFrame()
+{
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -107,25 +111,115 @@ void SceneEditorGUI::newFrame() {
 // this tells imgui that we're done setting up the current frame,
 // then gets the draw data from imgui and uses it to record to the provided
 // command buffer the necessary draw commands
-void SceneEditorGUI::render(VkCommandBuffer commandBuffer) {
+void SceneEditorGUI::render(VkCommandBuffer commandBuffer)
+{
     ImGui::Render();
     ImDrawData* drawdata = ImGui::GetDrawData();
     ImGui_ImplVulkan_RenderDrawData(drawdata, commandBuffer);
 }
 
-void SceneEditorGUI::runExample() {
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
-    // You can browse its code to learn more about Dear ImGui!).
-    if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
+void SceneEditorGUI::setupGUI()
+{
+    // Styling for all of windows
+    // Title color seems like a not exact. I don't know why for now.
+    // It can be tweaked just to imitate Vulkan original color and I need it to blink a bit when window active/non-acitve (also for tabs).
+    // Also background colors of the window is changing to other values when they are docked.
+    // Maybe it has something to do with the parent window from DockSpace, but I don't know exactly for now.
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_Tab, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TabHovered, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TabActive, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TabUnfocused, IM_COL32(172, 22, 44, 255));
+    ImGui::PushStyleColor(ImGuiCol_TabUnfocusedActive, IM_COL32(172, 22, 44, 255));
+#define STYLE_COLOR_NUM 8
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    // First created window ("DockSpaceRootWindow") used as container for the DockSpace
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+
+    // Styling for the root window with DockSpace 
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(0.0f, 0.0, 0.0f, 0.0f));
+    ImGuiWindowFlags windowFlags =
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
+        ImGuiWindowFlags_NoBackground;
+
+    ImGui::Begin("DockSpaceRootWindow", NULL, windowFlags);
+        ImGuiID dockspaceId = ImGui::GetID("RootDockSpace");
+        ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::End();
+    ImGui::PopStyleVar(3);   // Disabling root window stylings
+    ImGui::PopStyleColor();
+
+    setupAllWindows(); // all windows used for the DockSpace
+
+    ImGui::PopStyleColor(STYLE_COLOR_NUM); // disabling all remaining color stylings
+
+    // TODO: create proper layout
+    static float RATIO_1_5 = 0.8f;
+    static float RATIO_5_1 = 0.2f;
+    static float RATIO_1_4 = 0.25;
+
+    static ImVec2 savedWindowSize = {};
+    auto currentWindowSize = ImGui::GetWindowSize();
+
+    // Rebuild DockSpace when resize has happened. Inspired by: https://github.com/ocornut/imgui/issues/6095
+    if (currentWindowSize.x != savedWindowSize.x || currentWindowSize.y != savedWindowSize.y)
     {
-        ImGui::Begin("Scene Control Panel");  // Create a window called "Hello, world!" and append into it.
+        // I removed ImGuiDockNodeFlags_PassthruCentralNode from hear, because it somehow breaks Passthru for the RootDockSpace
+        ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::DockBuilderSetNodeSize(dockspaceId, currentWindowSize);
+
+        // splitting dockspace in down direction with given ratio
+        ImGuiID topAreaId = -1;
+        ImGuiID browserId = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, RATIO_1_4, nullptr, &topAreaId);
+        // splitting topArea in left direction
+        ImGuiID topRightAreaId = -1;
+        ImGuiID hierarchyId = ImGui::DockBuilderSplitNode(topAreaId, ImGuiDir_Left, RATIO_5_1, nullptr, &topRightAreaId);
+        // splitting topRightArea in left direction
+        ImGuiID inspectorId = -1;
+        ImGuiID viewId = ImGui::DockBuilderSplitNode(topRightAreaId, ImGuiDir_Left, RATIO_1_5, nullptr, &inspectorId);
+
+        ImGui::DockBuilderDockWindow("Scene Control Panel", hierarchyId);
+        ImGui::DockBuilderDockWindow("Inspector", inspectorId);
+        ImGui::DockBuilderDockWindow("All Objects", viewId);
+        ImGui::DockBuilderDockWindow("Point Light Creator", browserId);
+
+        ImGui::DockBuilderFinish(dockspaceId);
+
+        savedWindowSize = currentWindowSize;
+    }
+}
+
+void SceneEditorGUI::setupAllWindows()
+{
+
+    // Show the demo ImGui window (browse its code for better understanding of functionality)
+    if (show_demo_window) { ImGui::ShowDemoWindow(&show_demo_window); }
+
+    setupSceneControlPanel();
+    showPointLightCreator();
+    showModelsFromDirectory();
+    enumerateObjectsInTheScene();
+
+}
+
+void SceneEditorGUI::setupSceneControlPanel()
+{
+
+    ImGui::Begin("Scene Control Panel");
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
 
         ImGui::Text("Demo windows for further investigation:");  // Display some text (you can use a format strings too)
         ImGui::Checkbox("Demo Window", &show_demo_window);  // Edit bools storing our window open/close state
-        ImGui::Checkbox("Another Window", &show_another_window);
 
         ImGui::Text("Directional Light intensity");
         ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);
@@ -134,7 +228,7 @@ void SceneEditorGUI::runExample() {
         ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
 
         ImGui::Text("Clear Color");
-        ImGui::ColorEdit3("##Clear Color", (float*)&clear_color);
+        ImGui::ColorEdit3("##Clear Color", (float*)&clearColor);
 
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);
         ImGui::Text("Camera Move and Rotate Speed");
@@ -146,19 +240,7 @@ void SceneEditorGUI::runExample() {
             "Application average %.3f ms/frame (%.1f FPS)",
             1000.0f / ImGui::GetIO().Framerate,
             ImGui::GetIO().Framerate);
-        ImGui::End();
-    }
-
-    // 3. Show another simple window.
-    if (show_another_window) {
-        ImGui::Begin(
-            "Another Window",
-            &show_another_window);  // Pass a pointer to our bool variable (the window will have a
-                                    // closing button that will clear the bool when clicked)
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me")) show_another_window = false;
-        ImGui::End();
-    }
+    ImGui::End();
 }
 
 void SceneEditorGUI::showPointLightCreator()

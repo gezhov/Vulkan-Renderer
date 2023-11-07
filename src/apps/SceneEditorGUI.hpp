@@ -8,6 +8,7 @@
 
 // libs
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
@@ -22,9 +23,6 @@ static void check_vk_result(VkResult err) {
     if (err < 0) abort();
 }
 
-// This whole class is only necessary right now because it needs to manage the descriptor pool
-// because we haven't set one up anywhere else in the application, and we manage the
-// example state, otherwise all the functions could just be static helper functions if you prefered
 class SceneEditorGUI {
 public:
     SceneEditorGUI(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
@@ -35,23 +33,16 @@ public:
     SceneEditorGUI& operator=(SceneEditorGUI& imgui) { return imgui; }
 
     void newFrame();
-
+    void setupGUI();
     void render(VkCommandBuffer commandBuffer);
 
-    // Example state
-    bool show_demo_window = false;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    void runExample();
-    void showPointLightCreator();
-    void showModelsFromDirectory();
-    void enumerateObjectsInTheScene();
-    void inspectObject(SceneObject& object, bool isPointLight);
-    void renderTransformGizmo(TransformComponent& transform);
 
-    // data
+    bool show_demo_window = false;
+
+    // Fields controlled by window's changable values
     float directionalLightIntensity = 1.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
+    ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     std::vector<std::string> objectsPaths;
     std::string selectedObjPath = "";
@@ -61,6 +52,14 @@ public:
     glm::vec3 pointLightColor{};
 
 private:
+    void setupAllWindows();
+    void setupSceneControlPanel();
+    void showPointLightCreator();
+    void showModelsFromDirectory();
+    void enumerateObjectsInTheScene();
+    void inspectObject(SceneObject& object, bool isPointLight);
+    void renderTransformGizmo(TransformComponent& transform);
+
     WrpDevice& wrpDevice;
     WrpCamera& camera;
     KeyboardMovementController& kmc;
