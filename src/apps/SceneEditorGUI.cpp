@@ -120,11 +120,13 @@ void SceneEditorGUI::render(VkCommandBuffer commandBuffer)
 
 void SceneEditorGUI::setupGUI()
 {
-    // Styling for all of windows
+    // Styling for all of windows.
     // Title color seems like a not exact. I don't know why for now.
     // It can be tweaked just to imitate Vulkan original color and I need it to blink a bit when window active/non-acitve (also for tabs).
     // Also background colors of the window is changing to other values when they are docked.
-    // Maybe it has something to do with the parent window from DockSpace, but I don't know exactly for now.
+    // As far as I can tell these color changes somehow inherited by docked windows from the:
+    // 1. DockSpaceRootWindows (for this one NoBackground was setted to improve situation with bg a bit);
+    // 2. Central node from the DockBuilder that generated when the DockSpace window initialy added to the builder with AddNode().
     ImGui::PushStyleColor(ImGuiCol_TitleBg, IM_COL32(172, 22, 44, 255));
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, IM_COL32(172, 22, 44, 255));
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, IM_COL32(172, 22, 44, 255));
@@ -159,14 +161,13 @@ void SceneEditorGUI::setupGUI()
     ImGui::PopStyleVar(3);   // Disabling root window stylings
     ImGui::PopStyleColor();
 
-    setupAllWindows(); // all windows used for the DockSpace
+    // Styling for windows with tools
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(400, 250)); // appears doesn't work when windows is docked
 
+    setupAllWindows(); // all tools windows that integrated in the DockSpace
+
+    ImGui::PopStyleVar();
     ImGui::PopStyleColor(STYLE_COLOR_NUM); // disabling all remaining color stylings
-
-    // TODO: create proper layout
-    static float RATIO_1_5 = 0.8f;
-    static float RATIO_5_1 = 0.2f;
-    static float RATIO_1_4 = 0.25;
 
     static ImVec2 savedWindowSize = {};
     auto currentWindowSize = ImGui::GetWindowSize();
@@ -178,20 +179,22 @@ void SceneEditorGUI::setupGUI()
         ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::DockBuilderSetNodeSize(dockspaceId, currentWindowSize);
 
-        // splitting dockspace in down direction with given ratio
-        ImGuiID topAreaId = -1;
-        ImGuiID browserId = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, RATIO_1_4, nullptr, &topAreaId);
-        // splitting topArea in left direction
-        ImGuiID topRightAreaId = -1;
-        ImGuiID hierarchyId = ImGui::DockBuilderSplitNode(topAreaId, ImGuiDir_Left, RATIO_5_1, nullptr, &topRightAreaId);
-        // splitting topRightArea in left direction
-        ImGuiID inspectorId = -1;
-        ImGuiID viewId = ImGui::DockBuilderSplitNode(topRightAreaId, ImGuiDir_Left, RATIO_1_5, nullptr, &inspectorId);
+        ImGuiID rightAreaId = -1;
+        ImGuiID leftAreaId = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.25f, nullptr, &rightAreaId);
+        ImGuiID sceneControlPanelAreaId = -1;
+        ImGuiID downLeftAreaId = ImGui::DockBuilderSplitNode(leftAreaId, ImGuiDir_Down, 0.7f, nullptr, &sceneControlPanelAreaId);
+        ImGuiID inspectorAreaId = -1;
+        ImGuiID allObjectsAreaId = ImGui::DockBuilderSplitNode(downLeftAreaId, ImGuiDir_Down, 0.7f, nullptr, &inspectorAreaId);
+        ImGuiID centralAreaId = -1;
+        rightAreaId = ImGui::DockBuilderSplitNode(rightAreaId, ImGuiDir_Right, 0.3f, nullptr, &centralAreaId);
+        ImGuiID objectLoaderAreaId = -1;
+        ImGuiID pointLightCreatorAreaId = ImGui::DockBuilderSplitNode(rightAreaId, ImGuiDir_Down, 0.6f, nullptr, &objectLoaderAreaId);
 
-        ImGui::DockBuilderDockWindow("Scene Control Panel", hierarchyId);
-        ImGui::DockBuilderDockWindow("Inspector", inspectorId);
-        ImGui::DockBuilderDockWindow("All Objects", viewId);
-        ImGui::DockBuilderDockWindow("Point Light Creator", browserId);
+        ImGui::DockBuilderDockWindow("Scene Control Panel", sceneControlPanelAreaId);
+        ImGui::DockBuilderDockWindow("Inspector", inspectorAreaId);
+        ImGui::DockBuilderDockWindow("All Objects", allObjectsAreaId);
+        ImGui::DockBuilderDockWindow("Object Loader", objectLoaderAreaId);
+        ImGui::DockBuilderDockWindow("Point Light Creator", pointLightCreatorAreaId);
 
         ImGui::DockBuilderFinish(dockspaceId);
 
@@ -201,7 +204,6 @@ void SceneEditorGUI::setupGUI()
 
 void SceneEditorGUI::setupAllWindows()
 {
-
     // Show the demo ImGui window (browse its code for better understanding of functionality)
     if (show_demo_window) { ImGui::ShowDemoWindow(&show_demo_window); }
 
@@ -209,12 +211,10 @@ void SceneEditorGUI::setupAllWindows()
     showPointLightCreator();
     showModelsFromDirectory();
     enumerateObjectsInTheScene();
-
 }
 
 void SceneEditorGUI::setupSceneControlPanel()
 {
-
     ImGui::Begin("Scene Control Panel");
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
 
@@ -380,13 +380,13 @@ void SceneEditorGUI::renderTransformGizmo(TransformComponent& transform)
     static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::ROTATE;
     static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
 
-    if (ImGui::IsKeyPressed(GLFW_KEY_1)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_1)) {
         currentGizmoOperation = ImGuizmo::TRANSLATE;
     }
-    if (ImGui::IsKeyPressed(GLFW_KEY_2)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_2)) {
         currentGizmoOperation = ImGuizmo::ROTATE;
     }
-    if (ImGui::IsKeyPressed(GLFW_KEY_3)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_3)) {
         currentGizmoOperation = ImGuizmo::SCALE;
     }
     if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE)) {

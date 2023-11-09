@@ -79,7 +79,7 @@ endif()
 # Если путь до imgui не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT IMGUI_PATH)
     message(STATUS "IMGUI_PATH not specified in .env.cmake, using external/imgui")
-    set(IMGUI_PATH external/imgui)
+    set(IMGUI_PATH external/imgui-docking)
 endif()
 
 # Если путь до imguizmo не был указан явно в .env.cmake, то исп. его версию из external директории
