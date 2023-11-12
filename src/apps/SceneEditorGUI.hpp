@@ -36,10 +36,7 @@ public:
     void setupGUI();
     void render(VkCommandBuffer commandBuffer);
 
-
-    bool show_demo_window = false;
-
-    // Fields controlled by window's changable values
+    // Fields controlled by tools
     float directionalLightIntensity = 1.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -59,6 +56,8 @@ private:
     void enumerateObjectsInTheScene();
     void inspectObject(SceneObject& object, bool isPointLight);
     void renderTransformGizmo(TransformComponent& transform);
+
+    bool show_demo_window = false;
 
     WrpDevice& wrpDevice;
     WrpCamera& camera;
