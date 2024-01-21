@@ -37,27 +37,29 @@ public:
     void render(VkCommandBuffer commandBuffer);
 
     // Fields controlled by tools
-    float directionalLightIntensity = 1.0f;
+    float directionalLightIntensity = 0.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     std::vector<std::string> objectsPaths;
+    std::vector<std::string> objectsNames;
     std::string selectedObjPath = "";
 
     float pointLightIntensity = .0f;
     float pointLightRadius = .0f;
-    glm::vec3 pointLightColor{};
+    glm::vec3 pointLightColor{1, 1, 1};
 
 private:
     void setupAllWindows();
-    void setupSceneControlPanel();
+    void setupMainSettingsPanel();    // presented as "Vulkan Renderer" window
+    void setupObjectCreationPanel();
     void showPointLightCreator();
     void showModelsFromDirectory();
     void enumerateObjectsInTheScene();
     void inspectObject(SceneObject& object, bool isPointLight);
     void renderTransformGizmo(TransformComponent& transform);
 
-    bool show_demo_window = false;
+    bool showImGuiDemoWindow = false; // controllable by UI checkbox
 
     WrpDevice& wrpDevice;
     WrpCamera& camera;

@@ -119,55 +119,60 @@ void SceneEditorGUI::setupGUI()
 void SceneEditorGUI::setupAllWindows()
 {
     // Show the demo ImGui window (browse its code for better understanding of functionality)
-    if (show_demo_window) { ImGui::ShowDemoWindow(&show_demo_window); }
+    if (showImGuiDemoWindow) { ImGui::ShowDemoWindow(&showImGuiDemoWindow); }
 
-    setupSceneControlPanel();
+    setupMainSettingsPanel();
     enumerateObjectsInTheScene();
-    showPointLightCreator();
-    showModelsFromDirectory();
+    setupObjectCreationPanel();
 }
 
-void SceneEditorGUI::setupSceneControlPanel()
+void SceneEditorGUI::setupMainSettingsPanel()
 {
     ImGui::SetNextWindowPos(ImVec2{.0f, .0f}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2{390, 250}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2{390, 270}, ImGuiCond_FirstUseEver);
 
-    if (ImGui::Begin("Scene Control Panel")) {
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
+    // window itself
+    if (ImGui::Begin("Vulkan Renderer"))
+    {
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+            1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-        ImGui::Text("Demo window for further investigation:");
-        ImGui::Checkbox("Show Demo Window", &show_demo_window);
+        // 1 collapsing header
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.8f);
+        if (ImGui::CollapsingHeader("Scene Rendering Settings", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::Text("Directional Light Intensity");
+            ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);
 
-        ImGui::Text("Directional Light intensity");
-        ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);
+            ImGui::Text("Directional Light Position");
+            ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
 
-        ImGui::Text("Directional Light Position");
-        ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
-
-        ImGui::Text("Clear Color");
-        ImGui::ColorEdit3("##Clear Color", (float*)&clearColor);
-
+            ImGui::Text("Clear Color");
+            ImGui::ColorEdit3("##Clear Color", (float*)&clearColor);
+        }
         ImGui::PopItemWidth();
+
+        // 2 collapsing header
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);
-        ImGui::Text("Camera Move and Rotate Speed");
-        ImGui::DragFloat("##MoveSpeed", &kmc.moveSpeed, .01f);
-        ImGui::SameLine();
-        ImGui::DragFloat("##RotateSpeed", &kmc.lookSpeed, .01f);
-
-        ImGui::Text(
-            "Application average %.3f ms/frame (%.1f FPS)",
-            1000.0f / ImGui::GetIO().Framerate,
-            ImGui::GetIO().Framerate);
-
+        if (ImGui::CollapsingHeader("Camera Controller Settings"))
+        {
+            ImGui::Text("Camera Move and Rotate Speed");
+            ImGui::DragFloat("##MoveSpeed", &kmc.moveSpeed, .01f);
+            ImGui::SameLine();
+            ImGui::DragFloat("##RotateSpeed", &kmc.lookSpeed, .01f);
+        }
         ImGui::PopItemWidth();
+
+        ImGui::Separator();
+        ImGui::Checkbox("Show ImGui Demo Window", &showImGuiDemoWindow);
     }
     ImGui::End();
 }
 
 void SceneEditorGUI::enumerateObjectsInTheScene()
 {
-    ImGui::SetNextWindowPos(ImVec2{0, 255}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2{250, 230}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2{0, 275}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2{200, 230}, ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("All Objects")) {
         static int pickedItemId = 0; // first item is the default one to pick
@@ -198,7 +203,7 @@ void SceneEditorGUI::enumerateObjectsInTheScene()
 
 void SceneEditorGUI::inspectObject(SceneObject& object, bool isPointLight)
 {
-    ImGui::SetNextWindowPos(ImVec2{0, 490}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2{0, 510}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2{350, 290}, ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("Inspector")) {
@@ -212,11 +217,36 @@ void SceneEditorGUI::inspectObject(SceneObject& object, bool isPointLight)
 
         if (isPointLight) {
             if (ImGui::CollapsingHeader("PointLight Component", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 500.0f);
-                ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 10.0f);
+                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 250.0f);
+                ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 5.0f);
                 ImGui::ColorEdit3("Light color", (float*)&object.color);
                 ImGui::Checkbox("Demo Carousel Enabled", &object.pointLight->carouselEnabled);
             }
+        }
+    }
+    ImGui::End();
+}
+
+void SceneEditorGUI::setupObjectCreationPanel()
+{
+    ImGui::SetNextWindowPos(ImVec2{395, 0}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2{300, 330}, ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Object Creator"))
+    {
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            if (ImGui::BeginTabItem("Model Loader"))
+            {
+                showModelsFromDirectory();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Point Light Creator"))
+            {
+                showPointLightCreator();
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
         }
     }
     ImGui::End();
@@ -227,75 +257,66 @@ void SceneEditorGUI::showModelsFromDirectory()
     std::string path(MODELS_DIR);
     std::string ext(".obj");
     objectsPaths.clear();
+    objectsNames.clear();
     for (auto& p : std::filesystem::recursive_directory_iterator(path))
     {
         if (p.path().extension() == ext)
         {
+            // Names are shown in the list, paths are used for models loading
             objectsPaths.push_back(p.path().string());
+            size_t pathStringSize = p.path().string().size();
+            objectsNames.push_back(p.path().string().substr(16, pathStringSize));
         }
     }
 
-    ImGui::SetNextWindowPos(ImVec2{395, 0}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2{300, 300}, ImGuiCond_FirstUseEver);
-
-    if (ImGui::Begin("Object Loader")) {
-        static int pickedItemId = 0; // В статической переменной функции хранится номер выбранного из списка айтема
-        ImGui::Text("Available models to add to the scene:");
-        ImGui::Text(selectedObjPath.c_str());
-        if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing())))
+    static int pickedItemId = 0; // picked item number as a static var 
+    ImGui::Text("Available models to add to the scene:");
+    ImGui::Text(selectedObjPath.c_str());
+    if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing())))
+    {
+        for (int n = 0; n < objectsNames.size(); n++)
         {
-            for (int n = 0; n < objectsPaths.size(); n++)
-            {
-                const bool isSelected = (pickedItemId == n);
-                // Список заполняется элементами на основе переданных строк
-                if (ImGui::Selectable(objectsPaths[n].c_str(), isSelected)) {
-                    pickedItemId = n;
-                    selectedObjPath = objectsPaths.at(n);
-                }
-
-                // Установить фокус на выбранный айтем
-                if (isSelected) ImGui::SetItemDefaultFocus();
+            const bool isSelected = (pickedItemId == n);
+            // List are filling up with passed labels 
+            if (ImGui::Selectable(objectsNames[n].c_str(), isSelected)) {
+                pickedItemId = n;
+                selectedObjPath = objectsPaths.at(n);
             }
-            ImGui::EndListBox();
-        }
 
-        if (ImGui::Button("Add to the scene")) {
-            std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(pickedItemId));
-            auto newObj = SceneObject::createSceneObject();
-            newObj.model = model;
-            sceneObjects.emplace(newObj.getId(), std::move(newObj));
+            // Focus on chosen item
+            if (isSelected) ImGui::SetItemDefaultFocus();
         }
+        ImGui::EndListBox();
     }
-    ImGui::End();
+
+    if (ImGui::Button("Add to the scene")) {
+        std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(pickedItemId));
+        auto newObj = SceneObject::createSceneObject();
+        newObj.model = model;
+        sceneObjects.emplace(newObj.getId(), std::move(newObj));
+    }
 }
 
 void SceneEditorGUI::showPointLightCreator()
 {
-    ImGui::SetNextWindowPos(ImVec2{395, 305}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2{300, 180}, ImGuiCond_FirstUseEver);
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
 
-    if (ImGui::Begin("Point Light Creator"))
+    ImGui::Text("Intensity");
+    ImGui::SliderFloat("##Point Light intensity", &pointLightIntensity, .0f, 100.0f);
+
+    ImGui::Text("Radius");
+    ImGui::SliderFloat("##Point Light radius", &pointLightRadius, 0.01f, 4.0f);
+
+    ImGui::Text("Point Light Color");
+    ImGui::ColorEdit3("##Point Light color", (float*)&pointLightColor);
+
+    if (ImGui::Button("Add Point Light"))
     {
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.9f);
-
-        ImGui::Text("Intensity");
-        ImGui::SliderFloat("##Point Light intensity", &pointLightIntensity, .0f, 500.0f);
-
-        ImGui::Text("Radius");
-        ImGui::SliderFloat("##Point Light radius", &pointLightRadius, 0.01f, 10.0f);
-
-        ImGui::Text("Point Light Color");
-        ImGui::ColorEdit3("##Point Light color", (float*)&pointLightColor);
-
-        if (ImGui::Button("Add Point Light"))
-        {
-            SceneObject pointLight = SceneObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
-            sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
-        }
-
-        ImGui::PopItemWidth();
+        SceneObject pointLight = SceneObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
+        sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
-    ImGui::End();
+
+    ImGui::PopItemWidth();
 }
 
 void SceneEditorGUI::renderTransformGizmo(TransformComponent& transform)

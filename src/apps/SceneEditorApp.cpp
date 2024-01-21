@@ -186,11 +186,11 @@ void SceneEditorApp::loadSceneObjects()
     sceneObjects.emplace(vikingRoomObj.getId(), std::move(vikingRoomObj));*/
 
     // Sponza model
-    std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
-    auto sponzaObj = SceneObject::createSceneObject("Sponza");
-    sponzaObj.model = sponza;
-    sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
-    sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
-    sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-    sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
+    //std::shared_ptr<WrpModel> sponza = WrpModel::createModelFromObjMtl(wrpDevice, "../../../models/sponza.obj");
+    //auto sponzaObj = SceneObject::createSceneObject("Sponza");
+    //sponzaObj.model = sponza;
+    //sponzaObj.transform.translation = {-3.f, 1.0f, -2.f};
+    //sponzaObj.transform.scale = glm::vec3(0.01f, 0.01f, 0.01f);
+    //sponzaObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
+    //sceneObjects.emplace(sponzaObj.getId(), std::move(sponzaObj));
 }
