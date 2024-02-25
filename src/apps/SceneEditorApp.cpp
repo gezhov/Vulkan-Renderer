@@ -9,8 +9,8 @@
 #include "./common/KeyboardMovementController.hpp"
 
 // libs
-#define GLM_FORCE_RADIANS			  // Функции GLM будут работать с радианами, а не градусами
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE   // GLM будет ожидать интервал нашего буфера глубины от 0 до 1 (для OpenGL используется интервал от -1 до 1)
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <imgui.h>
@@ -41,27 +41,27 @@ SceneEditorApp::~SceneEditorApp() {}
 
 void SceneEditorApp::run()
 {
-    // Создание Uniform Buffer'ов. По одному на каждый одновременно рисующийся кадр.
+    // Uniform Buffers creation
     std::vector<std::unique_ptr<WrpBuffer>> uboBuffers(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); ++i)
     {
-        uboBuffers[i] = std::make_unique<WrpBuffer> (
+        uboBuffers[i] = std::make_unique<WrpBuffer>(
             wrpDevice,
             sizeof(GlobalUbo),
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            // Здесь не исп. HOST_COHERENT свойство, чтобы продемонстрировать flush сброс памяти в девайс
+            // PROPERTY_HOST_COHERENT is not used to demonstrate explicit memory flush to device
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
         );
         uboBuffers[i]->map();
     }
 
-    // Создаётся глобальная схема набора дескрипторов (действует на всё приложение)
+    // Global Descriptor Set Layout for the entire app
     auto globalDescriptorSetLayout = WrpDescriptorSetLayout::Builder(wrpDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, 1)
         .build();
 
-    // Выделение наборов дескрипторов из пула (по одному сету на кадр)
+    // Getting Descriptor Sets from pool
     std::vector<VkDescriptorSet> globalDescriptorSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); ++i)
     {
@@ -94,7 +94,8 @@ void SceneEditorApp::run()
     //camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
     //camera.setViewTarget(glm::vec3{-3.f, -3.f, 23.f}, {.0f, .0f, 1.5f});
 
-    auto cameraObject = SceneObject::createSceneObject("Camera"); // объект без модели для хранения текущего состояния камеры
+    // SceneObject for the editor camera 
+    auto cameraObject = SceneObject::createSceneObject("Camera");
     cameraObject.transform.rotation = {.0f, .0f, .0f};
     sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
@@ -114,33 +115,31 @@ void SceneEditorApp::run()
     // MAIN LOOP
     while (!wrpWindow.shouldClose())
     {
-        glfwPollEvents(); // Обработка событий из очереди (нажатие клавиш, взаимодействие с окном и т.п.)
+        glfwPollEvents(); // Process glfw events from queue
 
-        // расчёт временного шага с момента последней итерации
+        // calculating frameTime and currentTime 
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        // Ограничение на макс. время кадра. Было добавлено для случая, когда камера сдвигалась слишком далеко,
-        // потому что была зажата клавиша, а экран находился в режиме ресайза (время кадра становилось большим).
+        // Max frame time bound. For example, frameTime can become too long when window are in resizing mode.
         frameTime = glm::min(frameTime, MAX_FRAME_TIME);
 
-        // двигаем/вращаем объект камеры в зависимости от ввода с клавиатуры
+        // Move/rotate camera corresponding to the input
         cameraController.moveInPlaneXZ(wrpWindow.getGLFWwindow(), frameTime, cameraObject);
         camera.setViewYXZ(cameraObject.transform.translation, cameraObject.transform.rotation);
 
         float aspect = wrpRenderer.getAspectRatio();
         //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
-        // отрисовка кадра
-        if (auto commandBuffer = wrpRenderer.beginFrame()) // beginFrame() вернёт nullptr, если требуется пересоздание SwapChain'а
+        // frame rendering
+        if (auto commandBuffer = wrpRenderer.beginFrame()) // beginFrame() will return nullptr if SwapChain recreation is needed
         {
             appGUI.newFrame(); // tell imgui that we're starting a new frame
 
             int frameIndex = wrpRenderer.getFrameIndex();
-            FrameInfo frameInfo {frameIndex, frameTime, commandBuffer, camera,
+            FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera,
                 globalDescriptorSets[frameIndex], sceneObjects};
 
             // UPDATE SECTION
