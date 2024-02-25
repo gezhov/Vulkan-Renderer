@@ -5,13 +5,23 @@
 #include <iostream>
 #include <stdexcept>
 
-int main()
+int main(int argc, char* argv[])
 {
     try
     {
-        SceneEditorApp app{};
+        if (argc > 1) {
+            std::string argument_str(argv[1]);
+            int argument_number = atoi(argv[2]);
 
-        app.run();
+            if (argument_str == "--scene") {
+                SceneEditorApp app{argument_number};
+                app.run();
+            }
+        }
+        else {
+            SceneEditorApp app{};
+            app.run();
+        }
     }
     catch (const std::exception& ex)
     {

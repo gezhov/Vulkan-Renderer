@@ -16,7 +16,7 @@ public:
     static constexpr int WIDTH = 1600;
     static constexpr int HEIGHT = 1000;
 
-    SceneEditorApp();
+    SceneEditorApp(int preloadScene = 0);
     ~SceneEditorApp();
 
     // RAII
@@ -26,7 +26,8 @@ public:
     void run();
 
 private:
-    void loadSceneObjects();
+    void loadScene1();
+    void loadScene2();
 
     // Fields are initializing from top to bottom and destroying from bottom to top
     WrpWindow wrpWindow{ WIDTH, HEIGHT, "Vulkan Renderer" };
