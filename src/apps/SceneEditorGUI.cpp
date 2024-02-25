@@ -42,7 +42,7 @@ SceneEditorGUI::SceneEditorGUI(
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
     if (vkCreateDescriptorPool(device.device(), &pool_info, nullptr, &descriptorPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to set up descriptor pool for imgui");
+        throw std::runtime_error("Failed to set up descriptor pool for imgui.");
     }
 
     // Setup Dear ImGui context
@@ -68,21 +68,16 @@ SceneEditorGUI::SceneEditorGUI(
     init_info.Device = device.device();
     init_info.QueueFamily = device.getGraphicsQueueFamily();
     init_info.Queue = device.graphicsQueue();
-    init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = descriptorPool;
-    init_info.Allocator = VK_NULL_HANDLE;
+    init_info.RenderPass = renderPass;
     init_info.MinImageCount = 2;
     init_info.ImageCount = imageCount;
     init_info.MSAASamples = wrpDevice.getMaxUsableMSAASampleCount();
+    init_info.PipelineCache = VK_NULL_HANDLE;
+    init_info.Allocator = VK_NULL_HANDLE;
     init_info.CheckVkResultFn = check_vk_result;
-    ImGui_ImplVulkan_Init(&init_info, renderPass);
-
-    // Upload fonts. This is done by recording and submitting a one time use command buffer
-    // which can be done easily by using some existing helper functions on the device object.
-    auto commandBuffer = device.beginSingleTimeCommands();
-    ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-    device.endSingleTimeCommands(commandBuffer);
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
+    ImGui_ImplVulkan_Init(&init_info);
+    ImGui_ImplVulkan_CreateFontsTexture();
 }
 
 SceneEditorGUI::~SceneEditorGUI()
