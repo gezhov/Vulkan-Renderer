@@ -16,7 +16,7 @@ if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
     set(CMAKE_CXX_COMPILER  ${MINGW_PATH}/bin/g++.exe)
 endif()
 
-project(${NAME} VERSION 0.23.0) # Создание проекта с заданным ранее именем
+project(${NAME} VERSION 0.0.1) # Создание проекта с заданным ранее именем
 
 # 1. Set VULKAN_SDK_PATH in .env.cmake to target specific vulkan version
 if (DEFINED VULKAN_SDK_PATH)
@@ -154,8 +154,8 @@ endif()
 
 ############## Build SHADERS #######################
 
-# Find all vertex and fragment sources within shaders directory
-# taken from VBlancos vulkan tutorial
+# Find all vertex and fragment sources within shaders directory.
+# Taken from VBlancos vulkan tutorial:
 # https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters/CMakeLists.txt
 find_program(GLSL_VALIDATOR glslangValidator HINTS 
 	${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} 
