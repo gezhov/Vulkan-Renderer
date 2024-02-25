@@ -1,6 +1,6 @@
 #include "apps/SceneEditorApp.hpp"
 
-// std library
+// std
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
