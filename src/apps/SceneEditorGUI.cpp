@@ -82,10 +82,10 @@ SceneEditorGUI::SceneEditorGUI(
 
 SceneEditorGUI::~SceneEditorGUI()
 {
-    vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    vkDestroyDescriptorPool(wrpDevice.device(), descriptorPool, nullptr);
 }
 
 void SceneEditorGUI::newFrame()
