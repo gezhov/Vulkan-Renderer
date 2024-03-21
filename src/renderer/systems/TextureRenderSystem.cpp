@@ -64,8 +64,8 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
 
     wrpPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
-        "src/renderer/shaders/TextureShader.vert.spv",
-        "src/renderer/shaders/TextureShader.frag.spv",
+        "src/renderer/shaders/Texture.vert.spv",
+        "src/renderer/shaders/Texture.frag.spv",
         pipelineConfig,
         nullptr,
         fragShaderModule
@@ -140,7 +140,7 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     std::string macros = "#define TEXTURES_COUNT ";
     static bool isTexturesDefined = false;
 
-    shaderFile.open(ENGINE_DIR"src/renderer/shaders/TextureShader.frag", std::ios::in | std::ios::app);
+    shaderFile.open(ENGINE_DIR"src/renderer/shaders/Texture.frag", std::ios::in | std::ios::app);
     if (shaderFile.is_open())
     {
         while (std::getline(shaderFile, line))
@@ -169,17 +169,17 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     shaderFile.close();
 
     // generated shader are rewriting every time with new textures count
-    shaderFile.open(ENGINE_DIR"src/renderer/shaders/texture_shader_generated.frag", std::ios::out | std::ios::trunc);
+    shaderFile.open(ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", std::ios::out | std::ios::trunc);
     if (shaderFile.is_open())
     {
         shaderFile << shaderContent;
     }
     shaderFile.close();
 
-    std::vector<char> fragShader = WrpPipeline::readFile("src/renderer/shaders/texture_shader_generated.frag");
+    std::vector<char> fragShader = WrpPipeline::readFile("src/renderer/shaders/TextureGenerated.frag");
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
     shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, fragShader.data(), fragShader.size(),
-        shaderc_glsl_fragment_shader, ENGINE_DIR"src/renderer/shaders/texture_shader_generated.frag", "main", nullptr);
+        shaderc_glsl_fragment_shader, ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", "main", nullptr);
 
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

@@ -24,8 +24,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 invView;
     vec4 ambientLightColor;
-	float directionalLightIntensity;
-	vec4 directionalLightPosition;
+    float directionalLightIntensity;
+    vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
 } globalUbo;
@@ -46,9 +46,8 @@ void main() {
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // направление до наблюдателя
 
     // Вклад направленного источника света в рассеянное освещение
-    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) + globalUbo.directionalLightIntensity;
+    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.directionalLightIntensity;
 
-    // В цикле считаем вклад каждого Point Light'а на сцене в результирующее рассеянное освещение фрагмента
     for (int i = 0; i < globalUbo.numLights; ++i) {
         PointLight light = globalUbo.pointLights[i]; // берём текущий точечный источник света
 
