@@ -37,7 +37,7 @@ public:
     void render(VkCommandBuffer commandBuffer);
 
     // Fields controlled by tools
-    float directionalLightIntensity = 0.0f;
+    float directionalLightIntensity = 1.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 

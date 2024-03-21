@@ -108,7 +108,7 @@ void SceneEditorGUI::render(VkCommandBuffer commandBuffer)
 void SceneEditorGUI::setupGUI()
 {
     // this function may include DockSpace layout creation in the future
-    setupAllWindows(); // all tools windows that integrated in the DockSpace
+    setupAllWindows();
 }
 
 void SceneEditorGUI::setupAllWindows()
@@ -133,11 +133,11 @@ void SceneEditorGUI::setupMainSettingsPanel()
             1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
         // 1 collapsing header
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.8f);
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.95f);
         if (ImGui::CollapsingHeader("Scene Rendering Settings", ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::Text("Directional Light Intensity");
-            ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 1.0f);
+            ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 10.0f);
 
             ImGui::Text("Directional Light Position");
             ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
