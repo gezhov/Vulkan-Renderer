@@ -45,6 +45,7 @@ std::unique_ptr<WrpModel> WrpModel::createModelFromObjMtl(WrpDevice& device, con
     return std::make_unique<WrpModel>(device, builder);
 }
 
+// Creating model from obj with a single texture file.
 std::unique_ptr<WrpModel>
 WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelPath, const std::string& texturePath)
 {
@@ -52,6 +53,9 @@ WrpModel::createModelFromObjTexture(WrpDevice& device, const std::string& modelP
     builder.loadModel(modelPath);
     std::cout << "Vertex count: " << builder.vertices.size() << "\n";
     builder.texturePaths.push_back(texturePath);
+    for (Builder::SubMesh& subMesh : builder.subMeshesInfos) {
+        subMesh.diffuseTextureIndex = 0;
+    }
     
     return std::make_unique<WrpModel>(device, builder);
 }
