@@ -3,9 +3,9 @@ message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
 cmake_minimum_required(VERSION 3.11.0)
 
-set(NAME VulkanRenderer) # Название выходного exe файла
+set(NAME VulkanRenderer) # program name 
 
-# Пути до MinGW компиляторов, если генератор будет использовать эту среду
+# MinGW paths, if its environment is in using.
 message(STATUS "using ${CMAKE_GENERATOR}")
 if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
     if (NOT MINGW_PATH) 
@@ -16,20 +16,22 @@ if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
     set(CMAKE_CXX_COMPILER  ${MINGW_PATH}/bin/g++.exe)
 endif()
 
-project(${NAME} VERSION 0.0.1) # Создание проекта с заданным ранее именем
+project(${NAME} VERSION 0.0.1)
 
-# 1. Set VULKAN_SDK_PATH in .env.cmake to target specific vulkan version
+# Vulkan. Set VULKAN_SDK_PATH in .env.cmake to target specific Vulkan version.
 if (DEFINED VULKAN_SDK_PATH)
-    set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include") # 1.1 Make sure this include path is correct
-    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib") # 1.2 Make sure lib path is correct
+    set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
+    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib")
     set(Vulkan_DLLS "${VULKAN_SDK_PATH}/Bin")
     set(Vulkan_FOUND "True")
-# Если Vulkan SDK не будет указан в .env.cmake файле вручную, то CMake предпримет попытку
-# самостоятельно обнаружить место установки Vulkan SDK с помощью функции find_package().
-# Эта функция надёжней для Linux и MacOS, поэтому для Windows лучше указывать путь вручную в .env.cmake
 else()
-    find_package(Vulkan REQUIRED) # throws error if could not find Vulkan
+    message("VULKAN_SDK_PATH is not specified in .env.cmake, trying to find it automatically")
+    find_package(Vulkan REQUIRED)
     message(STATUS "Found Vulkan: $ENV{VULKAN_SDK}")
+    set(VULKAN_SDK_PATH $ENV{VULKAN_SDK})
+    set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
+    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib")
+    set(Vulkan_DLLS "${VULKAN_SDK_PATH}/Bin")
 endif()
 if (NOT Vulkan_FOUND)
     message(FATAL_ERROR "Could not find Vulkan library!")
@@ -38,55 +40,55 @@ else()
     message(STATUS "Using vulkan dlls at: ${Vulkan_DLLS}")
 endif()
 
-# 2. Set GLFW_PATH in .env.cmake to target specific glfw
-# Поиск GLFW библиотеки следует по примерно такому же паттерну, что и поиск Vulkan SDK
+# GLFW. Set GLFW_PATH in .env.cmake to target specific glfw.
 if (DEFINED GLFW_PATH)
     message(STATUS "Using GLFW path specified in .env")
     set(GLFW_INCLUDE_DIRS "${GLFW_PATH}/include")
-    # Поиск MSVC или MinGW версии либы
     if (MSVC)
         message(STATUS "USING MSVC")
-        set(GLFW_LIB "${GLFW_PATH}/lib-vc2022") # 2.1 Update lib to use same version as your visual studio
+        set(GLFW_LIB "${GLFW_PATH}/lib-vc2022")
     elseif (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
         message(STATUS "USING MINGW")
-        set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64") # 2.1 make sure matches glfw mingw subdirectory
+        set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64")
     endif()
 else()
-    find_package(glfw3 3.3 REQUIRED)
-    set(GLFW_LIB glfw)
-    message(STATUS "Found GLFW")
-endif()
-if (NOT GLFW_LIB)
-    message(FATAL_ERROR "Could not find glfw library!")
-else()
+    message("GLFW_PATH is not specified in .env.cmake, using external/glfw")
+    set(GLFW_PATH external/glfw)
+    set(GLFW_INCLUDE_DIRS "${GLFW_PATH}/include")
+    if (MSVC)
+        set(GLFW_LIB "${GLFW_PATH}/lib-vc2022")
+    elseif (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
+        set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64")
+    endif()
     message(STATUS "Using glfw lib at: ${GLFW_LIB}")
 endif()
 
-include_directories(external) # включить в сборку директории с заголовками
+if (NOT GLM_PATH)
+    message(STATUS "TINYOBJ_PATH not specified in .env.cmake, using external/glm-master")
+    set(GLM_PATH external/glm-master)
+endif()
 
-# Если путь до tinyobjloader не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT TINYOBJ_PATH)
     message(STATUS "TINYOBJ_PATH not specified in .env.cmake, using external/tinyobjloader")
     set(TINYOBJ_PATH external/tinyobjloader)
 endif()
 
-# Если путь до stb_image не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT STB_IMAGE_PATH)
     message(STATUS "STB_IMAGE_PATH not specified in .env.cmake, using external/stb_image")
     set(STB_IMAGE_PATH external/stb_image)
 endif()
 
-# Если путь до imgui не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT IMGUI_PATH)
     message(STATUS "IMGUI_PATH not specified in .env.cmake, using external/imgui")
     set(IMGUI_PATH external/imgui-docking)
 endif()
 
-# Если путь до imguizmo не был указан явно в .env.cmake, то исп. его версию из external директории
 if (NOT IMGUIZMO_PATH)
     message(STATUS "IMGUIZMO_PATH not specified in .env.cmake, using external/imguizmo")
     set(IMGUIZMO_PATH external/imguizmo)
 endif()
+
+include_directories(external)
 
 # GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -105,42 +107,40 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17) # C++ 17 станда
 # Св-во устанавливает рабочий каталог для локального отладчика Visual Studio C++
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
-# Это блок кода для указания местоположения Include директорий и
-# связанных библиотек всех внешних зависимостей проекта.
-# Также здесь добавляются Include-заголовки из самого проекта.
+# Includes, libs, dlls
 if (WIN32)
-	message(STATUS "CREATING BUILD FOR WINDOWS")
+    message(STATUS "CREATING BUILD FOR WINDOWS")
 
-	if (USE_MINGW)
-	target_include_directories(${PROJECT_NAME} PUBLIC
-	    ${MINGW_PATH}/include
-	)
-	target_link_directories(${PROJECT_NAME} PUBLIC
-	    ${MINGW_PATH}/lib
-	)
-endif()
-	target_include_directories(${PROJECT_NAME} PUBLIC
-		${PROJECT_SOURCE_DIR}/src
-		${Vulkan_INCLUDE_DIRS}
-		${TINYOBJ_PATH}
-		${GLFW_INCLUDE_DIRS}
-		${GLM_PATH}
-		${STB_IMAGE_PATH}
-		${IMGUI_PATH}
-		${IMGUI_PATH}/backends
-		${IMGUIZMO_PATH}
-	)
+    if (USE_MINGW)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+            ${MINGW_PATH}/include
+        )
+        target_link_directories(${PROJECT_NAME} PUBLIC
+            ${MINGW_PATH}/lib
+        )
+    endif()
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${PROJECT_SOURCE_DIR}/src
+        ${Vulkan_INCLUDE_DIRS}
+        ${TINYOBJ_PATH}
+        ${GLFW_INCLUDE_DIRS}
+        ${GLM_PATH}
+        ${STB_IMAGE_PATH}
+        ${IMGUI_PATH}
+        ${IMGUI_PATH}/backends
+        ${IMGUIZMO_PATH}
+    )
 
-	target_link_directories(${PROJECT_NAME} PUBLIC
-		${Vulkan_LIBRARIES}
+    target_link_directories(${PROJECT_NAME} PUBLIC
+        ${Vulkan_LIBRARIES}
         ${Vulkan_DLLS}
-		${GLFW_LIB}
-	)
+        ${GLFW_LIB}
+    )
 
-	target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME}
         shaderc_shared
-		glfw3
-		vulkan-1
+        glfw3
+        vulkan-1
     )
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
@@ -158,31 +158,31 @@ endif()
 # Taken from VBlancos vulkan tutorial:
 # https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters/CMakeLists.txt
 find_program(GLSL_VALIDATOR glslangValidator HINTS 
-	${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} 
-	/usr/bin 
-	/usr/local/bin 
-	${VULKAN_SDK_PATH}/Bin
-	${VULKAN_SDK_PATH}/Bin32
-	$ENV{VULKAN_SDK}/Bin/ 
-	$ENV{VULKAN_SDK}/Bin32/
+    ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} 
+    /usr/bin 
+    /usr/local/bin 
+    ${VULKAN_SDK_PATH}/Bin
+    ${VULKAN_SDK_PATH}/Bin32
+    $ENV{VULKAN_SDK}/Bin/ 
+    $ENV{VULKAN_SDK}/Bin32/
 )
 
 # get all .vert and .frag files in shaders directory
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-	"${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.frag"
-	"${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.vert"
+    "${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.frag"
+    "${PROJECT_SOURCE_DIR}/src/renderer/shaders/*.vert"
 )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
-	get_filename_component(FILE_NAME ${GLSL} NAME)
-	set(SPIRV "${PROJECT_SOURCE_DIR}/src/renderer/shaders/${FILE_NAME}.spv")
-	add_custom_command(
-		OUTPUT ${SPIRV}
-		COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-		DEPENDS ${GLSL}
-		VERBATIM
+    get_filename_component(FILE_NAME ${GLSL} NAME)
+    set(SPIRV "${PROJECT_SOURCE_DIR}/src/renderer/shaders/${FILE_NAME}.spv")
+    add_custom_command(
+        OUTPUT ${SPIRV}
+        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+        DEPENDS ${GLSL}
+        VERBATIM
     )
-	list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
 add_custom_target(
