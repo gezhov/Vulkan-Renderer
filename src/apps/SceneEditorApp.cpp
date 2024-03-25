@@ -76,16 +76,19 @@ void SceneEditorApp::run()
             .build(globalDescriptorSets[i]);
     }
 
+    RenderingSettings renderingSettings{0};
+
     SimpleRenderSystem simpleRenderSystem{
         wrpDevice,
         wrpRenderer.getSwapChainRenderPass(),
-        globalDescriptorSetLayout->getDescriptorSetLayout()
+        globalDescriptorSetLayout->getDescriptorSetLayout(),
+        renderingSettings
     };
     TextureRenderSystem textureRenderSystem{
         wrpDevice,
         wrpRenderer,
         globalDescriptorSetLayout->getDescriptorSetLayout(),
-        FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, sceneObjects}
+        FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, sceneObjects, renderingSettings}
     };
     PointLightSystem pointLightSystem{
         wrpDevice,
@@ -111,7 +114,8 @@ void SceneEditorApp::run()
         WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
         camera,
         cameraController,
-        sceneObjects
+        sceneObjects,
+        renderingSettings
     };
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -144,7 +148,7 @@ void SceneEditorApp::run()
 
             int frameIndex = wrpRenderer.getFrameIndex();
             FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera,
-                globalDescriptorSets[frameIndex], sceneObjects};
+                globalDescriptorSets[frameIndex], sceneObjects, renderingSettings};
 
             // UPDATE SECTION
             GlobalUbo ubo{};

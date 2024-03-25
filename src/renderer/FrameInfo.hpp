@@ -14,6 +14,11 @@ struct PointLight
 	glm::vec4 color{};	  // w - интенсивность цвета
 };
 
+struct RenderingSettings
+{
+    int reflectionModel;
+};
+
 // Структура, хранящая нужную для отрисовки кадра информацию.
 // Используется для удобной передачи множества аргументов в функции отрисовки.
 struct FrameInfo
@@ -24,6 +29,7 @@ struct FrameInfo
 	WrpCamera& camera;
 	VkDescriptorSet globalDescriptorSet;
 	SceneObject::Map& sceneObjects;
+    RenderingSettings& renderingSettings;
 };
 
 struct GlobalUbo // global uniform buffer object

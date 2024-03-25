@@ -5,6 +5,7 @@
 #include "../src/renderer/SceneObject.hpp"
 #include "../src/renderer/Camera.hpp"
 #include "./common/KeyboardMovementController.hpp"
+#include "../src/renderer/FrameInfo.hpp"
 
 // libs
 #include <imgui.h>
@@ -26,7 +27,8 @@ static void check_vk_result(VkResult err) {
 class SceneEditorGUI {
 public:
     SceneEditorGUI(WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects);
+        uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc,
+        SceneObject::Map& sceneObjects, RenderingSettings& renderingSettings);
     ~SceneEditorGUI();
 
     SceneEditorGUI() = default;
@@ -39,6 +41,7 @@ public:
     // Fields controlled by tools
     float directionalLightIntensity = 1.0f;
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
+    int reflectionModel = 1;
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     std::vector<std::string> objectsPaths;
@@ -65,6 +68,7 @@ private:
     WrpCamera& camera;
     KeyboardMovementController& kmc;
     SceneObject::Map& sceneObjects;
+    RenderingSettings& renderingSettings;
 
     VkDescriptorPool descriptorPool; // ImGui's descriptor pool
 };

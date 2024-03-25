@@ -19,8 +19,10 @@
 
 SceneEditorGUI::SceneEditorGUI(
     WrpWindow& window, WrpDevice& device, VkRenderPass renderPass,
-    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc, SceneObject::Map& sceneObjects)
-    : wrpDevice{ device }, camera{ camera }, kmc{ kmc }, sceneObjects{ sceneObjects }
+    uint32_t imageCount, WrpCamera& camera, KeyboardMovementController& kmc,
+    SceneObject::Map& sceneObjects, RenderingSettings& renderingSettings)
+    : wrpDevice{device}, camera{camera}, kmc{kmc}, sceneObjects{sceneObjects},
+    renderingSettings{renderingSettings}
 {
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
@@ -141,6 +143,11 @@ void SceneEditorGUI::setupMainSettingsPanel()
 
             ImGui::Text("Directional Light Position");
             ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
+
+            ImGui::Text("Reflection Model");
+            ImGui::RadioButton("Lambertian", &renderingSettings.reflectionModel, 0); ImGui::SameLine();
+            ImGui::RadioButton("Blinn-Phong", &renderingSettings.reflectionModel, 1); ImGui::SameLine();
+            ImGui::RadioButton("Torrance-Sparrow", &renderingSettings.reflectionModel, 2);
 
             ImGui::Text("Clear Color");
             ImGui::ColorEdit3("##Clear Color", (float*)&clearColor);

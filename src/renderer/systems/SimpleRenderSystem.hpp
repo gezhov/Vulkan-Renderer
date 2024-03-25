@@ -13,7 +13,8 @@
 class SimpleRenderSystem
 {
 public:
-    SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+    SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
+        VkDescriptorSetLayout globalSetLayout, RenderingSettings& renderingSettings);
     ~SimpleRenderSystem();
 
     SimpleRenderSystem(const SimpleRenderSystem&) = delete;
@@ -23,10 +24,12 @@ public:
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-    void createPipeline(VkRenderPass renderPass);
+    std::unique_ptr<WrpPipeline> createPipeline(VkRenderPass renderPass, int reflectionModel);
 
     WrpDevice& wrpDevice;
+    RenderingSettings& renderingSettings;
 
-    std::unique_ptr<WrpPipeline> wrpPipeline;
+    std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
+    std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;
     VkPipelineLayout pipelineLayout;
 };

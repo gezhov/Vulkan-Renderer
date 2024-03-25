@@ -12,10 +12,12 @@
 #include <array>
 
 SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
-    VkDescriptorSetLayout globalDescriptorSetLayout) : wrpDevice{ device }
+    VkDescriptorSetLayout globalDescriptorSetLayout, RenderingSettings& renderingSettings)
+    : wrpDevice{ device }, renderingSettings{renderingSettings}
 {
     createPipelineLayout(globalDescriptorSetLayout);
-    createPipeline(renderPass);
+    wrpPipelineLambertian = createPipeline(renderPass, 0);
+    wrpPipelineBlinnPhong = createPipeline(renderPass, 1);
 }
 
 SimpleRenderSystem::~SimpleRenderSystem()
@@ -51,7 +53,8 @@ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalDescri
     }
 }
 
-void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
+std::unique_ptr<WrpPipeline>
+SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel)
 {
     assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout.");
 
@@ -60,16 +63,23 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
 
-    wrpPipeline = std::make_unique<WrpPipeline>(
-        wrpDevice,
-        "src/renderer/shaders/NoTexture.vert.spv",
-        "src/renderer/shaders/NoTexture.frag.spv",
-        pipelineConfig);
+    std::string vertPath = "src/renderer/shaders/NoTexture.vert.spv";
+    std::string fragPath;
+    if (reflectionModel == 0) fragPath = "src/renderer/shaders/NoTextureLambertian.frag.spv";
+    else if (reflectionModel == 1) fragPath = "src/renderer/shaders/Notexture.frag.spv";
+
+    return std::make_unique<WrpPipeline>(wrpDevice, vertPath, fragPath, pipelineConfig);
 }
 
 void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
-    wrpPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
+    // прикрепление графического пайплайна к буферу команд
+    if (frameInfo.renderingSettings.reflectionModel == 0) {
+        wrpPipelineLambertian->bind(frameInfo.commandBuffer);
+    }
+    else if (frameInfo.renderingSettings.reflectionModel == 1) {
+        wrpPipelineBlinnPhong->bind(frameInfo.commandBuffer);
+    }
 
     // привязываем набор дескрипторов к пайплайну
     vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
