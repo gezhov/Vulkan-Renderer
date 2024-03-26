@@ -145,7 +145,6 @@ void SceneEditorGUI::setupMainSettingsPanel()
             ImGui::DragFloat4("##Directional Light Position", glm::value_ptr(directionalLightPosition), .02f);
 
             ImGui::Text("Reflection Model");
-            renderingSettings.reflectionModel = 1; // default model
             ImGui::RadioButton("Lambertian", &renderingSettings.reflectionModel, 0); ImGui::SameLine();
             ImGui::RadioButton("Blinn-Phong", &renderingSettings.reflectionModel, 1); ImGui::SameLine();
             ImGui::RadioButton("Torrance-Sparrow", &renderingSettings.reflectionModel, 2);

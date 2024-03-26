@@ -21,7 +21,8 @@ TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& rendere
     prevModelCount = fillModelsIds(frameInfo.sceneObjects);
     createDescriptorSets(frameInfo);
     createPipelineLayout(globalSetLayout);
-    createPipeline(renderer.getSwapChainRenderPass());
+    wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, 0);
+    wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, 0);
 }
 
 TextureRenderSystem::~TextureRenderSystem()
@@ -35,7 +36,7 @@ void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLa
     if (pipelineLayout != nullptr) vkDestroyPipelineLayout(wrpDevice.device(), pipelineLayout, nullptr);
 
     VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; // access to push constanf from both VS and FS 
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; // access to push constant from both VS and FS 
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(TextureSystemPushConstantData);
 
@@ -53,7 +54,8 @@ void TextureRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLa
     }
 }
 
-void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
+std::unique_ptr<WrpPipeline>
+TextureRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel, int polygonFillMode)
 {
     assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
@@ -61,15 +63,14 @@ void TextureRenderSystem::createPipeline(VkRenderPass renderPass)
     WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
-    wrpPipeline = std::make_unique<WrpPipeline>(
-        wrpDevice,
-        "src/renderer/shaders/Texture.vert.spv",
-        "src/renderer/shaders/Texture.frag.spv",
-        pipelineConfig,
-        nullptr,
-        fragShaderModule
-    );
+    std::string vertPath = "src/renderer/shaders/Texture.vert.spv";
+    VkShaderModule fragShaderModule;
+    if (reflectionModel == 0) fragShaderModule = fsModuleLambertian;
+    else if (reflectionModel == 1) fragShaderModule = fsModuleBlinnPhong;
+
+    return std::make_unique<WrpPipeline>(wrpDevice, vertPath, "", pipelineConfig, nullptr, fragShaderModule);
 }
 
 int TextureRenderSystem::fillModelsIds(SceneObject::Map& sceneObjects)
@@ -129,10 +130,15 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 
     // перезапись и перекомпиляция шейдера фрагментов с новым значением количества текстур
     if (texturesCount != 0)
-        rewriteAndRecompileFragShader(texturesCount);
+    {
+        std::string path0 = ENGINE_DIR"src/renderer/shaders/TextureLambertian.frag";
+        std::string path1 = ENGINE_DIR"src/renderer/shaders/Texture.frag";
+        fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
+        fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
+    }
 }
 
-void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
+VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fragShaderPath, int texturesCount)
 {
     std::fstream shaderFile;
     std::string shaderContent;
@@ -140,7 +146,7 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     std::string macros = "#define TEXTURES_COUNT ";
     static bool isTexturesDefined = false;
 
-    shaderFile.open(ENGINE_DIR"src/renderer/shaders/Texture.frag", std::ios::in | std::ios::app);
+    shaderFile.open(fragShaderPath, std::ios::in | std::ios::app);
     if (shaderFile.is_open())
     {
         while (std::getline(shaderFile, line))
@@ -168,7 +174,7 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     else std::cerr << "Your file couldn't be opened";
     shaderFile.close();
 
-    // generated shader are rewriting every time with new textures count
+    // generated shader are rewriting every time with the new textures count
     shaderFile.open(ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", std::ios::out | std::ios::trunc);
     if (shaderFile.is_open())
     {
@@ -176,20 +182,22 @@ void TextureRenderSystem::rewriteAndRecompileFragShader(int texturesCount)
     }
     shaderFile.close();
 
-    std::vector<char> fragShader = WrpPipeline::readFile("src/renderer/shaders/TextureGenerated.frag");
+    std::vector<char> fragShader = WrpPipeline::readFile("src/renderer/shaders/Texture_Generated.frag");
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
     shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, fragShader.data(), fragShader.size(),
         shaderc_glsl_fragment_shader, ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", "main", nullptr);
 
+    VkShaderModule shaderModule = nullptr;
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = shaderc_result_get_length(result);
     createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
-    if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, &fragShaderModule) != VK_SUCCESS)
+    if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
         throw std::runtime_error("Failed to create shader module.");
 
     shaderc_result_release(result);
     shaderc_compiler_release(compiler);
+    return shaderModule;
 }
 
 void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
@@ -199,11 +207,18 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
     if (prevModelCount != fillModelsIds(frameInfo.sceneObjects)) {
         createDescriptorSets(frameInfo);
         createPipelineLayout(globalSetLayout);
-        createPipeline(wrpRenderer.getSwapChainRenderPass());
+        wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, 0);
+        wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, 0);
     }
     prevModelCount = modelObjectsIds.size();
 
-    wrpPipeline->bind(frameInfo.commandBuffer);  // прикрепление графического пайплайна к буферу команд
+    // прикрепление графического пайплайна к буферу команд
+    if (frameInfo.renderingSettings.reflectionModel == 0) {
+        wrpPipelineLambertian->bind(frameInfo.commandBuffer);
+    }
+    else if (frameInfo.renderingSettings.reflectionModel == 1) {
+        wrpPipelineBlinnPhong->bind(frameInfo.commandBuffer);
+    }
 
     std::vector<VkDescriptorSet> descriptorSets{ frameInfo.globalDescriptorSet, systemDescriptorSets[frameInfo.frameIndex] };
     // Привязываем наборы дескрипторов к пайплайну

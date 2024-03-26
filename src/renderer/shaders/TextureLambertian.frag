@@ -1,11 +1,13 @@
 #version 450
 
-layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec3 fragPosWorld;
-layout(location = 2) in vec3 fragNormalWorld;
-layout(location = 3) in vec2 fragUv;
+#define TEXTURES_COUNT 0
 
-layout(location = 0) out vec4 outColor;
+layout (location = 0) in vec3 fragColor;
+layout (location = 1) in vec3 fragPosWorld;
+layout (location = 2) in vec3 fragNormalWorld;
+layout (location = 3) in vec2 fragUv;
+
+layout (location = 0) out vec4 outColor;
 
 struct PointLight {
     vec4 position; // w - ignored
@@ -15,6 +17,7 @@ struct PointLight {
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
+    int textureIndex;
     vec3 diffuseColor;
 } push;
 
@@ -55,12 +58,17 @@ void main() {
         diffuseLight += intensity * cosAngIncidence;
     }
 
-    // using dark grey for black (no color) models to see light impact
-    if (fragColor == vec3(0.0)) {
-        vec3 greyShadeColor = vec3(0.02);
-        outColor = vec4(diffuseLight * greyShadeColor, 1.0);
+    // Fragment getting texture color by coordinates if it's present
+    // and materials diffuse color otherwise.
+    vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
+    if (push.textureIndex != -1) {
+#ifdef TEXTURES
+        sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
+#endif
+    } else {
+        sampleTextureColor = vec4(push.diffuseColor, 1.0);
     }
-    else {
-        outColor = vec4(diffuseLight * fragColor, 1.0);
-    }
+
+    //outColor = sampleTextureColor;
+    outColor = vec4(diffuseLight * sampleTextureColor.rgb, 1.0);
 }

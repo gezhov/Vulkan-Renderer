@@ -12,8 +12,8 @@
 #include <array>
 
 SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, WrpRenderer& renderer,
-    VkDescriptorSetLayout globalDescriptorSetLayout, RenderingSettings& renderingSettings)
-    : wrpDevice{device}, wrpRenderer{renderer}, renderingSettings {renderingSettings}
+    VkDescriptorSetLayout globalDescriptorSetLayout)
+    : wrpDevice{device}, wrpRenderer{renderer}
 {
     createPipelineLayout(globalDescriptorSetLayout);
     wrpPipelineLambertian = createPipeline(renderer.getSwapChainRenderPass(), 0, 0);
@@ -67,7 +67,7 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel,
     std::string vertPath = "src/renderer/shaders/NoTexture.vert.spv";
     std::string fragPath;
     if (reflectionModel == 0) fragPath = "src/renderer/shaders/NoTextureLambertian.frag.spv";
-    else if (reflectionModel == 1) fragPath = "src/renderer/shaders/Notexture.frag.spv";
+    else if (reflectionModel == 1) fragPath = "src/renderer/shaders/NoTexture.frag.spv";
 
     return std::make_unique<WrpPipeline>(wrpDevice, vertPath, fragPath, pipelineConfig);
 }
@@ -75,10 +75,10 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel,
 void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
     // recreate pipelines with rendering settings changes
-    if (curPlgnFillMode != renderingSettings.polygonFillMode) {
+    if (curPlgnFillMode != frameInfo.renderingSettings.polygonFillMode) {
         // wait for graphics queue to complete before recreating new pipelines
         vkQueueWaitIdle(wrpDevice.graphicsQueue());
-        int polygonFillMode = renderingSettings.polygonFillMode;
+        int polygonFillMode = frameInfo.renderingSettings.polygonFillMode;
         wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, polygonFillMode);
         wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, polygonFillMode);
         curPlgnFillMode = polygonFillMode;

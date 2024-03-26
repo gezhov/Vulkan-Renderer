@@ -58,18 +58,16 @@ void WrpPipeline::createGraphicsPipeline(
     assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline: no renderPass provided in configInfo");
     std::cout << "Graphics Pipeline is creating..." << std::endl;
 
-    std::vector<char> vertCode = readFile(vertFilepath);
-    std::vector<char> fragCode = readFile(fragFilepath);
-
-    std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
-    std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
-
-    // создание шейдерных модулей
+    // создание шейдерных модулей, если они не были переданы
     if (!vertShaderModule) {
+        std::vector<char> vertCode = readFile(vertFilepath);
         createShaderModule(vertCode, &vertShaderModule);
+        std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
     }
     if (!fragShaderModule) {
+        std::vector<char> fragCode = readFile(fragFilepath);
         createShaderModule(fragCode, &fragShaderModule);
+        std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
     }
 
     VkPipelineShaderStageCreateInfo shaderStages[2];

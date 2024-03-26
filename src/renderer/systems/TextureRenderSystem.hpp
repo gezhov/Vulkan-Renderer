@@ -16,7 +16,8 @@
 class TextureRenderSystem
 {
 public:
-    TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer, VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
+    TextureRenderSystem(WrpDevice& device, WrpRenderer& renderer,
+        VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo);
     ~TextureRenderSystem();
 
     TextureRenderSystem(const TextureRenderSystem&) = delete;
@@ -26,19 +27,20 @@ public:
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-    void createPipeline(VkRenderPass renderPass);
-    void createUboBuffers();
+    std::unique_ptr<WrpPipeline> createPipeline(VkRenderPass renderPass, int reflectionModel, int polygonFillMode);
 
     int fillModelsIds(SceneObject::Map& sceneObjects);
     void createDescriptorSets(FrameInfo& frameInfo);
-    void rewriteAndRecompileFragShader(int texturesCount);
+    VkShaderModule rewriteAndRecompileFragShader(std::string fragShaderPath, int texturesCount);
 
     WrpDevice& wrpDevice;
     WrpRenderer& wrpRenderer;
     VkDescriptorSetLayout globalSetLayout;
 
-    VkShaderModule fragShaderModule = nullptr;
-    std::unique_ptr<WrpPipeline> wrpPipeline;
+    VkShaderModule fsModuleLambertian = nullptr;
+    VkShaderModule fsModuleBlinnPhong = nullptr;
+    std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
+    std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;
     VkPipelineLayout pipelineLayout = nullptr;
 
     std::vector<SceneObject::id_t> modelObjectsIds{};

@@ -76,13 +76,12 @@ void SceneEditorApp::run()
             .build(globalDescriptorSets[i]);
     }
 
-    RenderingSettings renderingSettings{0};
+    RenderingSettings renderingSettings{1, 0};
 
     SimpleRenderSystem simpleRenderSystem{
         wrpDevice,
         wrpRenderer,
         globalDescriptorSetLayout->getDescriptorSetLayout(),
-        renderingSettings
     };
     TextureRenderSystem textureRenderSystem{
         wrpDevice,

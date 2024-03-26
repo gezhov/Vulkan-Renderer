@@ -15,7 +15,7 @@ class SimpleRenderSystem
 {
 public:
     SimpleRenderSystem(WrpDevice& device, WrpRenderer& renderer,
-        VkDescriptorSetLayout globalSetLayout, RenderingSettings& renderingSettings);
+        VkDescriptorSetLayout globalSetLayout);
     ~SimpleRenderSystem();
 
     SimpleRenderSystem(const SimpleRenderSystem&) = delete;
@@ -30,7 +30,6 @@ private:
 
     WrpDevice& wrpDevice;
     WrpRenderer& wrpRenderer;
-    RenderingSettings& renderingSettings;
 
     int curPlgnFillMode = 0;
 
