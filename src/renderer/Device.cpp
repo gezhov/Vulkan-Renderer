@@ -321,6 +321,7 @@ void WrpDevice::createLogicalDevice()
     VkPhysicalDeviceFeatures deviceFeatures = {}; // возможности ус-ва для активации
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;   // sample shading feature
+    deviceFeatures.fillModeNonSolid = VK_TRUE;    // support point and wireframe fill modes
 
     VkDeviceCreateInfo createInfo = {}; // структура для создания логического ус-ва
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

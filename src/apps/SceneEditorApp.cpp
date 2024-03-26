@@ -80,7 +80,7 @@ void SceneEditorApp::run()
 
     SimpleRenderSystem simpleRenderSystem{
         wrpDevice,
-        wrpRenderer.getSwapChainRenderPass(),
+        wrpRenderer,
         globalDescriptorSetLayout->getDescriptorSetLayout(),
         renderingSettings
     };

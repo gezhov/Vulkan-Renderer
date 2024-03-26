@@ -17,6 +17,7 @@ struct PointLight
 struct RenderingSettings
 {
     int reflectionModel;
+    int polygonFillMode;
 };
 
 // Структура, хранящая нужную для отрисовки кадра информацию.

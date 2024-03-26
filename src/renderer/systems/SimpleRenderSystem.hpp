@@ -5,6 +5,7 @@
 #include "../SceneObject.hpp"
 #include "../Camera.hpp"
 #include "../FrameInfo.hpp"
+#include "../Renderer.hpp"
 
 // std
 #include <memory>
@@ -13,7 +14,7 @@
 class SimpleRenderSystem
 {
 public:
-    SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
+    SimpleRenderSystem(WrpDevice& device, WrpRenderer& renderer,
         VkDescriptorSetLayout globalSetLayout, RenderingSettings& renderingSettings);
     ~SimpleRenderSystem();
 
@@ -24,10 +25,14 @@ public:
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-    std::unique_ptr<WrpPipeline> createPipeline(VkRenderPass renderPass, int reflectionModel);
+    std::unique_ptr<WrpPipeline> createPipeline(
+        VkRenderPass renderPass, int reflectionModel, int polygonFillMode);
 
     WrpDevice& wrpDevice;
+    WrpRenderer& wrpRenderer;
     RenderingSettings& renderingSettings;
+
+    int curPlgnFillMode = 0;
 
     std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
     std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;

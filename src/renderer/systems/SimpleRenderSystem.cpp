@@ -11,13 +11,13 @@
 #include <cassert>
 #include <array>
 
-SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, VkRenderPass renderPass,
+SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, WrpRenderer& renderer,
     VkDescriptorSetLayout globalDescriptorSetLayout, RenderingSettings& renderingSettings)
-    : wrpDevice{ device }, renderingSettings{renderingSettings}
+    : wrpDevice{device}, wrpRenderer{renderer}, renderingSettings {renderingSettings}
 {
     createPipelineLayout(globalDescriptorSetLayout);
-    wrpPipelineLambertian = createPipeline(renderPass, 0);
-    wrpPipelineBlinnPhong = createPipeline(renderPass, 1);
+    wrpPipelineLambertian = createPipeline(renderer.getSwapChainRenderPass(), 0, 0);
+    wrpPipelineBlinnPhong = createPipeline(renderer.getSwapChainRenderPass(), 1, 0);
 }
 
 SimpleRenderSystem::~SimpleRenderSystem()
@@ -54,7 +54,7 @@ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalDescri
 }
 
 std::unique_ptr<WrpPipeline>
-SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel)
+SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel, int polygonFillMode)
 {
     assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout.");
 
@@ -62,6 +62,7 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel)
     WrpPipeline::defaultPipelineConfigInfo(pipelineConfig);
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
     std::string vertPath = "src/renderer/shaders/NoTexture.vert.spv";
     std::string fragPath;
@@ -73,6 +74,16 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel)
 
 void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
+    // recreate pipelines with rendering settings changes
+    if (curPlgnFillMode != renderingSettings.polygonFillMode) {
+        // wait for graphics queue to complete before recreating new pipelines
+        vkQueueWaitIdle(wrpDevice.graphicsQueue());
+        int polygonFillMode = renderingSettings.polygonFillMode;
+        wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, polygonFillMode);
+        wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, polygonFillMode);
+        curPlgnFillMode = polygonFillMode;
+    }
+
     // прикрепление графического пайплайна к буферу команд
     if (frameInfo.renderingSettings.reflectionModel == 0) {
         wrpPipelineLambertian->bind(frameInfo.commandBuffer);
