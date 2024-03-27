@@ -45,6 +45,7 @@ private:
 
     std::vector<SceneObject::id_t> modelObjectsIds{};
     size_t prevModelCount = 0;
+    int curPlgnFillMode = 0;
 
     std::unique_ptr<WrpDescriptorPool> systemDescriptorPool;
     std::unique_ptr<WrpDescriptorSetLayout> systemDescriptorSetLayout;

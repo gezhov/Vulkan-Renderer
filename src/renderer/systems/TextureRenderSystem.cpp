@@ -204,13 +204,19 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
 {
     // Заполняется вектор идентификаторов объектов с текстурами, и если их кол-во изменилось, то
     // наборы дескрипторов для этих объектов пересоздаются, а вместе с ними и пайплайн, т.к. изменяется его схема.
-    if (prevModelCount != fillModelsIds(frameInfo.sceneObjects)) {
+    if (prevModelCount != fillModelsIds(frameInfo.sceneObjects) ||
+        curPlgnFillMode != frameInfo.renderingSettings.polygonFillMode)
+    {
+        int polygonFillMode = frameInfo.renderingSettings.polygonFillMode;
+
         createDescriptorSets(frameInfo);
         createPipelineLayout(globalSetLayout);
-        wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, 0);
-        wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, 0);
+        wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, polygonFillMode);
+        wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, polygonFillMode);
+
+        curPlgnFillMode = polygonFillMode;
+        prevModelCount = modelObjectsIds.size();
     }
-    prevModelCount = modelObjectsIds.size();
 
     // прикрепление графического пайплайна к буферу команд
     if (frameInfo.renderingSettings.reflectionModel == 0) {
