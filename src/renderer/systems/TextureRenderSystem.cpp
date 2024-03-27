@@ -23,6 +23,7 @@ TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& rendere
     createPipelineLayout(globalSetLayout);
     wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, 0);
     wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, 0);
+    wrpPipelineTorranceSparrow = createPipeline(wrpRenderer.getSwapChainRenderPass(), 2, 0);
 }
 
 TextureRenderSystem::~TextureRenderSystem()
@@ -69,6 +70,7 @@ TextureRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel
     VkShaderModule fragShaderModule;
     if (reflectionModel == 0) fragShaderModule = fsModuleLambertian;
     else if (reflectionModel == 1) fragShaderModule = fsModuleBlinnPhong;
+    else if (reflectionModel == 2) fragShaderModule = fsModuleTorranceSparrow;
 
     return std::make_unique<WrpPipeline>(wrpDevice, vertPath, "", pipelineConfig, nullptr, fragShaderModule);
 }
@@ -133,8 +135,10 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
     {
         std::string path0 = ENGINE_DIR"src/renderer/shaders/TextureLambertian.frag";
         std::string path1 = ENGINE_DIR"src/renderer/shaders/Texture.frag";
+        std::string path2 = ENGINE_DIR"src/renderer/shaders/TextureTorranceSparrow.frag";
         fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
         fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
+        fsModuleTorranceSparrow = rewriteAndRecompileFragShader(path2, texturesCount);
     }
 }
 
@@ -213,6 +217,7 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         createPipelineLayout(globalSetLayout);
         wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, polygonFillMode);
         wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, polygonFillMode);
+        wrpPipelineTorranceSparrow = createPipeline(wrpRenderer.getSwapChainRenderPass(), 2, polygonFillMode);
 
         curPlgnFillMode = polygonFillMode;
         prevModelCount = modelObjectsIds.size();
@@ -224,6 +229,9 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
     }
     else if (frameInfo.renderingSettings.reflectionModel == 1) {
         wrpPipelineBlinnPhong->bind(frameInfo.commandBuffer);
+    }
+    else if (frameInfo.renderingSettings.reflectionModel == 2) {
+        wrpPipelineTorranceSparrow->bind(frameInfo.commandBuffer);
     }
 
     std::vector<VkDescriptorSet> descriptorSets{ frameInfo.globalDescriptorSet, systemDescriptorSets[frameInfo.frameIndex] };

@@ -39,8 +39,10 @@ private:
 
     VkShaderModule fsModuleLambertian = nullptr;
     VkShaderModule fsModuleBlinnPhong = nullptr;
+    VkShaderModule fsModuleTorranceSparrow = nullptr;
     std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
     std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;
+    std::unique_ptr<WrpPipeline> wrpPipelineTorranceSparrow;
     VkPipelineLayout pipelineLayout = nullptr;
 
     std::vector<SceneObject::id_t> modelObjectsIds{};

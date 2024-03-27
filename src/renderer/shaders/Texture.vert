@@ -35,8 +35,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 invView;
     vec4 ambientLightColor;
-	float directionalLightIntensity;
-	vec4 directionalLightPosition;
+    float directionalLightIntensity;
+    vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
 } globalUbo;
