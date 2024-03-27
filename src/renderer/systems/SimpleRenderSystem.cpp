@@ -18,6 +18,7 @@ SimpleRenderSystem::SimpleRenderSystem(WrpDevice& device, WrpRenderer& renderer,
     createPipelineLayout(globalDescriptorSetLayout);
     wrpPipelineLambertian = createPipeline(renderer.getSwapChainRenderPass(), 0, 0);
     wrpPipelineBlinnPhong = createPipeline(renderer.getSwapChainRenderPass(), 1, 0);
+    wrpPipelineTorranceSparrow = createPipeline(renderer.getSwapChainRenderPass(), 2, 0);
 }
 
 SimpleRenderSystem::~SimpleRenderSystem()
@@ -68,6 +69,7 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel,
     std::string fragPath;
     if (reflectionModel == 0) fragPath = "src/renderer/shaders/NoTextureLambertian.frag.spv";
     else if (reflectionModel == 1) fragPath = "src/renderer/shaders/NoTexture.frag.spv";
+    else if (reflectionModel == 2) fragPath = "src/renderer/shaders/NoTextureTorranceSparrow.frag.spv";
 
     return std::make_unique<WrpPipeline>(wrpDevice, vertPath, fragPath, pipelineConfig);
 }
@@ -81,16 +83,17 @@ void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         int polygonFillMode = frameInfo.renderingSettings.polygonFillMode;
         wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, polygonFillMode);
         wrpPipelineBlinnPhong = createPipeline(wrpRenderer.getSwapChainRenderPass(), 1, polygonFillMode);
+        wrpPipelineTorranceSparrow = createPipeline(wrpRenderer.getSwapChainRenderPass(), 2, polygonFillMode);
         curPlgnFillMode = polygonFillMode;
     }
 
     // прикрепление графического пайплайна к буферу команд
-    if (frameInfo.renderingSettings.reflectionModel == 0) {
+    if (frameInfo.renderingSettings.reflectionModel == 0)
         wrpPipelineLambertian->bind(frameInfo.commandBuffer);
-    }
-    else if (frameInfo.renderingSettings.reflectionModel == 1) {
+    else if (frameInfo.renderingSettings.reflectionModel == 1)
         wrpPipelineBlinnPhong->bind(frameInfo.commandBuffer);
-    }
+    else if (frameInfo.renderingSettings.reflectionModel == 2)
+        wrpPipelineTorranceSparrow->bind(frameInfo.commandBuffer);
 
     // привязываем набор дескрипторов к пайплайну
     vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

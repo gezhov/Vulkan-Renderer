@@ -35,5 +35,6 @@ private:
 
     std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
     std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;
+    std::unique_ptr<WrpPipeline> wrpPipelineTorranceSparrow;
     VkPipelineLayout pipelineLayout;
 };
