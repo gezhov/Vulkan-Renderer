@@ -38,10 +38,16 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
 // Source of directional light
 vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 
-// Fresnel function from Jim Blinn 1977 paper
-float Fresnel_Blinn1977(float n, float HdotE);
+// Geometrical attenuation - Schlick-GGX
+float G1(float alpha, float NdotX);             // Schlick-Beckmann geometry shadowing function
+float G(float alpha, float NdotE, float NdotL); // Smith model
 // Schlick's Fresnel factor approximation
 float FresnelSchlick(float n, float HdotE);
+
+// Geometrical attenuation from [Jim Blinn, 1977] paper
+float geometricalAttenuation_Blinn1977(float NdotL, float NdotH, float NdotE, float HdotE);
+// Fresnel function from [Jim Blinn, 1977] paper
+float Fresnel_Blinn1977(float n, float HdotE);
 
 void main() {
     vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
@@ -78,23 +84,17 @@ void main() {
         // (N * E) - consine of inclination angle
         float NdotE = dot(surfaceNormal, viewDirection);
         // G - geometrical attenuation factor.
-        // 1/NdotE factor from main equation is combined here, therefore it is not in the final formula for specular light.
-        float G = 0;
-        float NdotL = dot(surfaceNormal, directionToLight);
-        float NdotH = dot(surfaceNormal, H);
-        float HdotE = dot(H, viewDirection);
-        if (NdotE < NdotL) {
-            if (2 * NdotE * NdotH < HdotE) G = 2 * NdotH / HdotE;
-            else G = 1 / NdotE;
-        }
-        else {
-            if (2 * NdotL * NdotH < HdotE) G = 2 * NdotH * NdotL / HdotE * NdotE;
-            else G = 1 / NdotE;
-        }
+		float NdotL = dot(surfaceNormal, directionToLight);
+		float NdotH = dot(surfaceNormal, H);
+		float HdotE = dot(H, viewDirection);
+        //float G = geometricalAttenuation_Blinn1977(NdotL, NdotH, NdotE, HdotE);
+        float alpha = pow(c3, 2);
+        float G = G(alpha, NdotE, NdotL);
         // F - Frenel reflection
         //float F = Fresnel_Blinn1977(globalUbo.indexOfRefraction, HdotE);
         float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
-        specularLight += specularProportion * intensity * D * G * F;
+        specularLight += specularProportion * intensity * D * G * F / NdotE;
+        //specularLight += specularProportion * intesity * D * G * F; // Torrance-Sparrow equation for [Blinn, 1977] G variant.
     }
 
     // Fragment getting texture color by coordinates if it's present
@@ -112,10 +112,40 @@ void main() {
     outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
 }
 
+float G1(float alpha, float NdotX)
+{
+    float numerator = NdotX;
+    float k = alpha / 2.0;
+    float denominator = NdotX * (1.0 - k) + k;
+    denominator = max(denominator, 0.000001);
+    return numerator / denominator;
+}
+
+float G(float alpha, float NdotE, float NdotL)
+{
+    return G1(alpha, NdotE) * G1(alpha, NdotL);
+}
+
 float FresnelSchlick(float n, float HdotE)
 {
     float F0 = pow(n-1, 2)/pow(n+1, 2);
     return F0 + (1 - F0) * pow(1 - HdotE, 5);
+}
+
+float geometricalAttenuation_Blinn1977(float NdotL, float NdotH, float NdotE, float HdotE)
+{
+    // 1/NdotE factor from main equation is combined here, therefore
+    // it's not needed in the final equasion for specular light.
+	float G = 0;
+	if (NdotE < NdotL) {
+		if (2 * NdotE * NdotH < HdotE) G = 2 * NdotH / HdotE;
+		else G = 1 / NdotE;
+	}
+	else {
+		if (2 * NdotL * NdotH < HdotE) G = 2 * NdotH * NdotL / HdotE * NdotE;
+		else G = 1 / NdotE;
+	}
+    return G;
 }
 
 float Fresnel_Blinn1977(float n, float HdotE)
