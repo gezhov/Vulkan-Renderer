@@ -30,21 +30,30 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
+    float diffuseProportion;
+    float roughness;
+    float indexOfRefraction;
 } globalUbo;
 
 // Source of directional light
 vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 
+// Fresnel function from Jim Blinn 1977 paper
+float Fresnel_Blinn1977(float n, float HdotE);
+// Schlick's Fresnel factor approximation
+float FresnelSchlick(float n, float HdotE);
+
 void main() {
     vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
     vec3 specularLight = vec3(0.0);
+    float specularProportion = 1.0 - globalUbo.diffuseProportion; // energy conservation rule
     vec3 surfaceNormal = normalize(fragNormalWorld);
 
     vec3 cameraPosWorld = globalUbo.invView[3].xyz; // getting cameras world space pos from inverse view matrix
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // Eye vector
 
     // Directional light contribution
-    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.directionalLightIntensity;
+    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.diffuseProportion * globalUbo.directionalLightIntensity;
 
     for (int i = 0; i < globalUbo.numLights; ++i) {
         PointLight light = globalUbo.pointLights[i];
@@ -55,20 +64,21 @@ void main() {
         directionToLight = normalize(directionToLight);
         float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
-        diffuseLight += intensity * cosAngIncidence;
+        diffuseLight += globalUbo.diffuseProportion * intensity * cosAngIncidence;
         
         // specular term (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
         // s = D * G * F / (N * E)
         // Magnesium Oxide Ceramic values for c3 and n is used for now.
         // D - Facet distribution function (D3 - Trowbridge-Reitz function)
-        float c3 = 0.35; // [0;1] <=> [specular;diffuse]
+        float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
         // H - halfway direction
         vec3 H = normalize((directionToLight + viewDirection) / length(directionToLight + viewDirection));
         float c3sqrd = pow(c3,2);
         float D = pow(c3sqrd / ((dot(surfaceNormal,H) * (c3sqrd-1))+1), 2);
         // (N * E) - consine of inclination angle
         float NdotE = dot(surfaceNormal, viewDirection);
-        // G - geometrical attenuation factor
+        // G - geometrical attenuation factor.
+        // 1/NdotE factor from main equation is combined here, therefore it is not in the final formula for specular light.
         float G = 0;
         float NdotL = dot(surfaceNormal, directionToLight);
         float NdotH = dot(surfaceNormal, H);
@@ -82,11 +92,9 @@ void main() {
             else G = 1 / NdotE;
         }
         // F - Frenel reflection
-        float n = 1.8; // index of refraction
-        float c = HdotE;
-        float g = sqrt(pow(n,2) + pow(c,2) - 1);
-        float F = pow(g-c,2)/pow(g+c,2) * (1 + pow(c * (g+c) - 1, 2)/pow(c * (g-c) + 1, 2));
-        specularLight += intensity * D * G * F / NdotE;
+        //float F = Fresnel_Blinn1977(globalUbo.indexOfRefraction, HdotE);
+        float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
+        specularLight += specularProportion * intensity * D * G * F;
     }
 
     // Fragment getting texture color by coordinates if it's present
@@ -102,4 +110,17 @@ void main() {
 
     //outColor = sampleTextureColor;
     outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
+}
+
+float FresnelSchlick(float n, float HdotE)
+{
+    float F0 = pow(n-1, 2)/pow(n+1, 2);
+    return F0 + (1 - F0) * pow(1 - HdotE, 5);
+}
+
+float Fresnel_Blinn1977(float n, float HdotE)
+{
+    float c = HdotE;
+    float g = sqrt(pow(n,2) + pow(c,2) - 1);
+    return pow(g-c,2)/pow(g+c,2) * (1 + pow(c * (g+c) - 1, 2)/pow(c * (g-c) + 1, 2));
 }

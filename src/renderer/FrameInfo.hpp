@@ -45,6 +45,9 @@ struct GlobalUbo // global uniform buffer object
 	alignas(16) glm::vec4 directionalLightPosition;
 	PointLight pointLights[MAX_LIGHTS];
 	int numLights; // кол-во активных точечных источников света
+    float diffuseProportion;
+    float roughness;
+    float indexOfRefraction;
 };
 
 struct SimplePushConstantData

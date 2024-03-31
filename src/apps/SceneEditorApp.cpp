@@ -156,6 +156,9 @@ void SceneEditorApp::run()
             ubo.inverseView = camera.getInverseView();
             ubo.directionalLightIntensity = appGUI.directionalLightIntensity;
             ubo.directionalLightPosition = appGUI.directionalLightPosition;
+            ubo.diffuseProportion = appGUI.diffuseProportion;
+            ubo.roughness = appGUI.roughness;
+            ubo.indexOfRefraction = appGUI.indexOfRefraction;
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();

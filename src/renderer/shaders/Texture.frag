@@ -31,6 +31,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     vec4 directionalLightPosition;
     PointLight pointLights[10];
     int numLights;
+    float diffuseProportion;
+    float roughness;
+    float indexOfRefraction;
 } globalUbo;
 
 // Directional Lighting

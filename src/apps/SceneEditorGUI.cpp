@@ -135,9 +135,9 @@ void SceneEditorGUI::setupMainSettingsPanel()
             1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
         // 1 collapsing header
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.95f);
         if (ImGui::CollapsingHeader("Scene Rendering Settings", ImGuiTreeNodeFlags_DefaultOpen))
         {
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.95f);
             ImGui::Text("Directional Light Intensity");
             ImGui::SliderFloat("##Directional Light intensity", &directionalLightIntensity, -1.0f, 10.0f);
 
@@ -148,6 +148,16 @@ void SceneEditorGUI::setupMainSettingsPanel()
             ImGui::RadioButton("Lambertian", &renderingSettings.reflectionModel, 0); ImGui::SameLine();
             ImGui::RadioButton("Blinn-Phong", &renderingSettings.reflectionModel, 1); ImGui::SameLine();
             ImGui::RadioButton("Torrance-Sparrow", &renderingSettings.reflectionModel, 2);
+            ImGui::PopItemWidth();
+
+            if (renderingSettings.reflectionModel == 2) {
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
+                ImGui::Text("Torrance-Sparrow Model settings");
+                ImGui::SliderFloat("Diffuse Proportion", &diffuseProportion, 0.f, 1.f);
+                ImGui::SliderFloat("Roughness (C3)", &roughness, 0.f, 1.f);
+                ImGui::SliderFloat("Index of Refraction (n)", &indexOfRefraction, 0.1f, 300.f);
+                ImGui::PopItemWidth();
+            }
 
             ImGui::Text("Polygon Fill Mode");
             ImGui::RadioButton("Fill", &renderingSettings.polygonFillMode, 0); ImGui::SameLine();
@@ -157,7 +167,6 @@ void SceneEditorGUI::setupMainSettingsPanel()
             ImGui::Text("Clear Color");
             ImGui::ColorEdit3("##Clear Color", (float*)&clearColor);
         }
-        ImGui::PopItemWidth();
 
         // 2 collapsing header
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);

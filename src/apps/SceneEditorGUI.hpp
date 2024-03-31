@@ -43,6 +43,10 @@ public:
     glm::vec4 directionalLightPosition = { 1.0f, -3.0f, -1.0f, 1.f };
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    float diffuseProportion = 0.333f;
+    float roughness = 0.35f;
+    float indexOfRefraction = 1.8f;
+
     std::vector<std::string> objectsPaths;
     std::vector<std::string> objectsNames;
     std::string selectedObjPath = "";
