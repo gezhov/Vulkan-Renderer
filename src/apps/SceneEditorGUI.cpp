@@ -182,14 +182,13 @@ void SceneEditorGUI::enumerateObjectsInTheScene()
     ImGui::SetNextWindowSize(ImVec2{200, 230}, ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("All Objects")) {
-        static int pickedItemId = 0; // first item is the default one to pick
         if (ImGui::BeginListBox("All Objects", ImVec2(-FLT_MIN, 10 * ImGui::GetTextLineHeightWithSpacing())))
         {
             for (auto& obj : sceneObjects)
             {
-                const bool isSelected = (pickedItemId == obj.second.getId());
+                const bool isSelected = (pickedItemSceneObjectsList == obj.second.getId());
                 if (ImGui::Selectable(obj.second.getName().c_str(), isSelected)) {
-                    pickedItemId = obj.second.getId();
+                    pickedItemSceneObjectsList = obj.second.getId();
                 }
 
                 if (isSelected) { ImGui::SetItemDefaultFocus(); }
@@ -198,11 +197,11 @@ void SceneEditorGUI::enumerateObjectsInTheScene()
         }
 
         // Create "Inspect Object" window for chosed type of scene object
-        if (sceneObjects[pickedItemId].pointLight != nullptr) {
-            inspectObject(sceneObjects[pickedItemId], true);
+        if (sceneObjects[pickedItemSceneObjectsList].pointLight != nullptr) {
+            inspectObject(sceneObjects[pickedItemSceneObjectsList], true);
         }
         else {
-            inspectObject(sceneObjects[pickedItemId], false);
+            inspectObject(sceneObjects[pickedItemSceneObjectsList], false);
         }
     }
     ImGui::End();
@@ -224,7 +223,7 @@ void SceneEditorGUI::inspectObject(SceneObject& object, bool isPointLight)
 
         if (isPointLight) {
             if (ImGui::CollapsingHeader("PointLight Component", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 250.0f);
+                ImGui::SliderFloat("Light intensity", &object.pointLight->lightIntensity, .0f, 100.0f);
                 ImGui::SliderFloat("Light radius", &object.transform.scale.x, 0.01f, 5.0f);
                 ImGui::ColorEdit3("Light color", (float*)&object.color);
                 ImGui::Checkbox("Demo Carousel Enabled", &object.pointLight->carouselEnabled);
@@ -276,17 +275,16 @@ void SceneEditorGUI::showModelsFromDirectory()
         }
     }
 
-    static int pickedItemId = 0; // picked item number as a static var 
     ImGui::Text("Available models to add to the scene:");
     ImGui::Text(selectedObjPath.c_str());
     if (ImGui::BeginListBox("Object Loader", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing())))
     {
         for (int n = 0; n < objectsNames.size(); n++)
         {
-            const bool isSelected = (pickedItemId == n);
+            const bool isSelected = (pickedItemModelsList == n);
             // List are filling up with passed labels 
             if (ImGui::Selectable(objectsNames[n].c_str(), isSelected)) {
-                pickedItemId = n;
+                pickedItemModelsList = n;
                 selectedObjPath = objectsPaths.at(n);
             }
 
@@ -297,10 +295,11 @@ void SceneEditorGUI::showModelsFromDirectory()
     }
 
     if (ImGui::Button("Add to the scene")) {
-        std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(pickedItemId));
+        std::shared_ptr<WrpModel> model = WrpModel::createModelFromObjMtl(wrpDevice, objectsPaths.at(pickedItemModelsList));
         auto newObj = SceneObject::createSceneObject();
         newObj.model = model;
         sceneObjects.emplace(newObj.getId(), std::move(newObj));
+        pickedItemSceneObjectsList = newObj.getId();
     }
 }
 
@@ -321,6 +320,7 @@ void SceneEditorGUI::showPointLightCreator()
     {
         SceneObject pointLight = SceneObject::makePointLight(pointLightIntensity, pointLightRadius, pointLightColor);
         sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
+        pickedItemSceneObjectsList = pointLight.getId();
     }
 
     ImGui::PopItemWidth();
@@ -329,7 +329,7 @@ void SceneEditorGUI::showPointLightCreator()
 void SceneEditorGUI::renderTransformGizmo(TransformComponent& transform)
 {
     ImGuizmo::BeginFrame();
-    static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::ROTATE;
+    static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
     static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
 
     if (ImGui::IsKeyPressed(ImGuiKey_1)) {

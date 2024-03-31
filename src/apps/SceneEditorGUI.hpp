@@ -46,9 +46,11 @@ public:
     std::vector<std::string> objectsPaths;
     std::vector<std::string> objectsNames;
     std::string selectedObjPath = "";
+    int pickedItemModelsList = 0;
+    int pickedItemSceneObjectsList = 0;
 
-    float pointLightIntensity = .0f;
-    float pointLightRadius = .0f;
+    float pointLightIntensity = 1.0f;
+    float pointLightRadius = .22f;
     glm::vec3 pointLightColor{1, 1, 1};
 
 private:
