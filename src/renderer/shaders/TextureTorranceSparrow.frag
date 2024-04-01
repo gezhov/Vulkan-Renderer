@@ -35,9 +35,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     float indexOfRefraction;
 } globalUbo;
 
-// Source of directional light
-vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
-
+// --- Functions ---
 // Geometrical attenuation - Schlick-GGX
 float G1(float alpha, float NdotX);             // Schlick-Beckmann geometry shadowing function
 float G(float alpha, float NdotE, float NdotL); // Smith model
@@ -48,6 +46,10 @@ float FresnelSchlick(float n, float HdotE);
 float geometricalAttenuation_Blinn1977(float NdotL, float NdotH, float NdotE, float HdotE);
 // Fresnel function from [Jim Blinn, 1977] paper
 float Fresnel_Blinn1977(float n, float HdotE);
+// ---    ---
+
+// Source of directional light
+vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 
 void main() {
     vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
@@ -64,7 +66,7 @@ void main() {
     for (int i = 0; i < globalUbo.numLights; ++i) {
         PointLight light = globalUbo.pointLights[i];
 
-        // diffuse term
+        // --- diffuse term ---
         vec3 directionToLight = light.position.xyz - fragPosWorld;
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // intensity attenuation factor
         directionToLight = normalize(directionToLight);
@@ -72,29 +74,33 @@ void main() {
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
         diffuseLight += globalUbo.diffuseProportion * intensity * cosAngIncidence;
         
-        // specular term (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
+        // --- specular term --- (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
         // s = D * G * F / (N * E)
         // Magnesium Oxide Ceramic values for c3 and n is used for now.
-        // D - Facet distribution function (D3 - Trowbridge-Reitz function)
+
+        // D - Facet distribution function (D3 - Trowbridge-Reitz (GGX) function)
         float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
-        // H - halfway direction
-        vec3 H = normalize((directionToLight + viewDirection) / length(directionToLight + viewDirection));
+        vec3 H = normalize((directionToLight + viewDirection) / length(directionToLight + viewDirection)); // Halfway direction
         float c3sqrd = pow(c3,2);
-        float D = pow(c3sqrd / ((dot(surfaceNormal,H) * (c3sqrd-1))+1), 2);
-        // (N * E) - consine of inclination angle
+        float D = pow(c3sqrd / (dot(surfaceNormal,H) * (c3sqrd-1)+1), 2);
+
+        // (N * E) - cosine of inclination angle
         float NdotE = dot(surfaceNormal, viewDirection);
+
         // G - geometrical attenuation factor.
-		float NdotL = dot(surfaceNormal, directionToLight);
-		float NdotH = dot(surfaceNormal, H);
-		float HdotE = dot(H, viewDirection);
+        float NdotL = dot(surfaceNormal, directionToLight);
+        float NdotH = dot(surfaceNormal, H);
+        float HdotE = dot(H, viewDirection);
         //float G = geometricalAttenuation_Blinn1977(NdotL, NdotH, NdotE, HdotE);
         float alpha = pow(c3, 2);
         float G = G(alpha, NdotE, NdotL);
+
         // F - Frenel reflection
         //float F = Fresnel_Blinn1977(globalUbo.indexOfRefraction, HdotE);
         float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
-        specularLight += specularProportion * intensity * D * G * F / NdotE;
+
         //specularLight += specularProportion * intesity * D * G * F; // Torrance-Sparrow equation for [Blinn, 1977] G variant.
+        specularLight += specularProportion * intensity * D * G * F / NdotE;
     }
 
     // Fragment getting texture color by coordinates if it's present
@@ -136,15 +142,15 @@ float geometricalAttenuation_Blinn1977(float NdotL, float NdotH, float NdotE, fl
 {
     // 1/NdotE factor from main equation is combined here, therefore
     // it's not needed in the final equasion for specular light.
-	float G = 0;
-	if (NdotE < NdotL) {
-		if (2 * NdotE * NdotH < HdotE) G = 2 * NdotH / HdotE;
-		else G = 1 / NdotE;
-	}
-	else {
-		if (2 * NdotL * NdotH < HdotE) G = 2 * NdotH * NdotL / HdotE * NdotE;
-		else G = 1 / NdotE;
-	}
+    float G = 0;
+    if (NdotE < NdotL) {
+        if (2 * NdotE * NdotH < HdotE) G = 2 * NdotH / HdotE;
+        else G = 1 / NdotE;
+    }
+    else {
+        if (2 * NdotL * NdotH < HdotE) G = 2 * NdotH * NdotL / HdotE * NdotE;
+        else G = 1 / NdotE;
+    }
     return G;
 }
 
