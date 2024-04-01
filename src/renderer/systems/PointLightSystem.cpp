@@ -67,8 +67,8 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
 
     wrpPipeline = std::make_unique<WrpPipeline>(
         wrpDevice,
-        "src/renderer/shaders/PointLight.vert.spv",
-        "src/renderer/shaders/PointLight.frag.spv",
+        "src/shaders/PointLight.vert.spv",
+        "src/shaders/PointLight.frag.spv",
         pipelineConfig);
 }
 

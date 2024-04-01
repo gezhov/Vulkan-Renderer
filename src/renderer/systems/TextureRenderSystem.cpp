@@ -66,7 +66,7 @@ TextureRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel
     pipelineConfig.pipelineLayout = pipelineLayout;
     pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
-    std::string vertPath = "src/renderer/shaders/Texture.vert.spv";
+    std::string vertPath = "src/shaders/Texture.vert.spv";
     VkShaderModule fragShaderModule;
     if (reflectionModel == 0) fragShaderModule = fsModuleLambertian;
     else if (reflectionModel == 1) fragShaderModule = fsModuleBlinnPhong;
@@ -133,9 +133,9 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
     // перезапись и перекомпиляция шейдера фрагментов с новым значением количества текстур
     if (texturesCount != 0)
     {
-        std::string path0 = ENGINE_DIR"src/renderer/shaders/TextureLambertian.frag";
-        std::string path1 = ENGINE_DIR"src/renderer/shaders/Texture.frag";
-        std::string path2 = ENGINE_DIR"src/renderer/shaders/TextureTorranceSparrow.frag";
+        std::string path0 = ENGINE_DIR"src/shaders/TextureLambertian.frag";
+        std::string path1 = ENGINE_DIR"src/shaders/Texture.frag";
+        std::string path2 = ENGINE_DIR"src/shaders/TextureTorranceSparrow.frag";
         fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
         fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
         fsModuleTorranceSparrow = rewriteAndRecompileFragShader(path2, texturesCount);
@@ -179,17 +179,17 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
     shaderFile.close();
 
     // generated shader are rewriting every time with the new textures count
-    shaderFile.open(ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", std::ios::out | std::ios::trunc);
+    shaderFile.open(ENGINE_DIR"src/shaders/Texture_Generated.frag", std::ios::out | std::ios::trunc);
     if (shaderFile.is_open())
     {
         shaderFile << shaderContent;
     }
     shaderFile.close();
 
-    std::vector<char> fragShader = WrpPipeline::readFile("src/renderer/shaders/Texture_Generated.frag");
+    std::vector<char> fragShader = WrpPipeline::readFile("src/shaders/Texture_Generated.frag");
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
     shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, fragShader.data(), fragShader.size(),
-        shaderc_glsl_fragment_shader, ENGINE_DIR"src/renderer/shaders/Texture_Generated.frag", "main", nullptr);
+        shaderc_glsl_fragment_shader, ENGINE_DIR"src/shaders/Texture_Generated.frag", "main", nullptr);
 
     VkShaderModule shaderModule = nullptr;
     VkShaderModuleCreateInfo createInfo{};

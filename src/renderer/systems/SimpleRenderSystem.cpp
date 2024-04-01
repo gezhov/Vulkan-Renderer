@@ -65,11 +65,11 @@ SimpleRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel,
     pipelineConfig.pipelineLayout = pipelineLayout;
     pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
-    std::string vertPath = "src/renderer/shaders/NoTexture.vert.spv";
+    std::string vertPath = "src/shaders/NoTexture.vert.spv";
     std::string fragPath;
-    if (reflectionModel == 0) fragPath = "src/renderer/shaders/NoTextureLambertian.frag.spv";
-    else if (reflectionModel == 1) fragPath = "src/renderer/shaders/NoTexture.frag.spv";
-    else if (reflectionModel == 2) fragPath = "src/renderer/shaders/NoTextureTorranceSparrow.frag.spv";
+    if (reflectionModel == 0) fragPath = "src/shaders/NoTextureLambertian.frag.spv";
+    else if (reflectionModel == 1) fragPath = "src/shaders/NoTexture.frag.spv";
+    else if (reflectionModel == 2) fragPath = "src/shaders/NoTextureTorranceSparrow.frag.spv";
 
     return std::make_unique<WrpPipeline>(wrpDevice, vertPath, fragPath, pipelineConfig);
 }
