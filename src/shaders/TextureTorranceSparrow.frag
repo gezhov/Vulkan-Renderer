@@ -70,9 +70,9 @@ void main() {
         vec3 directionToLight = light.position.xyz - fragPosWorld;
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // intensity attenuation factor
         directionToLight = normalize(directionToLight);
-        float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
+        float NdotL = max(dot(surfaceNormal, directionToLight), 0.0); // aka cosine of the angle of incidence
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
-        diffuseLight += globalUbo.diffuseProportion * intensity * cosAngIncidence;
+        diffuseLight += globalUbo.diffuseProportion * intensity * NdotL;
         
         // --- specular term --- (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
         // s = D * G * F / (N * E)
@@ -82,15 +82,14 @@ void main() {
         float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
         vec3 H = normalize((directionToLight + viewDirection) / length(directionToLight + viewDirection)); // Halfway direction
         float c3sqrd = pow(c3,2);
-        float D = pow(c3sqrd / (dot(surfaceNormal,H) * (c3sqrd-1)+1), 2);
+        float NdotH = max(dot(surfaceNormal, H), 0.0);
+        float D = pow(c3sqrd / (pow(NdotH,2) * (c3sqrd-1)+1), 2);
 
         // (N * E) - cosine of inclination angle
-        float NdotE = dot(surfaceNormal, viewDirection);
+        float NdotE = max(dot(surfaceNormal, viewDirection), 0.0);
 
         // G - geometrical attenuation factor.
-        float NdotL = dot(surfaceNormal, directionToLight);
-        float NdotH = dot(surfaceNormal, H);
-        float HdotE = dot(H, viewDirection);
+        float HdotE = max(dot(H, viewDirection), 0.0);
         //float G = geometricalAttenuation_Blinn1977(NdotL, NdotH, NdotE, HdotE);
         float alpha = pow(c3, 2);
         float G = G(alpha, NdotE, NdotL);
@@ -100,7 +99,7 @@ void main() {
         float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
 
         //specularLight += specularProportion * intesity * D * G * F; // Torrance-Sparrow equation for [Blinn, 1977] G variant.
-        specularLight += specularProportion * intensity * D * G * F / NdotE;
+        specularLight += specularProportion * intensity * D * G * F / max(NdotE, 0.000001);
     }
 
     // Fragment getting texture color by coordinates if it's present
