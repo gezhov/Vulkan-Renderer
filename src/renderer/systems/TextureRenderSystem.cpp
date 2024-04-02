@@ -130,16 +130,13 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         descriptorWriter.build(systemDescriptorSets[i]);
     }
 
-    // перезапись и перекомпиляция шейдера фрагментов с новым значением количества текстур
-    if (texturesCount != 0)
-    {
-        std::string path0 = ENGINE_DIR"src/shaders/TextureLambertian.frag";
-        std::string path1 = ENGINE_DIR"src/shaders/Texture.frag";
-        std::string path2 = ENGINE_DIR"src/shaders/TextureTorranceSparrow.frag";
-        fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
-        fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
-        fsModuleTorranceSparrow = rewriteAndRecompileFragShader(path2, texturesCount);
-    }
+    // rewrite and recompile fragment shader with the new textures count value
+    std::string path0 = ENGINE_DIR"src/shaders/TextureLambertian.frag";
+    std::string path1 = ENGINE_DIR"src/shaders/Texture.frag";
+    std::string path2 = ENGINE_DIR"src/shaders/TextureTorranceSparrow.frag";
+    fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
+    fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
+    fsModuleTorranceSparrow = rewriteAndRecompileFragShader(path2, texturesCount);
 }
 
 VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fragShaderPath, int texturesCount)
@@ -148,14 +145,14 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
     std::string shaderContent;
     std::string line;
     std::string macros = "#define TEXTURES_COUNT ";
-    static bool isTexturesDefined = false;
+    bool isTexturesDefined = false;
 
     shaderFile.open(fragShaderPath, std::ios::in | std::ios::app);
     if (shaderFile.is_open())
     {
         while (std::getline(shaderFile, line))
         {
-            if (line.find(macros) != std::string::npos)
+            if (!isTexturesDefined && line.find(macros) != std::string::npos)
             {
                 // replacing TEXTURES_COUNT
                 macros += std::to_string(texturesCount);
@@ -163,11 +160,13 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
                 shaderContent += line + '\n';
 
                 // single-time adding TEXTURES define and sampler2D array to activate code with texturing
-                if (!isTexturesDefined) {
+                if (texturesCount != 0) {
                     shaderContent += "#define TEXTURES\n";
-                    shaderContent += "layout(set = 1, binding = 0) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler дескрипторы\n";
+                    shaderContent += "layout(set = 1, binding = 0) uniform sampler2D texSampler[TEXTURES_COUNT]; // Combined Image Sampler descriptors\n";
                 }
+
                 std::cout << line << std::endl;
+                isTexturesDefined = true;
             }
             else
             {
@@ -175,7 +174,7 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
             }
         }
     }
-    else std::cerr << "Your file couldn't be opened";
+    else std::cerr << "Shader rewriting: Your shader file couldn't be opened.";
     shaderFile.close();
 
     // generated shader are rewriting every time with the new textures count
