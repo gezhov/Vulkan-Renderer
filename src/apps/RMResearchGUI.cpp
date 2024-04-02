@@ -119,7 +119,7 @@ void RMResearchGUI::setupGUI()
 void RMResearchGUI::setupMainSettingsPanel()
 {
     ImGui::SetNextWindowPos(ImVec2{5, 5}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2{390, 425}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2{390, 500}, ImGuiCond_FirstUseEver);
 
     // window itself
     if (ImGui::Begin("Vulkan Renderer"))
@@ -143,14 +143,19 @@ void RMResearchGUI::setupMainSettingsPanel()
             ImGui::RadioButton("Torrance-Sparrow", &renderingSettings.reflectionModel, 2);
             ImGui::PopItemWidth();
 
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
+            if (renderingSettings.reflectionModel == 1) {
+                ImGui::Text("Blinn-Phong Model settings");
+                ImGui::SliderFloat("Diffuse Proportion", &diffuseProportion, 0.f, 1.f);
+            }
+
             if (renderingSettings.reflectionModel == 2) {
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
                 ImGui::Text("Torrance-Sparrow Model settings");
                 ImGui::SliderFloat("Diffuse Proportion", &diffuseProportion, 0.f, 1.f);
                 ImGui::SliderFloat("Roughness (C3)", &roughness, 0.f, 1.f);
                 ImGui::SliderFloat("Index of Refraction (n)", &indexOfRefraction, 0.1f, 300.f);
-                ImGui::PopItemWidth();
             }
+            ImGui::PopItemWidth();
 
             ImGui::Text("Polygon Fill Mode");
             ImGui::RadioButton("Fill", &renderingSettings.polygonFillMode, 0); ImGui::SameLine();
@@ -227,7 +232,7 @@ void RMResearchGUI::enumerateObjectsInTheScene()
 
 void RMResearchGUI::inspectObject(SceneObject& object, bool isPointLight)
 {
-    ImGui::SetNextWindowPos(ImVec2{5, 435}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2{5, 510}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2{350, 315}, ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("Inspector")) {
