@@ -1,4 +1,5 @@
 #include "apps/SceneEditorApp.hpp"
+#include "apps/RMResearchApp.hpp"
 
 // std
 #include <cstdlib>
@@ -15,6 +16,10 @@ int main(int argc, char* argv[])
 
             if (argument_str == "--scene") {
                 SceneEditorApp app{argument_number};
+                app.run();
+            }
+            else if (argument_str == "--rmresearch") {
+                RMResearchApp app{argument_number};
                 app.run();
             }
         }
