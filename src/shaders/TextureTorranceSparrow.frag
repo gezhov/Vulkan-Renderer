@@ -61,7 +61,7 @@ void main() {
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // Eye vector
 
     // Directional light contribution
-    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.diffuseProportion * globalUbo.directionalLightIntensity;
+    diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.directionalLightIntensity;
 
     for (int i = 0; i < globalUbo.numLights; ++i) {
         PointLight light = globalUbo.pointLights[i];
