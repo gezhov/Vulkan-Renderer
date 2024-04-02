@@ -76,7 +76,6 @@ void main() {
         
         // --- specular term --- (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
         // s = D * G * F / (N * E)
-        // Magnesium Oxide Ceramic values for c3 and n is used for now.
 
         // D - Facet distribution function (D3 - Trowbridge-Reitz (GGX) function)
         float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
