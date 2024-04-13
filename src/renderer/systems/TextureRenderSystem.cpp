@@ -132,7 +132,7 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
 
     // rewrite and recompile fragment shader with the new textures count value
     std::string path0 = ENGINE_DIR"src/shaders/TextureLambertian.frag";
-    std::string path1 = ENGINE_DIR"src/shaders/Texture.frag";
+    std::string path1 = ENGINE_DIR"src/shaders/TextureBlinnPhong.frag";
     std::string path2 = ENGINE_DIR"src/shaders/TextureTorranceSparrow.frag";
     fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
     fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
