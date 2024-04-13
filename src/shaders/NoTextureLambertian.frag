@@ -39,9 +39,6 @@ void main() {
     vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
     vec3 surfaceNormal = normalize(fragNormalWorld);
 
-    vec3 cameraPosWorld = globalUbo.invView[3].xyz; // getting cameras world space pos from inverse view matrix
-    vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld); // Eye vector
-
     // Directional light contribution
     diffuseLight += max(dot(surfaceNormal, DIRECTION_TO_LIGHT), 0) * globalUbo.directionalLightIntensity;
 
@@ -52,10 +49,10 @@ void main() {
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // intensity attenuation factor
         directionToLight = normalize(directionToLight);
 
-        float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
+        float NdotL = max(dot(surfaceNormal, directionToLight), 0); // cosine of the angle of incidence 
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
 
-        diffuseLight += intensity * cosAngIncidence;
+        diffuseLight += intensity * NdotL;
     }
 
     // using dark grey for black (no color) models to see light impact

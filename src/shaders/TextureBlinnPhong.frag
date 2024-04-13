@@ -2,7 +2,7 @@
 
 #define TEXTURES_COUNT 0
 
-// Входные интерполированные от трёх вершин переменные. Location и тип данных должны совпадать с выходными переменными из шейдера вершин.
+// Input variables interpolated from 3 vertcies
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
@@ -11,8 +11,8 @@ layout (location = 3) in vec2 fragUv;
 layout (location = 0) out vec4 outColor;
 
 struct PointLight {
-    vec4 position; // w - игнорируется
-    vec4 color;    // w - интенсивность цвета
+    vec4 position; // w - ignored
+    vec4 color;    // w - color intensity
 };
 
 layout(push_constant) uniform Push {
@@ -63,8 +63,8 @@ void main() {
         diffuseLight += globalUbo.diffuseProportion * intensity * cosAngIncidence;
 
         // --- specular term ---
-        vec3 halfAngle = normalize(directionToLight + viewDirection);
-        float blinnTerm = dot(surfaceNormal, halfAngle); // фактор-член влияния зеркального света по Блинн-Фонгу на интенсивность отражённого света
+        vec3 halfAngleVec = normalize(directionToLight + viewDirection);
+        float blinnTerm = dot(surfaceNormal, halfAngleVec); // фактор-член влияния зеркального света по Блинн-Фонгу на интенсивность отражённого света
         blinnTerm = clamp(blinnTerm, 0, 1);  // отбросить случаи, когда источник света или наблюдатель находятся с другой стороны поверхности
         blinnTerm = pow(blinnTerm, 60.0);  // больше степень => резче блик отражённого света
 

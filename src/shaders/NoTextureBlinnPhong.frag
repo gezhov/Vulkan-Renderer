@@ -57,17 +57,17 @@ void main() {
         vec3 directionToLight = light.position.xyz - fragPosWorld; // ещё ненормализованное направление к ист. света
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // фактор ослабевания интенсивности света = 1 / квадрат расстояния до источника
         directionToLight = normalize(directionToLight);
-        float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
+        float NdotL = max(dot(surfaceNormal, directionToLight), 0); // cosine of the angle of incidence
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
 
-        diffuseLight += globalUbo.diffuseProportion * intensity * cosAngIncidence;
+        diffuseLight += globalUbo.diffuseProportion * intensity * NdotL;
 
         // --- specular term ---
-        vec3 halfAngle = normalize(directionToLight + viewDirection);
-        float blinnTerm = max(dot(surfaceNormal, halfAngle), 0.0); // фактор-член влияния зеркального света по Блинн-Фонгу на интенсивность отражённого света
-        blinnTerm = pow(blinnTerm, 60.0);  // больше степень => резче блик отражённого света
+        vec3 halfAngleVec = normalize(directionToLight + viewDirection); // H
+        float NdotH = max(dot(surfaceNormal, halfAngleVec), 0.0);    // фактор-член влияния зеркального света по Блинн-Фонгу на интенсивность отражённого света
+        NdotH = pow(NdotH, 60.0);  // больше степень => резче блик отражённого света
 
-        specularLight += specularProportion * intensity * blinnTerm;
+        specularLight += specularProportion * intensity * NdotH;
     }
 
     // Если "простая модель" пришла на вход без цвета, то используется серый оттенок,
