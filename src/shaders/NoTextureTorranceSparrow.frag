@@ -43,6 +43,8 @@ float FresnelSchlick(float n, float HdotE);
 float geometricalAttenuation_Blinn1977(float NdotL, float NdotH, float NdotE, float HdotE);
 // Fresnel function from [Jim Blinn, 1977] paper
 float Fresnel_Blinn1977(float n, float HdotE);
+// Torrance-Sparrow microfacet model, source: [Blinn, 1977]
+float Specular_TorranceSparrow_Blinn1977(float alpha, float NdotL, float NdotH, float NdotE, float HdotE);
 // ---    ---
 
 // Source of directional light
@@ -51,7 +53,7 @@ vec3 DIRECTION_TO_LIGHT = normalize(globalUbo.directionalLightPosition.xyz);
 void main() {
     vec3 diffuseLight = globalUbo.ambientLightColor.xyz * globalUbo.ambientLightColor.w;
     vec3 specularLight = vec3(0.0);
-    float specularProportion = 1.0 - globalUbo.diffuseProportion; // energy conservation rule
+    //float specularProportion = 1.0 - globalUbo.diffuseProportion; // energy conservation rule (manual regulation)
     vec3 surfaceNormal = normalize(fragNormalWorld);
 
     vec3 cameraPosWorld = globalUbo.invView[3].xyz; // getting cameras world space pos from inverse view matrix
@@ -63,39 +65,31 @@ void main() {
     for (int i = 0; i < globalUbo.numLights; ++i) {
         PointLight light = globalUbo.pointLights[i];
 
-        // --- diffuse term ---
         vec3 directionToLight = light.position.xyz - fragPosWorld;
         float attenuation = 1.0 / dot(directionToLight, directionToLight); // intensity attenuation factor
         directionToLight = normalize(directionToLight);
-        float NdotL = max(dot(surfaceNormal, directionToLight), 0.0); // aka cosine of the angle of incidence
+        float NdotL = max(dot(surfaceNormal, directionToLight), 0.0); // cosine of the angle of incidence 
         vec3 intensity = light.color.xyz * light.color.w * attenuation;
-        diffuseLight += globalUbo.diffuseProportion * intensity * NdotL;
         
-        // --- specular term --- (Torrance-Sparrow microfacet model, source: [Blinn, 1977])
-        // s = D * G * F / (N * E)
-
-        // D - Facet distribution function (D3 - Trowbridge-Reitz (GGX) function)
-        float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
         vec3 H = normalize((directionToLight + viewDirection) / length(directionToLight + viewDirection)); // Halfway direction
-        float c3sqrd = pow(c3,2);
-        float NdotH = max(dot(surfaceNormal, H), 0.0);
-        float D = pow(c3sqrd / (pow(NdotH,2) * (c3sqrd-1)+1), 2);
-
-        // (N * E) - cosine of inclination angle
-        float NdotE = max(dot(surfaceNormal, viewDirection), 0.0);
-
-        // G - geometrical attenuation factor.
         float HdotE = max(dot(H, viewDirection), 0.0);
-        //float G = geometricalAttenuation_Blinn1977(NdotL, NdotH, NdotE, HdotE);
-        float alpha = pow(c3, 2);
+        float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
+        float specularProportion = F;
+        float diffuseProportion = 1.0 - specularProportion;
+
+        float c3 = globalUbo.roughness; // [0;1] <=> [specular;diffuse]
+        float alpha = pow(c3,2);
+        float NdotH = max(dot(surfaceNormal, H), 0.0);
+        float D = pow(alpha / (pow(NdotH,2) * (alpha-1)+1), 2);
+
+        float NdotE = max(dot(surfaceNormal, viewDirection), 0.0); // (N * E) - cosine of inclination angle
         float G = G(alpha, NdotE, NdotL);
 
-        // F - Frenel reflection
-        //float F = Fresnel_Blinn1977(globalUbo.indexOfRefraction, HdotE);
-        float F = FresnelSchlick(globalUbo.indexOfRefraction, HdotE);
-
-        //specularLight += specularProportion * intesity * D * G * F; // Torrance-Sparrow equation for [Blinn, 1977] G variant.
-        specularLight += specularProportion * intensity * D * G * F / max(NdotE, 0.000001);
+        diffuseLight += diffuseProportion * intensity * NdotL;
+        // Cook-Torrance specular reflection model
+        specularLight += specularProportion * intensity * D * G * F / 4 * max(NdotL, 0.000001) * max(NdotE, 0.000001);
+        // Torrance-Sparrow [Blinn, 1977]
+        //specularLight += specularProportion * intensity * Specular_TorranceSparrow_Blinn1977(alpha, NdotL, NdotH, NdotE, HdotE);
     }
 
     // using dark grey for black (no color) models to see light impact
@@ -106,6 +100,18 @@ void main() {
     else {
         outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
     }
+}
+
+float Specular_TorranceSparrow_Blinn1977(float alpha, float NdotL, float NdotH, float NdotE, float HdotE)
+{
+    // D - Facet distribution function (D3 - Trowbridge-Reitz (GGX) function)
+    float D = pow(alpha / (pow(NdotH,2) * (alpha-1)+1), 2);
+    // G - geometrical attenuation factor.
+    float G = geometricalAttenuation_Blinn1977(NdotL, NdotH, NdotE, HdotE);
+    // F - Frenel reflection
+    float F = Fresnel_Blinn1977(globalUbo.indexOfRefraction, HdotE);
+    // 1 / NdotE is used in G factor so its omitted
+    return D * G * F; // Torrance-Sparrow equation for [Blinn, 1977] (1/NdotE in G variant).
 }
 
 float G1(float alpha, float NdotX)

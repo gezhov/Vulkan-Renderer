@@ -140,7 +140,7 @@ void RMResearchGUI::setupMainSettingsPanel()
             ImGui::Text("Reflection Model");
             ImGui::RadioButton("Lambertian", &renderingSettings.reflectionModel, 0); ImGui::SameLine();
             ImGui::RadioButton("Blinn-Phong", &renderingSettings.reflectionModel, 1); ImGui::SameLine();
-            ImGui::RadioButton("Torrance-Sparrow", &renderingSettings.reflectionModel, 2);
+            ImGui::RadioButton("Cook-Torrance", &renderingSettings.reflectionModel, 2);
             ImGui::PopItemWidth();
 
             ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.6f);
@@ -150,8 +150,7 @@ void RMResearchGUI::setupMainSettingsPanel()
             }
 
             if (renderingSettings.reflectionModel == 2) {
-                ImGui::Text("Torrance-Sparrow Model settings");
-                ImGui::SliderFloat("Diffuse Proportion", &diffuseProportion, 0.f, 1.f);
+                ImGui::Text("Cook-Torrance Model settings");
                 ImGui::SliderFloat("Roughness (C3)", &roughness, 0.f, 1.f);
                 ImGui::SliderFloat("Index of Refraction (n)", &indexOfRefraction, 0.1f, 300.f);
             }
