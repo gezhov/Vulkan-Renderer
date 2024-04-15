@@ -85,6 +85,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 
     int i = 0;
     std::unordered_map<std::string, int> difTexPathsMap{}; // чтобы мапить текстуры материалов на индексы реального массива путей
+    std::unordered_map<std::string, int> specTexPathsMap{};
     for (auto& mat : materials)
     {
         if (mat.diffuse_texname != "")
@@ -93,6 +94,15 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
             if (difTexPathsMap.find(path) == difTexPathsMap.end()) {
                 difTexPathsMap[path] = i;
                 texturePaths.push_back(path); // only unique non-blank paths to diffuse textures
+                ++i;
+            }
+        }
+        if (mat.specular_texname != "")
+        {
+            std::string path = MODELS_DIR + mat.specular_texname;
+            if (specTexPathsMap.find(path) == specTexPathsMap.end()) {
+                specTexPathsMap[path] = i;
+                texturePaths.push_back(path);
                 ++i;
             }
         }
@@ -166,7 +176,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
             int currentFaceMaterialId = shape.mesh.material_ids.at(face);
             if (face + 1 != facesNumber && shape.mesh.material_ids.at(face + 1) != currentFaceMaterialId)
             {
-                SubMesh subMesh = createSubMesh(indexStart, indexCount, currentFaceMaterialId, difTexPathsMap, materials);
+                SubMesh subMesh = createSubMesh(indexStart, indexCount, currentFaceMaterialId, difTexPathsMap, specTexPathsMap, materials);
                 subMeshesInfos.push_back(subMesh);
                 uint32_t indexStart = static_cast<uint32_t>(indices.size());
                 uint32_t indexCount = 0;
@@ -175,7 +185,7 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 
         // adding the remaining faces to the submesh
         SubMesh subMesh = createSubMesh(indexStart, indexCount,
-            shape.mesh.material_ids.at(shape.mesh.material_ids.size()-1), difTexPathsMap, materials);
+            shape.mesh.material_ids.at(shape.mesh.material_ids.size()-1), difTexPathsMap, specTexPathsMap, materials);
         subMeshesInfos.push_back(subMesh);
     }
 }
@@ -183,12 +193,14 @@ void WrpModel::Builder::loadModel(const std::string& filepath)
 WrpModel::Builder::SubMesh WrpModel::Builder::createSubMesh(
     uint32_t indexStart, uint32_t indexCount, int materialId,
     std::unordered_map<std::string, int>& difTexPathsMap,
+    std::unordered_map<std::string, int>& specTexPathsMap,
     std::vector<tinyobj::material_t>& materials)
 {
     SubMesh subMesh = {indexStart, indexCount, -1, glm::vec3{}};
     if (materialId != -1) {
-        int diffuseTextureId;
+        int diffuseTextureId, specularTextureId;
         std::string difTexName = materials.at(materialId).diffuse_texname;
+        std::string specTexName = materials.at(materialId).specular_texname;
         if (difTexName == "") {
             diffuseTextureId = -1;
         }
@@ -196,12 +208,20 @@ WrpModel::Builder::SubMesh WrpModel::Builder::createSubMesh(
             diffuseTextureId = difTexPathsMap[MODELS_DIR + difTexName]; // индекс в реальный массив texturePaths
         }
 
+        if (specTexName == "") {
+            specularTextureId = -1;
+        }
+        else {
+            specularTextureId = specTexPathsMap[MODELS_DIR + specTexName];
+        }
+
         // Данной фигуре .obj модели присваивается её начало, кол-во индексов, индекс текстуры из мапы текстур и диффузный цвет
         subMesh = {
             indexStart,
             indexCount,
             diffuseTextureId,
-            glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2])
+            glm::vec3(materials.at(materialId).diffuse[0], materials.at(materialId).diffuse[1], materials.at(materialId).diffuse[2]),
+            specularTextureId
         };
     }
     return subMesh;

@@ -255,10 +255,17 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         for (auto& subMesh : obj.model->getSubMeshesInfos())
         {
             if (subMesh.diffuseTextureIndex != -1) {
-                push.textureIndex = textureIndexOffset + subMesh.diffuseTextureIndex;
+                push.diffTexIndex = textureIndexOffset + subMesh.diffuseTextureIndex;
             }
             else {
-                push.textureIndex = -1;
+                push.diffTexIndex = -1;
+            }
+
+            if (subMesh.specularTextureIndex != -1) {
+                push.specTexIndex = textureIndexOffset + subMesh.specularTextureIndex;
+            }
+            else {
+                push.specTexIndex = -1;
             }
             push.diffuseColor = subMesh.diffuseColor;	
 

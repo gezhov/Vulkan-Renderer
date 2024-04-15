@@ -62,6 +62,7 @@ struct TextureSystemPushConstantData
     glm::mat4 modelMatrix{ 1.f };
     glm::mat4 normalMatrix{1.f};
     // 128 byte min limit is reached. next fields will be limited by maxPushConstantSize
-    int textureIndex;
+    int diffTexIndex;
+    int specTexIndex;
     alignas(16) glm::vec3 diffuseColor{};
 };

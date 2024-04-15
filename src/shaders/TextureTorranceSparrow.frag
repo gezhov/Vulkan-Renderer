@@ -17,7 +17,8 @@ struct PointLight {
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
-    int textureIndex;
+    int diffTexIndex;
+    int specTexIndex;
     vec3 diffuseColor;
 } push;
 
@@ -98,16 +99,25 @@ void main() {
     // Fragment getting texture color by coordinates if it's present
     // and materials diffuse color otherwise.
     vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
-    if (push.textureIndex != -1) {
+    vec4 specularColor = vec4(0.0, 0.0, 0.0, 1);
+    if (push.diffTexIndex != -1) {
 #ifdef TEXTURES
-        sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
+        sampleTextureColor = texture(texSampler[push.diffTexIndex], fragUv);
 #endif
     } else {
         sampleTextureColor = vec4(push.diffuseColor, 1.0);
     }
 
+    if (push.specTexIndex != -1) {
+#ifdef TEXTURES
+        specularColor = texture(texSampler[push.specTexIndex], fragUv);
+#endif
+    } else {
+        specularColor = sampleTextureColor;
+    }
+
     //outColor = sampleTextureColor;
-    outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * sampleTextureColor.rgb, 1.0);
+    outColor = vec4(diffuseLight * sampleTextureColor.rgb + specularLight * specularColor.rgb, 1.0);
 }
 
 float Specular_TorranceSparrow_Blinn1977(float alpha, float NdotL, float NdotH, float NdotE, float HdotE)

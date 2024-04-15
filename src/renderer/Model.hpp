@@ -45,6 +45,7 @@ public:
             uint32_t indexCount;
             int diffuseTextureIndex;
             glm::vec3 diffuseColor;
+            int specularTextureIndex;
         };
 
         std::vector<Vertex> vertices{};
@@ -54,7 +55,8 @@ public:
 
         void loadModel(const std::string& filepath);
         SubMesh createSubMesh(uint32_t indexStart, uint32_t indexCount, int materialId,
-            std::unordered_map<std::string, int>& difTexPathsMap, std::vector<tinyobj::material_t>& materials);
+            std::unordered_map<std::string, int>& difTexPathsMap, std::unordered_map<std::string, int>& specTexPathsMap,
+            std::vector<tinyobj::material_t>& materials);
     };
 
     WrpModel(WrpDevice& device, const WrpModel::Builder& builder);

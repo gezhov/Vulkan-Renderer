@@ -17,7 +17,8 @@ struct PointLight {
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
-    int textureIndex;
+    int diffTexIndex;
+    int specTexIndex;
     vec3 diffuseColor;
 } push;
 
@@ -61,9 +62,9 @@ void main() {
     // Fragment getting texture color by coordinates if it's present
     // and materials diffuse color otherwise.
     vec4 sampleTextureColor = vec4(0.8, 0.1, 0.1, 1);
-    if (push.textureIndex != -1) {
+    if (push.diffTexIndex != -1) {
 #ifdef TEXTURES
-        sampleTextureColor = texture(texSampler[push.textureIndex], fragUv);
+        sampleTextureColor = texture(texSampler[push.diffTexIndex], fragUv);
 #endif
     } else {
         sampleTextureColor = vec4(push.diffuseColor, 1.0);
