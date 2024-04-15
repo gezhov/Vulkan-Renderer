@@ -25,6 +25,9 @@ void WrpWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
 
 void WrpWindow::initWindow()
 {
+    glfwSetErrorCallback([](int error, const char* description) {
+        fprintf(stderr, "Error: %s\n", description);
+    });
 	glfwInit();  // GLFW library initialization
 
 	// Настройки контекста окна GLFW перед его созданием.
