@@ -66,7 +66,7 @@ TextureRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel
     pipelineConfig.pipelineLayout = pipelineLayout;
     pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
-    std::string vertPath = "src/shaders/Texture.vert.spv";
+    std::string vertPath = "Texture.vert.spv";
     VkShaderModule fragShaderModule;
     if (reflectionModel == 0) fragShaderModule = fsModuleLambertian;
     else if (reflectionModel == 1) fragShaderModule = fsModuleBlinnPhong;
@@ -185,7 +185,7 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
     }
     shaderFile.close();
 
-    std::vector<char> fragShader = WrpPipeline::readFile("src/shaders/Texture_Generated.frag");
+    std::vector<char> fragShader = WrpPipeline::readShaderFile("Texture_Generated.frag");
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
     shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, fragShader.data(), fragShader.size(),
         shaderc_glsl_fragment_shader, ENGINE_DIR"src/shaders/Texture_Generated.frag", "main", nullptr);

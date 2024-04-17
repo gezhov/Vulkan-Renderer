@@ -24,11 +24,11 @@ WrpPipeline::~WrpPipeline()
     vkDestroyPipeline(wrpDevice.device(), graphicsPipeline, nullptr);
 }
 
-std::vector<char> WrpPipeline::readFile(const std::string& filepath)
+std::vector<char> WrpPipeline::readShaderFile(const std::string& filepath)
 {
-    std::string targetPath = ENGINE_DIR + filepath;
+    std::string targetPath = ENGINE_DIR"src/shaders/" + filepath;
 
-    // флаг ate устанавливает указатель в конец файла, чтобы сразу считать его размер
+    // ate is setting pointer to the end of file to read file size right from to-go
     std::ifstream file(targetPath, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())
@@ -60,12 +60,12 @@ void WrpPipeline::createGraphicsPipeline(
 
     // создание шейдерных модулей, если они не были переданы
     if (!vertShaderModule) {
-        std::vector<char> vertCode = readFile(vertFilepath);
+        std::vector<char> vertCode = readShaderFile(vertFilepath);
         createShaderModule(vertCode, &vertShaderModule);
         std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
     }
     if (!fragShaderModule) {
-        std::vector<char> fragCode = readFile(fragFilepath);
+        std::vector<char> fragCode = readShaderFile(fragFilepath);
         createShaderModule(fragCode, &fragShaderModule);
         std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
     }

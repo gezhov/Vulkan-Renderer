@@ -55,7 +55,7 @@ public:
     static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
     static void enableAlphaBlending(PipelineConfigInfo& configInfo);
 
-    static std::vector<char> readFile(const std::string& filepath);
+    static std::vector<char> readShaderFile(const std::string& filepath);
     void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 private:
