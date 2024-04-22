@@ -68,8 +68,8 @@ public:
     WrpModel& operator=(const WrpModel&) = delete;
 
     static std::unique_ptr<WrpModel> createModelFromObjMtl(WrpDevice& device, const std::string& filepath);
-    static std::unique_ptr<WrpModel> WrpModel::createModelFromObjTexture
-        (WrpDevice& device, const std::string& modelPath, const std::string& texturePath);
+    static std::unique_ptr<WrpModel> createModelFromObjTexture(WrpDevice& device,
+        const std::string& modelPath, const std::string& texturePath);
 
     void bind(VkCommandBuffer commandBuffer);
     void draw(VkCommandBuffer commandBuffer);

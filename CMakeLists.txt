@@ -102,7 +102,7 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/ZI>")
 
 add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17) # C++ 17 стандарт компилятора
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20) # C++ standard version
 
 # Св-во устанавливает рабочий каталог для локального отладчика Visual Studio C++
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")

@@ -100,7 +100,7 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         // Заполнение информации по дескрипторам текстур для каждой модели
         for (auto& texture : frameInfo.sceneObjects.at(id).model->getTextures())
         {
-            auto& imageInfo = texture->descriptorInfo();
+            VkDescriptorImageInfo imageInfo = texture->descriptorInfo();
             descriptorImageInfos.push_back(imageInfo);
         }
     }

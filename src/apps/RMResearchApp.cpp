@@ -71,25 +71,6 @@ void RMResearchApp::run()
             .build(globalDescriptorSets[i]);
     }
 
-    RenderingSettings renderingSettings{1, 0};
-
-    SimpleRenderSystem simpleRenderSystem{
-        wrpDevice,
-        wrpRenderer,
-        globalDescriptorSetLayout->getDescriptorSetLayout(),
-    };
-    TextureRenderSystem textureRenderSystem{
-        wrpDevice,
-        wrpRenderer,
-        globalDescriptorSetLayout->getDescriptorSetLayout(),
-        FrameInfo{0, 0, nullptr, WrpCamera{}, nullptr, sceneObjects, renderingSettings}
-    };
-    PointLightSystem pointLightSystem{
-        wrpDevice,
-        wrpRenderer.getSwapChainRenderPass(),
-        globalDescriptorSetLayout->getDescriptorSetLayout()
-    };
-
     WrpCamera camera{};
     // default camera transform
     //camera.setViewDirection(glm::vec3{0.f}, glm::vec3{0.5f, 0.f, 1.f});
@@ -101,6 +82,26 @@ void RMResearchApp::run()
     cameraObject.transform.rotation = {.0f, .0f, .0f};
     sceneObjects.emplace(cameraObject.getId(), std::move(cameraObject));
     KeyboardMovementController cameraController{};
+
+    RenderingSettings renderingSettings{1, 0};
+    FrameInfo frameInfo{0, 0, nullptr, camera, nullptr, sceneObjects, renderingSettings};
+
+    SimpleRenderSystem simpleRenderSystem{
+        wrpDevice,
+        wrpRenderer,
+        globalDescriptorSetLayout->getDescriptorSetLayout(),
+    };
+    TextureRenderSystem textureRenderSystem{
+        wrpDevice,
+        wrpRenderer,
+        globalDescriptorSetLayout->getDescriptorSetLayout(),
+        frameInfo
+    };
+    PointLightSystem pointLightSystem{
+        wrpDevice,
+        wrpRenderer.getSwapChainRenderPass(),
+        globalDescriptorSetLayout->getDescriptorSetLayout()
+    };
 
     RMResearchGUI appGUI{
         wrpWindow,
