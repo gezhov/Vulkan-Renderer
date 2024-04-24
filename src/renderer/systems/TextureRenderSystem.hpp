@@ -8,6 +8,7 @@
 #include "../FrameInfo.hpp"
 #include "../SwapChain.hpp"
 #include "../Descriptors.hpp"
+#include "../ShaderModule.hpp"
 
 // std
 #include <memory>
@@ -31,15 +32,15 @@ private:
 
     int fillModelsIds(SceneObject::Map& sceneObjects);
     void createDescriptorSets(FrameInfo& frameInfo);
-    VkShaderModule rewriteAndRecompileFragShader(std::string fragShaderPath, int texturesCount);
+    void rewriteAndRecompileFragShader(ShaderModule*& shaderModule, std::string fragShaderName, int texturesCount);
 
     WrpDevice& wrpDevice;
     WrpRenderer& wrpRenderer;
     VkDescriptorSetLayout globalSetLayout;
 
-    VkShaderModule fsModuleLambertian = nullptr;
-    VkShaderModule fsModuleBlinnPhong = nullptr;
-    VkShaderModule fsModuleTorranceSparrow = nullptr;
+    ShaderModule* fsModuleLambertian;
+    ShaderModule* fsModuleBlinnPhong;
+    ShaderModule* fsModuleTorranceSparrow;
     std::unique_ptr<WrpPipeline> wrpPipelineLambertian;
     std::unique_ptr<WrpPipeline> wrpPipelineBlinnPhong;
     std::unique_ptr<WrpPipeline> wrpPipelineTorranceSparrow;

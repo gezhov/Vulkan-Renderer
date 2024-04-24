@@ -9,5 +9,9 @@
 #endif
 
 #ifndef TEXTURES_DIR
-#define TEXTURES_DIR "../../../textures/"
+#define TEXTURES_DIR "../../../models/textures/"
+#endif
+
+#ifndef SHADERS_DIR
+#define SHADERS_DIR "../../../src/shaders/"
 #endif

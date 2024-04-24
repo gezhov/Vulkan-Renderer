@@ -66,8 +66,8 @@ TextureRenderSystem::createPipeline(VkRenderPass renderPass, int reflectionModel
     pipelineConfig.pipelineLayout = pipelineLayout;
     pipelineConfig.rasterizationInfo.polygonMode = (VkPolygonMode)polygonFillMode;
 
-    std::string vertPath = "Texture.vert.spv";
-    VkShaderModule fragShaderModule;
+    std::string vertPath = "Texture.vert";
+    ShaderModule* fragShaderModule;
     if (reflectionModel == 0) fragShaderModule = fsModuleLambertian;
     else if (reflectionModel == 1) fragShaderModule = fsModuleBlinnPhong;
     else if (reflectionModel == 2) fragShaderModule = fsModuleTorranceSparrow;
@@ -130,17 +130,18 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
         descriptorWriter.build(systemDescriptorSets[i]);
     }
 
-    // rewrite and recompile fragment shader with the new textures count value
-    std::string path0 = ENGINE_DIR"src/shaders/TextureLambertian.frag";
-    std::string path1 = ENGINE_DIR"src/shaders/TextureBlinnPhong.frag";
-    std::string path2 = ENGINE_DIR"src/shaders/TextureTorranceSparrow.frag";
-    fsModuleLambertian = rewriteAndRecompileFragShader(path0, texturesCount);
-    fsModuleBlinnPhong = rewriteAndRecompileFragShader(path1, texturesCount);
-    fsModuleTorranceSparrow = rewriteAndRecompileFragShader(path2, texturesCount);
+    std::string name0 = "TextureLambertian.frag";
+    std::string name1 = "TextureBlinnPhong.frag";
+    std::string name2 = "TextureTorranceSparrow.frag";
+    rewriteAndRecompileFragShader(fsModuleLambertian, name0, texturesCount);
+    rewriteAndRecompileFragShader(fsModuleBlinnPhong, name1, texturesCount);
+    rewriteAndRecompileFragShader(fsModuleTorranceSparrow, name2, texturesCount);
 }
 
-VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fragShaderPath, int texturesCount)
+void TextureRenderSystem::rewriteAndRecompileFragShader(
+    ShaderModule*& shaderModule, std::string fragShaderName, int texturesCount)
 {
+    std::string fragShaderPath = SHADERS_DIR + fragShaderName;
     std::fstream shaderFile;
     std::string shaderContent;
     std::string line;
@@ -185,22 +186,7 @@ VkShaderModule TextureRenderSystem::rewriteAndRecompileFragShader(std::string fr
     }
     shaderFile.close();
 
-    std::vector<char> fragShader = WrpPipeline::readShaderFile("Texture_Generated.frag");
-    shaderc_compiler_t compiler = shaderc_compiler_initialize();
-    shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, fragShader.data(), fragShader.size(),
-        shaderc_glsl_fragment_shader, ENGINE_DIR"src/shaders/Texture_Generated.frag", "main", nullptr);
-
-    VkShaderModule shaderModule = nullptr;
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = shaderc_result_get_length(result);
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
-    if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create shader module.");
-
-    shaderc_result_release(result);
-    shaderc_compiler_release(compiler);
-    return shaderModule;
+    shaderModule = new ShaderModule(wrpDevice, "Texture_Generated.frag");
 }
 
 void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)

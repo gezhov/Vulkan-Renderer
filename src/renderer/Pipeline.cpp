@@ -13,8 +13,8 @@ WrpPipeline::WrpPipeline(
     const std::string& vertFilepath,
     const std::string& fragFilepath,
     PipelineConfigInfo& configInfo,
-    VkShaderModule vertShaderModule,
-    VkShaderModule fragShaderModule) : wrpDevice(device)
+    ShaderModule* vertShaderModule,
+    ShaderModule* fragShaderModule) : wrpDevice(device)
 {
     createGraphicsPipeline(vertFilepath, fragFilepath, configInfo, vertShaderModule, fragShaderModule);
 }
@@ -24,34 +24,12 @@ WrpPipeline::~WrpPipeline()
     vkDestroyPipeline(wrpDevice.device(), graphicsPipeline, nullptr);
 }
 
-std::vector<char> WrpPipeline::readShaderFile(const std::string& filepath)
-{
-    std::string targetPath = ENGINE_DIR"src/shaders/" + filepath;
-
-    // ate is setting pointer to the end of file to read file size right from to-go
-    std::ifstream file(targetPath, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Failed to open file: " + targetPath);
-    }
-
-    size_t fileSize = static_cast<size_t>(file.tellg());
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-    return buffer;
-}
-
 void WrpPipeline::createGraphicsPipeline(
     const std::string& vertFilepath,
     const std::string& fragFilepath,
     PipelineConfigInfo& configInfo,
-    VkShaderModule vertShaderModule,
-    VkShaderModule fragShaderModule)
+    ShaderModule* vertShaderModule,
+    ShaderModule* fragShaderModule)
 {
     // Явные проверки на наличие объектов pipelineLayout и renderPass в структуре конфигурационной информации (configInfo)
     assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
@@ -60,21 +38,19 @@ void WrpPipeline::createGraphicsPipeline(
 
     // создание шейдерных модулей, если они не были переданы
     if (!vertShaderModule) {
-        std::vector<char> vertCode = readShaderFile(vertFilepath);
-        createShaderModule(vertCode, &vertShaderModule);
-        std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
+        vertShaderModule = new ShaderModule(wrpDevice, vertFilepath);
+        std::cout << "Vertex Shader Code Size: " << vertShaderModule->getSourceSizeInBytes() << std::endl;
     }
     if (!fragShaderModule) {
-        std::vector<char> fragCode = readShaderFile(fragFilepath);
-        createShaderModule(fragCode, &fragShaderModule);
-        std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
+        fragShaderModule = new ShaderModule(wrpDevice, fragFilepath);
+        std::cout << "Fragment Shader Code Size: " << fragShaderModule->getSourceSizeInBytes() << std::endl;
     }
 
     VkPipelineShaderStageCreateInfo shaderStages[2];
     // Информация для шейдера вершин
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;  // тип шейдерного этапа
-    shaderStages[0].module = vertShaderModule;			 // передаём в структуру созданный ранее шейдерный модуль
+    shaderStages[0].module = vertShaderModule->shaderModule;			 // передаём в структуру созданный ранее шейдерный модуль
     shaderStages[0].pName = "main";						 // название входной функции шейдерной программы
     shaderStages[0].flags = 0;
     shaderStages[0].pNext = nullptr;
@@ -83,7 +59,7 @@ void WrpPipeline::createGraphicsPipeline(
     // Информация для шейдера фрагментов
     shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = fragShaderModule;
+    shaderStages[1].module = fragShaderModule->shaderModule;
     shaderStages[1].pName = "main";
     shaderStages[1].flags = 0;
     shaderStages[1].pNext = nullptr;
@@ -143,19 +119,8 @@ void WrpPipeline::createGraphicsPipeline(
     }
 
     // Шейдерные модули можно освободить сразу после создания пайплайна, т.к. шейдеры уже скомпилированы
-    vkDestroyShaderModule(wrpDevice.device(), vertShaderModule, nullptr);
-    vkDestroyShaderModule(wrpDevice.device(), fragShaderModule, nullptr);
-}
-
-void WrpPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
-{
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-    if (vkCreateShaderModule(wrpDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create shader module.");
+    delete vertShaderModule;
+    delete fragShaderModule;
 }
 
 void WrpPipeline::bind(VkCommandBuffer commandBuffer)

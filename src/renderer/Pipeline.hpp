@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.hpp"
+#include "ShaderModule.hpp"
 
 // std
 #include <string>
@@ -41,8 +42,8 @@ public:
         const std::string& vertFilepath,
         const std::string& fragFilepath,
         PipelineConfigInfo& configInfo,
-        VkShaderModule vertShaderModule = nullptr,
-        VkShaderModule fragShaderModule = nullptr);
+        ShaderModule* vertShaderModule = nullptr,
+        ShaderModule* fragShaderModule = nullptr);
 
     ~WrpPipeline();
 
@@ -55,16 +56,13 @@ public:
     static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
     static void enableAlphaBlending(PipelineConfigInfo& configInfo);
 
-    static std::vector<char> readShaderFile(const std::string& filepath);
-    void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
-
 private:
     void createGraphicsPipeline(
         const std::string& vertFilepath,
         const std::string& fragFilepath,
         PipelineConfigInfo& configInfo,
-        VkShaderModule vertShaderModule = nullptr,
-        VkShaderModule fragShaderModule = nullptr
+        ShaderModule* vertShaderModule = nullptr,
+        ShaderModule* fragShaderModule = nullptr
     );
 
     WrpDevice& wrpDevice;				// девайс
