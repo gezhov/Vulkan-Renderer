@@ -65,8 +65,7 @@ const bool enableValidationLayers = true;
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-    void copyBufferToImage(
-        VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 
     void createImageWithInfo(
         const VkImageCreateInfo& imageInfo,
@@ -85,10 +84,11 @@ private:
     void createCommandPool();
 
     bool isDeviceSuitable(VkPhysicalDevice device);
-    std::vector<const char*> getRequiredExtensions();
+    std::vector<const char*> getRequiredInstanceExtensions();
     bool checkValidationLayerSupport();
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+    void populateDebugReportCallbackInfo(VkDebugReportCallbackCreateInfoEXT& createInfo);
     void checkRequiredInstanceExtensionsAvailability();
     bool checkDeviceExtensionsSupport(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupportDetails(VkPhysicalDevice device);
@@ -96,6 +96,7 @@ private:
     WrpWindow& window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkDebugReportCallbackEXT debugReportCallback;
     VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
     VkCommandPool commandPool;
 
@@ -105,5 +106,6 @@ private:
     VkQueue presentQueue_;
 
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<const char*> instanceExtensions = {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
     const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };

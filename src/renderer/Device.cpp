@@ -5,13 +5,16 @@
 #include <set>
 #include <unordered_set>
 
-// Callback function for debug messanger.
+// --- DEBUG UTILS/REPORT RELATED FUNCTIONS ---
+
+// Callback function for debug messenger.
 // !!! It's useful to set there breakpoint to find out what function call triggered this callback (see callstack).
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT             messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
+    void*                                       pUserData
+)
 {
     std::cerr << "\n";
     switch (messageSeverity) {
@@ -41,9 +44,37 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             break;
     }
 
-    std::cerr << "Validation layer says: \"" << pCallbackData->pMessage << "\"\n" << std::endl;
+    std::cerr << "Validation layer: \"" << pCallbackData->pMessage << "\"\n" << std::endl;
     return VK_FALSE;
     // return VK_TRUE allows to abort the call which triggered this callback. Use VK_FALSE for the casual debugging.
+}
+
+// Callback for Debug Report Extension (more elaborate message with information about an object that's causing en error)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFUNC(
+    VkDebugReportFlagsEXT      flags,
+    VkDebugReportObjectTypeEXT objectType,
+    uint64_t                   object,
+    size_t                     location,
+    int32_t                    messageCode,
+    const char*                pLayerPrefix,
+    const char*                pMessage,
+    void*                      pUserData
+)
+{
+    // https://github.com/zeux/niagara/blob/master/src/device.cpp   [ignoring performance warnings]
+    // This silences warnings like "For optimal performance image layout should be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL instead of GENERAL."
+    // We'll assume other performance warnings are also not useful.
+    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+        return VK_FALSE;
+
+    const char* type = (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) ? "ERROR"
+        : (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) ? "WARNING"
+        : (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) ? "DEBUG"
+        : "INFO";
+
+    std::cerr << "[" << type << "] " << "[" << pLayerPrefix << "] Debug report callback: \"" << pMessage << "\"\n" << std::endl;
+
+    return VK_FALSE;
 }
 
 // Функция, которая находит указатель на функцию vkCreateDebugUtilsMessengerEXT(),
@@ -81,7 +112,33 @@ void DestroyDebugUtilsMessengerEXT(
     }
 }
 
-// CLASS MEMBER FUNCTIONS
+VkResult CreateDebugReportCallbackEXT(
+    VkInstance instance,
+    const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkDebugReportCallbackEXT* pDebugReportCallback)
+{
+    auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+    if (func) {
+        return func(instance, pCreateInfo, pAllocator, pDebugReportCallback);
+    }
+    else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void DestroyDebugReportCallbackEXT(
+    VkInstance instance,
+    VkDebugReportCallbackEXT debugReportCallback,
+    const VkAllocationCallbacks* pAllocator)
+{
+    auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+    if (func) {
+        func(instance, debugReportCallback, pAllocator);
+    }
+}
+
+// --- CLASS MEMBER FUNCTIONS ---
 
 WrpDevice::WrpDevice(WrpWindow& window) : window{window}
 {
@@ -101,6 +158,7 @@ WrpDevice::~WrpDevice()
     if (enableValidationLayers)
     {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        DestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
     }
 
     vkDestroySurfaceKHR(instance, surface_, nullptr);
@@ -128,7 +186,7 @@ void WrpDevice::createInstance()
     createInfo.flags = 0u;
     createInfo.pApplicationInfo = &appInfo;
     checkRequiredInstanceExtensionsAvailability();
-    auto extensions = getRequiredExtensions();
+    auto extensions = getRequiredInstanceExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -171,7 +229,7 @@ void WrpDevice::checkRequiredInstanceExtensionsAvailability()
     }
 
     std::cout << "Required extensions:" << std::endl;
-    auto requiredExtensions = getRequiredExtensions();
+    auto requiredExtensions = getRequiredInstanceExtensions();
     for (const auto& required : requiredExtensions)
     {
         std::cout << "\t" << required << std::endl;
@@ -182,23 +240,80 @@ void WrpDevice::checkRequiredInstanceExtensionsAvailability()
     }
 }
 
-// Формирование и возврат вектора расширений, требуемых для работы движка.
-std::vector<const char*> WrpDevice::getRequiredExtensions()
+std::vector<const char*> WrpDevice::getRequiredInstanceExtensions()
 {
-    // Встроенная в GLFW функция создаёт массив с расширениями, которые должен 
-    // использовать Vulkan для взаимодействия с оконной системой (как минимум "VK_KHR_surface").
+    // GLFW required extensions
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    // Добавление расширения для отладочного мессенджера (он обрабатывает вывод слоёв проверки)
+    // Add extensions for debug messanger (handling validation layers output)
     if (enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); // extension to set up debug messanger
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);  // extension to set up debug messanger
+        extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME); // extension to create debug Report callback
+    }
+
+    // Other required extensions from the predefined list
+    for (const auto& extension : instanceExtensions)
+    {
+        extensions.push_back(extension);
     }
 
     return extensions;
+}
+
+// Настройка и создание отладочного мессенджера
+void WrpDevice::setupDebugMessenger()
+{
+    if (!enableValidationLayers) return;
+
+    // Creating Debug Messenger
+    VkDebugUtilsMessengerCreateInfoEXT createInfo;
+    populateDebugMessengerCreateInfo(createInfo);
+    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to set up Debug Messenger!");
+    }
+
+    // Creating Debug Report Callback
+    VkDebugReportCallbackCreateInfoEXT createInfo2;
+    populateDebugReportCallbackInfo(createInfo2);
+    if (CreateDebugReportCallbackEXT(instance, &createInfo2, nullptr, &debugReportCallback) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to set up Debug Report Callback!");
+    }
+}
+
+// Заполнение информации для создания дескриптора отладочного мессенджера
+void WrpDevice::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+{
+    createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    // catching msg severity are: (INFO and VERBOSE excluded)
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    // catching msg types are:
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback; // callback function pointer
+    createInfo.pUserData = nullptr;             // pointer to pass user data to callback function (Optional)
+}
+
+void WrpDevice::populateDebugReportCallbackInfo(VkDebugReportCallbackCreateInfoEXT& createInfo)
+{
+    createInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+        .flags = VK_DEBUG_REPORT_WARNING_BIT_EXT |
+            VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+            VK_DEBUG_REPORT_ERROR_BIT_EXT |
+            VK_DEBUG_REPORT_DEBUG_BIT_EXT,
+        .pfnCallback = debugReportCallbackFUNC,
+        .pUserData = nullptr
+    };
 }
 
 void WrpDevice::pickPhysicalDevice()
@@ -362,35 +477,6 @@ void WrpDevice::createCommandPool()
 
 void WrpDevice::createSurface() { window.createWindowSurface(instance, &surface_); }
 
-// Настройка и создание отладочного мессенджера
-void WrpDevice::setupDebugMessenger()
-{
-    if (!enableValidationLayers) return;
-    VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateDebugMessengerCreateInfo(createInfo);
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to set up debug messenger!");
-    }
-}
-
-// Заполнение информации для создания дескриптора отладочного мессенджера
-void WrpDevice::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-    createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    // messageSeverity задаёт виды серьёзности сообщения от valid. layer для отлова мессенджером
-    // Функция обратного вызова выполняется только для указанных видов. (не указаны INFO и VERBOSE).
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    // messageType таким же образом фильтрует сообщения по их типу (сейчас указаны все типы)
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback; // указатель на саму функцию обратного вызова
-    createInfo.pUserData = nullptr;  // любой указатель для передачи данных в callback-функцию (Optional)
-}
-
 // Проверка есть ли требуемые слои проверки в списке доступных слоёв экземпляра.
 bool WrpDevice::checkValidationLayerSupport()
 {
@@ -422,7 +508,6 @@ bool WrpDevice::checkValidationLayerSupport()
     return true;
 }
 
-// Проверка поддерживаются ли требуемые расширения данным физическим девайсом
 bool WrpDevice::checkDeviceExtensionsSupport(VkPhysicalDevice physicalDevice)
 {
     uint32_t extensionCount;
