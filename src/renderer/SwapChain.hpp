@@ -2,10 +2,8 @@
 
 #include "Device.hpp"
 
-// vulkan
 #include <vulkan/vulkan.h>
 
-// std
 #include <memory>
 #include <string>
 #include <vector>

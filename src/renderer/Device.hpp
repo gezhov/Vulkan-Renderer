@@ -3,12 +3,10 @@
 #include "HeaderCore.hpp"
 #include "Window.hpp"
 
-// std lib headers
 #include <string>
 #include <vector>
 #include <optional>
 
-// Структура, хранящая детали поддержки цепи обмена
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -16,7 +14,6 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-// Структура, хранящая индексы нужных для рендерера семейств очередей
 struct QueueFamilyIndices
 {
     std::optional<uint32_t> graphicsFamily;
@@ -52,7 +49,7 @@ const bool enableValidationLayers = true;
     VkPhysicalDevice getPhysicalDevice() { return physicalDevice_; }
     uint32_t getGraphicsQueueFamily() { return getQueueFamilies().graphicsFamily.value(); }
 
-    SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice_); }
+    SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupportDetails(physicalDevice_); }
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     QueueFamilyIndices getQueueFamilies() { return findQueueFamilies(physicalDevice_); }
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -87,15 +84,14 @@ private:
     void createLogicalDevice();
     void createCommandPool();
 
-    // helper functions
     bool isDeviceSuitable(VkPhysicalDevice device);
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    void hasEngineRequiredInstanceExtensions();
+    void checkRequiredInstanceExtensionsAvailability();
     bool checkDeviceExtensionsSupport(VkPhysicalDevice device);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    SwapChainSupportDetails querySwapChainSupportDetails(VkPhysicalDevice device);
 
     WrpWindow& window;
     VkInstance instance;
@@ -108,7 +104,6 @@ private:
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
 
-    // В слое VK_LAYER_KHRONOS_validation объединены все стандартные слои проверки
     const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };

@@ -1,6 +1,5 @@
 #include "SwapChain.hpp"
 
-// std
 #include <array>
 #include <cstdlib>
 #include <cstring>
@@ -27,9 +26,9 @@ WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window, std::shared_ptr
 
 void WrpSwapChain::init()
 {
-    msaaSampleCount = wrpDevice.getMaxUsableMSAASampleCount(); // needed in multiple structs
-    createSwapChain();       // создание SwapChain объекта
-    createImageViews();      // создание VkImageView представлений для изображений SwapChain'а
+    msaaSampleCount = wrpDevice.getMaxUsableMSAASampleCount(); // used in multiple structs
+    createSwapChain();
+    createImageViews();      // creating VkImageView representations for SwapChain images
     createColorResources();  // создание изображений цвета для реализации мультисэмплинга
     createDepthResources();  // создание изображений для Depth Buffer вложения
     createRenderPass();      // subpass с его привязками и дальнейшее создание RenderPassa'а
@@ -159,11 +158,10 @@ void WrpSwapChain::createSwapChain()
     VkPresentModeKHR presentMode = chooseSwapChainPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapChainExtent(swapChainSupport.capabilities);
 
-    // Минимальное кол-во изображений в цепи: min + 1 = triple buffering
-    // Если maxImageCount == 0, то это значит, что кол-во изображений в цепи неограничено
+    // min + 1, is to create triple buffering and to make sure GPU is not idle (at least in FIFO mode)
+    // maxImageCount == 0, means no upper bound for image count
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 &&
-        imageCount > swapChainSupport.capabilities.maxImageCount)
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
     {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
@@ -172,37 +170,34 @@ void WrpSwapChain::createSwapChain()
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = wrpDevice.surface();
-    // детали по хранящимся в SwapChain изображениям
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    // изображения цепи обмена исп. как color attachment subpass'а, значит рендер будет вестись прямо в них
+    // Using swap chain images as Subpass' color attachment and transfer command destination
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    // Указание режима использования изображений цепи обмена очередями
+    // Choosing image sharing mode for Queue Families in use
     QueueFamilyIndices indices = wrpDevice.getQueueFamilies();
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-    if (indices.graphicsFamily != indices.presentFamily) // параллельный режим, если очереди из разных семейств
+    if (indices.graphicsFamily != indices.presentFamily) // CONCURRENT mode if queues from different families
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
     }
-    else // исключительный режим, если очереди из одного семейства
+    else // EXCLUSIVE mode if queues from single family which combine both types
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0; // Optional
+        createInfo.queueFamilyIndexCount = 0;     // Optional
         createInfo.pQueueFamilyIndices = nullptr; // Optional
     }
 
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform; // преобразование для изображения по умолчанию
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // использование alpha канала для смешивания пикселей с другими окнами
-
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform; // default image tranfsorm
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // alpha channel usage to mix surface pixels with other windows' pixels
     createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE; // отсечение перекрытых пикселей окна из swapchain изображений
-
+    createInfo.clipped = VK_TRUE; // clipping overlapped window's pixels from swapchain image
     createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
     if (vkCreateSwapchainKHR(wrpDevice.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
@@ -210,9 +205,8 @@ void WrpSwapChain::createSwapChain()
         throw std::runtime_error("Failed to create swap chain!");
     }
 
-    // В структуре создания цепи обмена мы указали минимальное кол-во изображений в цепи, но
-    // реализация Vulkan может создать число изображений больше, чем указано в структуре,
-    // поэтому первым вызовом vkGetSwapchainImagesKHR() получаем реальное кол-во изображений.
+    // Vulkan can create more images that specified in minImageCount.
+    // vkGetSwapchainImagesKHR() call gets real image count and return the array of VkImage representing them.
     vkGetSwapchainImagesKHR(wrpDevice.device(), swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(wrpDevice.device(), swapChain, &imageCount, swapChainImages.data());
@@ -223,7 +217,7 @@ void WrpSwapChain::createSwapChain()
 
 void WrpSwapChain::createImageViews()
 {
-    swapChainImageViews.resize(swapChainImages.size()); // ресайз вектора под кол-во изображений
+    swapChainImageViews.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++)
     {
         VkImageViewCreateInfo viewInfo{};
@@ -231,9 +225,9 @@ void WrpSwapChain::createImageViews()
         viewInfo.image = swapChainImages[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = swapChainImageFormat;
-        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY; // маппинг цветовых каналов
-        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY; // к определённым значениям
-        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY; // IDENTITY - дефолтный маппинг
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY; // color channel mapping to specific values
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY; // IDENTITY is default mapping
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
@@ -241,8 +235,7 @@ void WrpSwapChain::createImageViews()
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) !=
-            VK_SUCCESS)
+        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create image views in swapchain!");
         }
@@ -493,7 +486,6 @@ void WrpSwapChain::createSyncObjects()
     }
 }
 
-// Функция выбора формата поверхности для цепи обмена
 VkSurfaceFormatKHR WrpSwapChain::chooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat : availableFormats)
@@ -503,13 +495,12 @@ VkSurfaceFormatKHR WrpSwapChain::chooseSwapChainSurfaceFormat(const std::vector<
             return availableFormat;
     }
 
-    return availableFormats[0]; // выбираем первый формат, если не был найден нужный
+    return availableFormats[0]; // first available format otherwise
 }
 
-// Функция выбора режима показа кадров
 VkPresentModeKHR WrpSwapChain::chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
-    // Если поддерживается Mailbox, то возвращается именно он.
+    // Mailbox: V-Sync with presentation request updating. Energy-dependent mode (mobile considerations).
     for (const auto& availablePresentMode : availablePresentModes) {
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
             std::cout << "Present mode: Mailbox" << std::endl;
@@ -517,8 +508,7 @@ VkPresentModeKHR WrpSwapChain::chooseSwapChainPresentMode(const std::vector<VkPr
         }
     }
 
-    // Резервный вариант в виде режима показа Immediate. В этом режиме
-    // вертикальная синхронизация отсутствует.
+    // Immediate: No queuing of presentation requests. Visible tearing. Energy-dependent mode (mobile considerations).
     /*for (const auto &availablePresentMode : availablePresentModes) {
         if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
             std::cout << "Present mode: Immediate" << std::endl;
@@ -526,8 +516,7 @@ VkPresentModeKHR WrpSwapChain::chooseSwapChainPresentMode(const std::vector<VkPr
         }
     }*/
 
-    // В случае отсутствия поддержки выбранного выше режима показа, включается
-    // режим FIFO (стандартный V-Sync).
+    // FIFO: Guaranteed to be supported. Standard V-Sync queue.
     std::cout << "Present mode: FIFO" << std::endl;
     return VK_PRESENT_MODE_FIFO_KHR;
 }

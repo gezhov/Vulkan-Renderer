@@ -1,15 +1,12 @@
 #include "Device.hpp"
 
-// std headers
 #include <cstring>
 #include <iostream>
 #include <set>
 #include <unordered_set>
 
-// Отладочная callback-функция, которая исп. отладочным мессенджером.
-// Её прототип соответствует требуемому типу PFN_vkDebugUtilsMessengerCallbackEXT.
-/* Чтобы увидеть вызов, который стриггерил callback, можно добавить точку останова на
-   эту функцию и посмотреть на стек вызовов. */
+// Callback function for debug messanger.
+// !!! It's useful to set there breakpoint to find out what function call triggered this callback (see callstack).
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -46,8 +43,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
     std::cerr << "Validation layer says: \"" << pCallbackData->pMessage << "\"\n" << std::endl;
     return VK_FALSE;
-    /* Если функция будет возвращать VK_TRUE, то вызов Vulkan'а, который инициировал данное сообщение проверки будет прерван.
-       Такое прерывание через слой проверки не используется в полноценной отладке, поэтому тут всегда VK_FALSE. */
+    // return VK_TRUE allows to abort the call which triggered this callback. Use VK_FALSE for the casual debugging.
 }
 
 // Функция, которая находит указатель на функцию vkCreateDebugUtilsMessengerEXT(),
@@ -89,12 +85,12 @@ void DestroyDebugUtilsMessengerEXT(
 
 WrpDevice::WrpDevice(WrpWindow& window) : window{window}
 {
-    createInstance();      // инициализация Vulkan API
-    setupDebugMessenger(); // настройка отладочного мессенджера для контроля вывода сообщений от слоя проверки в ходе отладки
-    createSurface();       // создание surface объекта для связи окна от GLFW и выводимого изображения от Vulkan
-    pickPhysicalDevice();  // выбор физического девайса (GPU)
-    createLogicalDevice(); // создание логического девайса (выбор технических особенностей GPU для работы с ними)
-    createCommandPool();   // создание пула команд
+    createInstance();      // Vulkan API initialization
+    setupDebugMessenger(); // to control output messages from validation layer during debug
+    createSurface();       // surface to present output images to (window <-> frame image)
+    pickPhysicalDevice();
+    createLogicalDevice();
+    createCommandPool();
 }
 
 WrpDevice::~WrpDevice()
@@ -118,33 +114,32 @@ void WrpDevice::createInstance()
         throw std::runtime_error("Validation layers requested, but not available!");
     }
 
-    VkApplicationInfo appInfo = {}; // Необязательная информация о приложении
+    VkApplicationInfo appInfo;
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "VgetX-Engine";
+    appInfo.pNext = nullptr;
+    appInfo.pApplicationName = "Vulkan";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
-    VkInstanceCreateInfo createInfo = {}; // Обязательная информация для создания экземпляра Vulkan
+    VkInstanceCreateInfo createInfo;
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.flags = 0u;
     createInfo.pApplicationInfo = &appInfo;
-    // Проверяем наличие требуемых для движка расширений и помещаем их названия в createInfo
-    hasEngineRequiredInstanceExtensions();
+    checkRequiredInstanceExtensionsAvailability();
     auto extensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (enableValidationLayers) // включение слоёв проверок
+    if (enableValidationLayers)
     {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-
-        // Передача структуры для создания отладочного мессенджера через pNext автоматически
-        // создаст этот мессенджер для его работы во время создания и уничтожения экземпляра Vulkan
-        // через vkCreateInstance() и vkDestroyInstance() соответственно. Он не мешает работе основного
-        // отладочного мессенджера и будет очищен вместе с экземпляром.
+        // Passing DebugMessangerCreateInfo as pNext allows to enable separate messanger
+        // for VkInstance creation and destruction processes. It won't conflict with the main
+        // debug messanger and will free with VkInstance destruction.
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
@@ -160,10 +155,8 @@ void WrpDevice::createInstance()
     }
 }
 
-// Проверка доступны ли Vulkan расширения, требуемые для работы движка.
-void WrpDevice::hasEngineRequiredInstanceExtensions()
+void WrpDevice::checkRequiredInstanceExtensionsAvailability()
 {
-    // Ищем и выводим все доступные расширения экземпляра
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -177,8 +170,6 @@ void WrpDevice::hasEngineRequiredInstanceExtensions()
         available.insert(extension.extensionName);
     }
 
-    // Выводим требуемые расширения экземпляра и выбрасываем исключение, если
-    // какого-то расширения не хватает для работы движка.
     std::cout << "Required extensions:" << std::endl;
     auto requiredExtensions = getRequiredExtensions();
     for (const auto& required : requiredExtensions)
@@ -248,7 +239,7 @@ bool WrpDevice::isDeviceSuitable(VkPhysicalDevice physicalDevice)
     bool isSwapChainAdequate = false;
     if (extensionsSupported)
     {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupportDetails(physicalDevice);
         isSwapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
@@ -306,35 +297,32 @@ void WrpDevice::createLogicalDevice()
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<std::optional<uint32_t>> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
 
-    // Заполнение QueueCreateInfo для каждого из нужных семейств очередей
+    // QueueCreateInfo struct for each of the required queue families
     float queuePriority = 1.0f;
     for (std::optional<uint32_t> queueFamily : uniqueQueueFamilies)
     {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily.value();
-        queueCreateInfo.queueCount = 1; // создать только одну очередь из данного семейства
+        queueCreateInfo.queueCount = 1; // single queue from the family
         queueCreateInfo.pQueuePriorities = &queuePriority;
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures = {}; // возможности ус-ва для активации
+    VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;   // sample shading feature
     deviceFeatures.fillModeNonSolid = VK_TRUE;    // support point and wireframe fill modes
 
-    VkDeviceCreateInfo createInfo = {}; // структура для создания логического ус-ва
+    VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    // Слои проверок уровня девайса теперь являются устаревшими, но их всё равно стоит указывать для сохранения
-    // совместимости со старыми реализациями. Слои берутся такие же, как и для экземпляра.
+    // Device validation layers is deprecated, but they are passed to the info struct to keep consistancy with older Vulkan implementations.
     if (enableValidationLayers)
     {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -453,8 +441,7 @@ bool WrpDevice::checkDeviceExtensionsSupport(VkPhysicalDevice physicalDevice)
     return requiredExtensions.empty();
 }
 
-// Заполнение структуры деталей поддержки цепи обмена
-SwapChainSupportDetails WrpDevice::querySwapChainSupport(VkPhysicalDevice physicalDevice)
+SwapChainSupportDetails WrpDevice::querySwapChainSupportDetails(VkPhysicalDevice physicalDevice)
 {
     SwapChainSupportDetails details;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface_, &details.capabilities);
@@ -472,11 +459,7 @@ SwapChainSupportDetails WrpDevice::querySwapChainSupport(VkPhysicalDevice physic
     if (presentModeCount != 0)
     {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(
-            physicalDevice,
-            surface_,
-            &presentModeCount,
-            details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface_, &presentModeCount, details.presentModes.data());
     }
     return details;
 }
