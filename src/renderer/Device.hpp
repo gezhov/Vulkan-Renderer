@@ -73,6 +73,8 @@ const bool enableValidationLayers = true;
         VkImage& image,
         VkDeviceMemory& imageMemory);
 
+    bool setVkObjectName(void* object, VkObjectType objType, const char* name);
+
     VkPhysicalDeviceProperties properties;
 
 private:

@@ -77,36 +77,29 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFUNC(
     return VK_FALSE;
 }
 
-// Функция, которая находит указатель на функцию vkCreateDebugUtilsMessengerEXT(),
-// а затем вызывает её создавая дескриптор для отлад. мессенджера VkDebugUtilsMessengerEXT
+// Load and call the DebugMessenger creating function
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-    // ищем указатель на функцию создания отладочного мессенджера в расширении экземпляра
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-        instance,
-        "vkCreateDebugUtilsMessengerEXT");
+    // get pointer to the function from the extension
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
-        // создаём отладочный мессенджер, вызвав найденную функцию
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
 
-// Функция для уничтожения дескриптора отладочного мессенджера при помощи функции
-// vkDestroyDebugUtilsMessengerEXT(), указатель на которую сначала ищется через экземпляр.
+// Load and call the DebugMessenger destroying function
 void DestroyDebugUtilsMessengerEXT(
     VkInstance instance,
     VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator)
 {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-        instance,
-        "vkDestroyDebugUtilsMessengerEXT");
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }
@@ -135,6 +128,17 @@ void DestroyDebugReportCallbackEXT(
     auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
     if (func) {
         func(instance, debugReportCallback, pAllocator);
+    }
+}
+
+VkResult SetDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device, VkDebugUtilsObjectNameInfoEXT nameInfo)
+{
+    auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+    if (func) {
+        func(device, &nameInfo);
+    }
+    else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
 
@@ -264,7 +268,6 @@ std::vector<const char*> WrpDevice::getRequiredInstanceExtensions()
     return extensions;
 }
 
-// Настройка и создание отладочного мессенджера
 void WrpDevice::setupDebugMessenger()
 {
     if (!enableValidationLayers) return;
@@ -286,7 +289,6 @@ void WrpDevice::setupDebugMessenger()
     }
 }
 
-// Заполнение информации для создания дескриптора отладочного мессенджера
 void WrpDevice::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
     createInfo = {};
@@ -760,4 +762,17 @@ void WrpDevice::createImageWithInfo(
     {
         throw std::runtime_error("Failed to bind image memory!");
     }
+}
+
+bool WrpDevice::setVkObjectName(void* object, VkObjectType objType, const char* name)
+{
+    VkDebugUtilsObjectNameInfoEXT nameInfo = {
+        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        .pNext = nullptr,
+        .objectType = objType,
+        .objectHandle = (uint64_t)object,
+        .pObjectName = name
+    };
+
+    return (SetDebugUtilsObjectNameEXT(instance, device_, nameInfo) == VK_SUCCESS);
 }
