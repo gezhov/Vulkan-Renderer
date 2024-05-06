@@ -215,12 +215,32 @@ void SceneEditorApp::loadScene2()
     bunnyObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
     sceneObjects.emplace(bunnyObj.getId(), std::move(bunnyObj));
 
-    bunnyObj = SceneObject::createSceneObject();
-    bunnyObj.model = bunny;
-    bunnyObj.transform.translation = {1.f, 0.f, 1.f};
-    bunnyObj.transform.scale = glm::vec3(0.4f, 0.4f, 0.4f);
-    bunnyObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
-    sceneObjects.emplace(bunnyObj.getId(), std::move(bunnyObj));
+    const int gridX = 15;
+    const int gridY = 15;
+    const int pointLightNumber = 5;
+    constexpr int modelsToPlacePointLight = gridX * gridY / pointLightNumber;
 
+    int count = 0;
+    for (int i = 0; i < gridX; i++)
+    {
+        for (int j = 0; j < gridY; j++)
+        {
+            if (count == modelsToPlacePointLight)
+            {
+                auto pointLight = SceneObject::makePointLight();
+                pointLight.pointLight->carouselEnabled = true;
+                pointLight.transform.translation = {i, -1.5f, j};
+                sceneObjects.emplace(pointLight.getId(), std::move(pointLight));
+                count = 0;
+            }
+            bunnyObj = SceneObject::createSceneObject();
+            bunnyObj.model = bunny;
+            bunnyObj.transform.translation = {i, 0.f, j};
+            bunnyObj.transform.scale = glm::vec3(0.4f, 0.4f, 0.4f);
+            bunnyObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
+            sceneObjects.emplace(bunnyObj.getId(), std::move(bunnyObj));
+
+            ++count;
+        }
+    }
 }
-
