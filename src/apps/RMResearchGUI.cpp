@@ -24,6 +24,12 @@ RMResearchGUI::RMResearchGUI(
     : wrpDevice{device}, camera{camera}, kmc{kmc}, sceneObjects{sceneObjects},
     renderingSettings{renderingSettings}
 {
+    VkInstance instance = device.getInstance();
+    // custom vulkan function loader to support volk library
+    ImGui_ImplVulkan_LoadFunctions([](const char* functionName, void* vulkanInstance) {
+        return vkGetInstanceProcAddr(*(reinterpret_cast<VkInstance*>(vulkanInstance)), functionName);
+    }, &instance);
+
     // set up a descriptor pool stored on this instance, see header for more comments on this.
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},

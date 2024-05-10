@@ -100,11 +100,11 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/ZI>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/ZI>")
 
-add_executable(${PROJECT_NAME} ${SOURCES}) # Добавление всех SOURCES файлов в качестве входных для создания .exe
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20) # C++ standard version
 
-# Св-во устанавливает рабочий каталог для локального отладчика Visual Studio C++
+# VS debugger working directory
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
 # Includes, libs, dlls
@@ -119,6 +119,7 @@ if (WIN32)
             ${MINGW_PATH}/lib
         )
     endif()
+
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${PROJECT_SOURCE_DIR}/src
         ${Vulkan_INCLUDE_DIRS}
@@ -137,13 +138,19 @@ if (WIN32)
         ${GLFW_LIB}
     )
 
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+	add_subdirectory(external/volk-master)
+
     target_link_libraries(${PROJECT_NAME}
         shaderc_shared
         glfw3
-        vulkan-1
+        volk
     )
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
+
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
+
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${PROJECT_SOURCE_DIR}/src
         ${TINYOBJ_PATH}
@@ -151,6 +158,7 @@ elseif (UNIX)
     target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
 endif()
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 
 ############## Build SHADERS #######################
 

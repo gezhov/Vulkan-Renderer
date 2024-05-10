@@ -1,4 +1,9 @@
 // Internal header core 
+#pragma once
+
+#include "volk.h"
+
+#define NOMINMAX
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../../../"

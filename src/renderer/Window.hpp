@@ -3,7 +3,6 @@
 #include "HeaderCore.hpp"
 
 // libs
-#define GLFW_INCLUDE_VULKAN // GLFW will automatically include Vulkan headers for its work
 #include <GLFW/glfw3.h>
 
 // std

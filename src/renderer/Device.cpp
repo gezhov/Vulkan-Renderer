@@ -77,71 +77,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFUNC(
     return VK_FALSE;
 }
 
-// Load and call the DebugMessenger creating function
-VkResult CreateDebugUtilsMessengerEXT(
-    VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-    // get pointer to the function from the extension
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-// Load and call the DebugMessenger destroying function
-void DestroyDebugUtilsMessengerEXT(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT debugMessenger,
-    const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
-VkResult CreateDebugReportCallbackEXT(
-    VkInstance instance,
-    const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDebugReportCallbackEXT* pDebugReportCallback)
-{
-    auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-    if (func) {
-        return func(instance, pCreateInfo, pAllocator, pDebugReportCallback);
-    }
-    else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugReportCallbackEXT(
-    VkInstance instance,
-    VkDebugReportCallbackEXT debugReportCallback,
-    const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-    if (func) {
-        func(instance, debugReportCallback, pAllocator);
-    }
-}
-
-VkResult SetDebugUtilsObjectNameEXT(VkInstance instance, VkDevice device, VkDebugUtilsObjectNameInfoEXT nameInfo)
-{
-    auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
-    if (func) {
-        func(device, &nameInfo);
-    }
-    else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
 // --- CLASS MEMBER FUNCTIONS ---
 
 WrpDevice::WrpDevice(WrpWindow& window) : window{window}
@@ -161,8 +96,8 @@ WrpDevice::~WrpDevice()
 
     if (enableValidationLayers)
     {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-        DestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
+        vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
     }
 
     vkDestroySurfaceKHR(instance, surface_, nullptr);
@@ -171,6 +106,10 @@ WrpDevice::~WrpDevice()
 
 void WrpDevice::createInstance()
 {
+    if (volkInitialize() != VK_SUCCESS)
+    {
+        throw std::runtime_error("Vulkan loader has not found while trying to initialize volk meta-loader library.");
+    }
     if (enableValidationLayers && !checkValidationLayerSupport())
     {
         throw std::runtime_error("Validation layers requested, but not available!");
@@ -215,6 +154,7 @@ void WrpDevice::createInstance()
     {
         throw std::runtime_error("Failed to create an instance!");
     }
+    volkLoadInstance(instance);
 }
 
 void WrpDevice::checkRequiredInstanceExtensionsAvailability()
@@ -275,7 +215,7 @@ void WrpDevice::setupDebugMessenger()
     // Creating Debug Messenger
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    if (vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to set up Debug Messenger!");
     }
@@ -283,7 +223,7 @@ void WrpDevice::setupDebugMessenger()
     // Creating Debug Report Callback
     VkDebugReportCallbackCreateInfoEXT createInfo2;
     populateDebugReportCallbackInfo(createInfo2);
-    if (CreateDebugReportCallbackEXT(instance, &createInfo2, nullptr, &debugReportCallback) != VK_SUCCESS)
+    if (vkCreateDebugReportCallbackEXT(instance, &createInfo2, nullptr, &debugReportCallback) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to set up Debug Report Callback!");
     }
@@ -774,5 +714,5 @@ bool WrpDevice::setVkObjectName(void* object, VkObjectType objType, const char* 
         .pObjectName = name
     };
 
-    return (SetDebugUtilsObjectNameEXT(instance, device_, nameInfo) == VK_SUCCESS);
+    return (vkSetDebugUtilsObjectNameEXT(device_, &nameInfo) == VK_SUCCESS);
 }
