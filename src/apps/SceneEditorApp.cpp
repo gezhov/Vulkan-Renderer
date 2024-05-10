@@ -215,8 +215,8 @@ void SceneEditorApp::loadScene2()
     bunnyObj.transform.rotation = glm::vec3(3.15f, 0.f, 0.f);
     sceneObjects.emplace(bunnyObj.getId(), std::move(bunnyObj));
 
-    const int gridX = 15;
-    const int gridY = 15;
+    const int gridX = 5;
+    const int gridY = 5;
     const int pointLightNumber = 5;
     constexpr int modelsToPlacePointLight = gridX * gridY / pointLightNumber;
 
