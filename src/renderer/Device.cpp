@@ -93,6 +93,7 @@ WrpDevice::~WrpDevice()
 {
     vkDestroyCommandPool(device_, commandPool, nullptr);
     vkDestroyDevice(device_, nullptr);
+    vkDestroySurfaceKHR(instance, surface_, nullptr);
 
     if (enableValidationLayers)
     {
@@ -100,7 +101,6 @@ WrpDevice::~WrpDevice()
         vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
     }
 
-    vkDestroySurfaceKHR(instance, surface_, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
 
