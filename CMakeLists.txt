@@ -90,7 +90,6 @@ endif()
 
 include_directories(external)
 
-# GLOB_RECURSE функция ищет все cpp файлы в src/ директории и сохраняет ссылки на них в переменную SOURCES
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp
                           ${PROJECT_SOURCE_DIR}/external/*.cpp
                           ${PROJECT_SOURCE_DIR}/apps/*cpp)
@@ -103,6 +102,8 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/ZI>")
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20) # C++ standard version
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES) # predefined preprocessor defines
 
 # VS debugger working directory
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
@@ -157,44 +158,3 @@ elseif (UNIX)
     )
     target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
 endif()
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-
-############## Build SHADERS #######################
-
-# Find all vertex and fragment sources within shaders directory.
-# Taken from VBlancos vulkan tutorial:
-# https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters/CMakeLists.txt
-find_program(GLSL_VALIDATOR glslangValidator HINTS 
-    ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} 
-    /usr/bin 
-    /usr/local/bin 
-    ${VULKAN_SDK_PATH}/Bin
-    ${VULKAN_SDK_PATH}/Bin32
-    $ENV{VULKAN_SDK}/Bin/ 
-    $ENV{VULKAN_SDK}/Bin32/
-)
-
-# get all .vert and .frag files in shaders directory
-file(GLOB_RECURSE GLSL_SOURCE_FILES
-    "${PROJECT_SOURCE_DIR}/src/shaders/*.frag"
-    "${PROJECT_SOURCE_DIR}/src/shaders/*.vert"
-)
-
-foreach(GLSL ${GLSL_SOURCE_FILES})
-    get_filename_component(FILE_NAME ${GLSL} NAME)
-    set(SPIRV "${PROJECT_SOURCE_DIR}/src/shaders/${FILE_NAME}.spv")
-    add_custom_command(
-        OUTPUT ${SPIRV}
-        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-        DEPENDS ${GLSL}
-        VERBATIM
-    )
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
-
-add_custom_target(
-    Shaders
-    ALL
-    DEPENDS ${SPIRV_BINARY_FILES}
-)
