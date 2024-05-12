@@ -18,12 +18,11 @@ public:
     WrpRenderer(WrpWindow& window, WrpDevice& device);
     ~WrpRenderer();
 
-    // Избавляемся от copy operator и copy constructor, т.к. WrpRenderer хранит в себе указатели
-    // на VkCommandBuffer_T, которые лучше не копировать.
     WrpRenderer(const WrpRenderer&) = delete;
     WrpRenderer& operator=(const WrpRenderer&) = delete;
 
     VkRenderPass getSwapChainRenderPass() const { return wrpSwapChain->getRenderPass(); }
+    uint32_t getSwapChainImageCount() const { return wrpSwapChain->getImageCount(); }
     float getAspectRatio() const {return wrpSwapChain->extentAspectRatio();}
     bool isFrameInProgress() const { return isFrameStarted; }
 
@@ -48,8 +47,6 @@ private:
     void createCommandBuffers();
     void freeCommandBuffers();
     void recreateSwapChain();
-
-    std::string getTimeStampStr(); // todo: take out to standalone logging system
 
     WrpWindow& wrpWindow;
     WrpDevice& wrpDevice;

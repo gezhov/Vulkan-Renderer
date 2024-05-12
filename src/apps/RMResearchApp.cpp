@@ -30,8 +30,8 @@ RMResearchApp::RMResearchApp(int preloadScene)
 {
     // global descriptor pool designed for the entire app 
     globalPool = WrpDescriptorPool::Builder(wrpDevice)
-        .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .setMaxSets(wrpRenderer.getSwapChainImageCount())
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, wrpRenderer.getSwapChainImageCount())
         .build();
 
     loadScene();
@@ -42,7 +42,7 @@ RMResearchApp::~RMResearchApp() {}
 void RMResearchApp::run()
 {
     // Uniform Buffers creation
-    std::vector<std::unique_ptr<WrpBuffer>> uboBuffers(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<std::unique_ptr<WrpBuffer>> uboBuffers(wrpRenderer.getSwapChainImageCount());
     for (int i = 0; i < uboBuffers.size(); ++i)
     {
         uboBuffers[i] = std::make_unique<WrpBuffer>(
@@ -61,7 +61,7 @@ void RMResearchApp::run()
         .build();
 
     // Getting Descriptor Sets from pool
-    std::vector<VkDescriptorSet> globalDescriptorSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<VkDescriptorSet> globalDescriptorSets(wrpRenderer.getSwapChainImageCount());
     for (int i = 0; i < globalDescriptorSets.size(); ++i)
     {
         VkDescriptorBufferInfo bufferInfo = uboBuffers[i]->descriptorInfo(); // инфа о буфере для дескриптора
@@ -107,7 +107,7 @@ void RMResearchApp::run()
         wrpWindow,
         wrpDevice,
         wrpRenderer.getSwapChainRenderPass(),
-        WrpSwapChain::MAX_FRAMES_IN_FLIGHT,
+        wrpRenderer.getSwapChainImageCount(),
         camera,
         cameraController,
         sceneObjects,

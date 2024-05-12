@@ -1,12 +1,11 @@
 #include "Renderer.hpp"
+#include "Utils.hpp"
 
 // std
 #include <stdexcept>
 #include <cassert>
 #include <array>
 #include <iostream>
-#include <chrono>
-#include <ctime>
 
 WrpRenderer::WrpRenderer(WrpWindow& window, WrpDevice& device) : wrpWindow{ window }, wrpDevice{ device }
 {
@@ -19,13 +18,10 @@ WrpRenderer::~WrpRenderer()
     freeCommandBuffers();
 }
 
-// Пересоздать SwapChain
 void WrpRenderer::recreateSwapChain()
 {
-    // Если ширина или высота окна не имеют размера, то поток выполнения пристанавливается функцией glfwWaitEvents()
-    // и ждёт пока не появится какое-либо событие на обработку. С появлением события размеры окна перепроверяются, и
-    // так, пока окно не приобретёт какую-то двумерную размерность.
-    // Этот цикл полезен, например, для случая минимизации (сворачивания) окна.
+    // glfwWaitEvents() waits for the event which cause resize of window when it has no size.
+    // It can be helpful for the window minimizing case.
     auto extent = wrpWindow.getExtent();
     while (extent.width == 0 || extent.height == 0)
     {
@@ -33,18 +29,16 @@ void WrpRenderer::recreateSwapChain()
         glfwWaitEvents();
     }
 
-    if (wrpSwapChain == nullptr)
+    if (wrpSwapChain == nullptr) // first time SwapChain creation
     {
         std::cout << "Creating SwapChain for the first time." << std::endl;
-        // Стандартное создание цепи обмена в первый раз
         wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindow);
     }
-    else
+    else // SwapCahin recreation
     {
         std::cout << getTimeStampStr() << "Recreating SwapChain." << std::endl;
         
-        // Если до этого уже существовал SwapChain, то он используется при инициализации нового.
-        // std::move() перемещает уникальный указатель в данный shared указатель.
+        // oldSwapChain as shared_ptr used to initialize new wrpSwapCahin
         std::shared_ptr<WrpSwapChain> oldSwapChain = std::move(wrpSwapChain);
         wrpSwapChain = std::make_unique<WrpSwapChain>(wrpDevice, wrpWindow, oldSwapChain);
 
@@ -55,12 +49,10 @@ void WrpRenderer::recreateSwapChain()
     }
 }
 
-// Создание буферов команд
 void WrpRenderer::createCommandBuffers()
 {
-    // Размер массива буферов команд равен константе, определённой в цепи обмена.
-    // Кол-во буферов команд в таком случае может отличаться от количества framebuffer'ов в цепи.
-    commandBuffers.resize(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+    // CommandBuffers count are equal to FrameBuffers count
+    commandBuffers.resize(wrpSwapChain->getImageCount());
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -74,7 +66,6 @@ void WrpRenderer::createCommandBuffers()
     }
 }
 
-// Освобождение всех буферов команд
 void WrpRenderer::freeCommandBuffers()
 {
     vkFreeCommandBuffers(
@@ -91,11 +82,11 @@ VkCommandBuffer WrpRenderer::beginFrame()
 {
     assert(!isFrameStarted && "Can't call beginFrame while already in progress.");
 
-    // функция возврашает в currentImageIndex номер следующего FrameBuffer'а для рендеринга
-    auto result = wrpSwapChain->acquireNextImage(&currentImageIndex);
+    // currentImageIndex gets index of the next FrameBuffer to render to
+    VkResult result = wrpSwapChain->acquireNextImage(&currentImageIndex);
 
-    // Если result получил ошибку OUT_OF_DATE, значит свойства поверхности, на которую выводятся кадры, изменились.
-    // Например, изменился размер окна. В этом случае swapchain пересоздаётся для новых размеров.
+    // If result is OUT_OF_DATE, it means surface, that are being rendered to, got changed properties.
+    // It can be window size change, for example. In this case SwapChain is recreating with the new extent.
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         recreateSwapChain();
@@ -107,7 +98,7 @@ VkCommandBuffer WrpRenderer::beginFrame()
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    // Начинаем создание кадра в текущем буфере команд
+    // Start frame creating in current command buffer
     isFrameStarted = true;
 
     auto commandBuffer = getCurrentCommandBuffer();
@@ -153,7 +144,7 @@ void WrpRenderer::endFrame()
     }
 
     isFrameStarted = false;
-    currentFrameIndex = (currentFrameIndex + 1) % WrpSwapChain::MAX_FRAMES_IN_FLIGHT; // выбираем следующий кадр
+    currentFrameIndex = (currentFrameIndex + 1) % wrpSwapChain->getImageCount(); // выбираем следующий кадр
 }
 
 void WrpRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, ImVec4 clearColors)
@@ -208,12 +199,5 @@ void WrpRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
     assert(isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress.");
     assert(commandBuffer == getCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame.");
 
-    vkCmdEndRenderPass(commandBuffer); // завершаем проход рендера
-}
-
-std::string WrpRenderer::getTimeStampStr()
-{
-    auto timePoint = std::chrono::system_clock::now();
-    std::time_t timeStamp = std::chrono::system_clock::to_time_t(timePoint);
-    return std::string(std::ctime(&timeStamp));
+    vkCmdEndRenderPass(commandBuffer);
 }

@@ -19,6 +19,7 @@ TextureRenderSystem::TextureRenderSystem(WrpDevice& device, WrpRenderer& rendere
     VkDescriptorSetLayout globalSetLayout, FrameInfo frameInfo) : wrpDevice{device}, wrpRenderer{renderer}, globalSetLayout{globalSetLayout}
 {
     prevModelCount = fillModelsIds(frameInfo.sceneObjects);
+    systemDescriptorSets.resize(wrpRenderer.getSwapChainImageCount());
     createDescriptorSets(frameInfo);
     createPipelineLayout(globalSetLayout);
     wrpPipelineLambertian = createPipeline(wrpRenderer.getSwapChainRenderPass(), 0, 0);
@@ -109,9 +110,9 @@ void TextureRenderSystem::createDescriptorSets(FrameInfo& frameInfo)
     vkQueueWaitIdle(wrpDevice.graphicsQueue());
 
     WrpDescriptorPool::Builder poolBuilder = WrpDescriptorPool::Builder(wrpDevice)
-        .setMaxSets(WrpSwapChain::MAX_FRAMES_IN_FLIGHT);
+        .setMaxSets(wrpRenderer.getSwapChainImageCount());
     if (texturesCount != 0) {
-        poolBuilder.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, WrpSwapChain::MAX_FRAMES_IN_FLIGHT * texturesCount);
+        poolBuilder.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, wrpRenderer.getSwapChainImageCount() * texturesCount);
     }
     systemDescriptorPool = poolBuilder.build();
 

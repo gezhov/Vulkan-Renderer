@@ -9,8 +9,6 @@
 class WrpSwapChain
 {
 public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;  // кол-во буферов команд, одновременно находящихся в очереди девайса на выполнение
-
     WrpSwapChain(WrpDevice& device, WrpWindow& window);
     WrpSwapChain(WrpDevice& device, WrpWindow& window, std::shared_ptr<WrpSwapChain> previous);
     ~WrpSwapChain();
@@ -21,7 +19,7 @@ public:
     VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
     VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
-    size_t imageCount() { return swapChainImages.size(); }
+    size_t getImageCount() { return imageCount; }
     VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
     VkExtent2D getSwapChainExtent() { return swapChainExtent; }
     uint32_t width() { return swapChainExtent.width; }
@@ -82,6 +80,7 @@ private:
     VkSwapchainKHR swapChain;
     std::shared_ptr<WrpSwapChain> oldSwapChain;
 
+    uint32_t imageCount = 0; // also defines count of frame buffers and command buffers
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences; // fences to control command buffer recording (only after successful execution in the queue)

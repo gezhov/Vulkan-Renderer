@@ -21,20 +21,8 @@ WrpSwapChain::WrpSwapChain(WrpDevice& device, WrpWindow& window, std::shared_ptr
 {
     init();
 
-    vkDeviceWaitIdle(wrpDevice.device()); // ожидание, пока старый SwapChain не перестанет использоваться девайсом
-    oldSwapChain = nullptr; // избавляемся от старого свапчейна
-}
-
-void WrpSwapChain::init()
-{
-    msaaSampleCount = wrpDevice.getMaxUsableMSAASampleCount(); // used in multiple structs
-    createSwapChain();
-    createImageViews();      // creating VkImageView representations for SwapChain images
-    createColorResources();  // создание изображений цвета для реализации мультисэмплинга
-    createDepthResources();  // создание изображений для Depth Buffer вложения
-    createRenderPass();      // subpass с его привязками и дальнейшее создание RenderPassa'а
-    createFramebuffers();
-    createSyncObjects();
+    vkDeviceWaitIdle(wrpDevice.device()); // wait until oldSwapChain stops being used by the device
+    oldSwapChain = nullptr; // get rid of oldSwapChain pointer after SwapChain creation
 }
 
 WrpSwapChain::~WrpSwapChain()
@@ -66,89 +54,23 @@ WrpSwapChain::~WrpSwapChain()
     vkDestroyRenderPass(wrpDevice.device(), renderPass, nullptr);
 
     // cleanup synchronization objects
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < imageCount; i++) {
         vkDestroySemaphore(wrpDevice.device(), renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(wrpDevice.device(), imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(wrpDevice.device(), inFlightFences[i], nullptr);
     }
 }
 
-VkResult WrpSwapChain::acquireNextImage(uint32_t* imageIndex)
+void WrpSwapChain::init()
 {
-    // Wait for fence signal when N'th frames command buffer has executed
-    vkWaitForFences(
-        wrpDevice.device(),
-        1,
-        &inFlightFences[currentFrame],
-        VK_TRUE,
-        std::numeric_limits<uint64_t>::max()); // big timeout number to wait till end
-
-    VkResult result = vkAcquireNextImageKHR(
-        wrpDevice.device(),
-        swapChain,
-        std::numeric_limits<uint64_t>::max(),
-        imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
-        VK_NULL_HANDLE,
-        imageIndex);
-
-    return result;
-}
-
-VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
-{
-    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(wrpDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-    }
-    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    // Wait on writing colors to the image until it become available.
-    // Each waiting stage corresponds to the semaphore with the same index.
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = buffers;
-    
-    // specifying which semaphores to signal once command buffer(s) has finished execution
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    // Resetting N'th frame fence for further successful waiting
-    vkResetFences(wrpDevice.device(), 1, &inFlightFences[currentFrame]);
-
-    // Command buffer is submitting to graphics queue.
-    // The passed fence will be signaled once command buffer(s) has finished execution.
-    if (vkQueueSubmit(wrpDevice.graphicsQueue(), 1, &submitInfo,
-        inFlightFences[currentFrame]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
-
-    VkPresentInfoKHR presentInfo = {};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    // wait until renderFinishedSemaphore is signaled before presenting image
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapChains[] = {swapChain}; // swapchain and image to present
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = imageIndex;
-    presentInfo.pResults = nullptr; // optional
-
-    // Image is queueing for presentation
-    auto result = vkQueuePresentKHR(wrpDevice.presentQueue(), &presentInfo);
-
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    return result;
+    msaaSampleCount = wrpDevice.getMaxUsableMSAASampleCount(); // used in multiple structs
+    createSwapChain();
+    createImageViews();      // creating VkImageView representations for SwapChain images
+    createColorResources();  // создание изображений цвета для реализации мультисэмплинга
+    createDepthResources();  // создание изображений для Depth Buffer вложения
+    createRenderPass();      // subpass с его привязками и дальнейшее создание RenderPassa'а
+    createFramebuffers();
+    createSyncObjects();
 }
 
 void WrpSwapChain::createSwapChain()
@@ -159,9 +81,9 @@ void WrpSwapChain::createSwapChain()
     VkPresentModeKHR presentMode = chooseSwapChainPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapChainExtent(swapChainSupport.capabilities);
 
-    // min + 1, is to create triple buffering and to make sure GPU is not idle (at least in FIFO mode)
+    // min + 1, is to make sure GPU is not idle
     // maxImageCount == 0, means no upper bound for image count
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
     {
         imageCount = swapChainSupport.capabilities.maxImageCount;
@@ -206,7 +128,7 @@ void WrpSwapChain::createSwapChain()
         throw std::runtime_error("Failed to create swap chain!");
     }
 
-    // Vulkan can create more images that specified in minImageCount.
+    // In some implementations Vulkan can create more images than specified in minImageCount.
     // vkGetSwapchainImagesKHR() call gets real image count and return the array of VkImage representing them.
     vkGetSwapchainImagesKHR(wrpDevice.device(), swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
@@ -239,6 +161,100 @@ void WrpSwapChain::createImageViews()
         if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create image views in swapchain!");
+        }
+    }
+}
+
+// Создание изображений цвета для их использования в ходе мультисемплирования
+void WrpSwapChain::createColorResources()
+{
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = swapChainExtent.width;
+    imageInfo.extent.height = swapChainExtent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = swapChainImageFormat;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    imageInfo.samples = msaaSampleCount;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    wrpDevice.createImageWithInfo(
+        imageInfo,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        colorImage,
+        colorImageMemory
+    );
+
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = colorImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = swapChainImageFormat;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &colorImageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create color image view!");
+    }
+}
+
+// Создание изображений глубины для их использования в качестве вложения глубины (Depth Attachment)
+void WrpSwapChain::createDepthResources()
+{
+    swapChainDepthFormat = findDepthFormat();
+
+    depthImages.resize(imageCount);
+    depthImageMemories.resize(imageCount);
+    depthImageViews.resize(imageCount);
+
+    for (int i = 0; i < depthImages.size(); i++)
+    {
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = swapChainExtent.width;
+        imageInfo.extent.height = swapChainExtent.height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = swapChainDepthFormat;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        imageInfo.samples = msaaSampleCount;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.flags = 0;
+
+        wrpDevice.createImageWithInfo(
+            imageInfo,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            depthImages[i],
+            depthImageMemories[i]
+        );
+
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = depthImages[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = swapChainDepthFormat;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create depth image view!");
         }
     }
 }
@@ -338,10 +354,10 @@ void WrpSwapChain::createRenderPass()
 
 void WrpSwapChain::createFramebuffers()
 {
-    swapChainFramebuffers.resize(imageCount());
+    swapChainFramebuffers.resize(imageCount);
 
     // Создание буфера кадра для каждого из изображений в цепи обмена
-    for (size_t i = 0; i < imageCount(); i++)
+    for (size_t i = 0; i < imageCount; i++)
     {
         // swapChainImageViews для colorAttachment'ов, depthImageViews для depthAttachment'ов
         // данные ImageViews будут связываться с соответствующими VkAttachmentReference'ами сабпасса
@@ -368,112 +384,18 @@ void WrpSwapChain::createFramebuffers()
     }
 }
 
-// Создание изображений цвета для их использования в ходе мультисемплирования
-void WrpSwapChain::createColorResources()
-{
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = swapChainExtent.width;
-    imageInfo.extent.height = swapChainExtent.height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = swapChainImageFormat;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    imageInfo.samples = msaaSampleCount;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    wrpDevice.createImageWithInfo(
-        imageInfo,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        colorImage,
-        colorImageMemory
-    );
-
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = colorImage;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = swapChainImageFormat;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &colorImageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create color image view!");
-    }
-}
-
-// Создание изображений глубины для их использования в качестве вложения глубины (Depth Attachment)
-void WrpSwapChain::createDepthResources()
-{
-    swapChainDepthFormat = findDepthFormat();
-
-    depthImages.resize(imageCount());
-    depthImageMemories.resize(imageCount());
-    depthImageViews.resize(imageCount());
-
-    for (int i = 0; i < depthImages.size(); i++)
-    {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = swapChainExtent.width;
-        imageInfo.extent.height = swapChainExtent.height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = swapChainDepthFormat;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        imageInfo.samples = msaaSampleCount;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.flags = 0;
-
-        wrpDevice.createImageWithInfo(
-            imageInfo,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            depthImages[i],
-            depthImageMemories[i]
-        );
-
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = depthImages[i];
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = swapChainDepthFormat;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        if (vkCreateImageView(wrpDevice.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create depth image view!");
-        }
-    }
-}
-
 void WrpSwapChain::createSyncObjects()
 {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
+    imageAvailableSemaphores.resize(imageCount);
+    renderFinishedSemaphores.resize(imageCount);
+    inFlightFences.resize(imageCount);
+    imagesInFlight.resize(imageCount, VK_NULL_HANDLE);
 
     VkFenceCreateInfo fenceInfo = {};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    for (size_t i = 0; i < imageCount; i++)
     {
         if (createSemaphore(wrpDevice.device(), &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             createSemaphore(wrpDevice.device(), &renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -482,6 +404,84 @@ void WrpSwapChain::createSyncObjects()
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
     }
+}
+
+VkResult WrpSwapChain::acquireNextImage(uint32_t* imageIndex)
+{
+    // Wait for fence signal when N'th frames command buffer has executed
+    vkWaitForFences(
+        wrpDevice.device(),
+        1,
+        &inFlightFences[currentFrame],
+        VK_TRUE,
+        std::numeric_limits<uint64_t>::max()); // big timeout number to wait till end
+
+    VkResult result = vkAcquireNextImageKHR(
+        wrpDevice.device(),
+        swapChain,
+        std::numeric_limits<uint64_t>::max(),
+        imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
+        VK_NULL_HANDLE,
+        imageIndex);
+
+    return result;
+}
+
+VkResult WrpSwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
+{
+    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(wrpDevice.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+    }
+    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    // Wait on writing colors to the image until it become available.
+    // Each waiting stage corresponds to the semaphore with the same index.
+    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = buffers;
+    
+    // specifying which semaphores to signal once command buffer(s) has finished execution
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    // Resetting N'th frame fence for further successful waiting
+    vkResetFences(wrpDevice.device(), 1, &inFlightFences[currentFrame]);
+
+    // Command buffer is submitting to graphics queue.
+    // The passed fence will be signaled once command buffer(s) has finished execution.
+    if (vkQueueSubmit(wrpDevice.graphicsQueue(), 1, &submitInfo,
+        inFlightFences[currentFrame]) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    // wait until renderFinishedSemaphore is signaled before presenting image
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = {swapChain}; // swapchain and image to present
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = imageIndex;
+    presentInfo.pResults = nullptr; // optional
+
+    // Image is queueing for presentation
+    auto result = vkQueuePresentKHR(wrpDevice.presentQueue(), &presentInfo);
+
+    currentFrame = (currentFrame + 1) % imageCount;
+
+    return result;
 }
 
 VkSurfaceFormatKHR WrpSwapChain::chooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

@@ -52,5 +52,5 @@ private:
 
     std::unique_ptr<WrpDescriptorPool> systemDescriptorPool;
     std::unique_ptr<WrpDescriptorSetLayout> systemDescriptorSetLayout;
-    std::vector<VkDescriptorSet> systemDescriptorSets{WrpSwapChain::MAX_FRAMES_IN_FLIGHT};
+    std::vector<VkDescriptorSet> systemDescriptorSets;
 };
