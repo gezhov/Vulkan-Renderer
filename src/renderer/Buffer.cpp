@@ -101,10 +101,6 @@ void WrpBuffer::writeToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset
 
     if (size == VK_WHOLE_SIZE)
     {
-        // Копирование данных data в область памяти хоста. Теперь благодаря ранее заданному флагу
-        // HOST_COHERENT_BIT все данные о вершинах, внесённые в память хоста, будут автоматически переданы
-        // в отображённую ранее память девайса. Если бы этот флаг не был установлен, то данные пришлось
-        // бы сбрасывать вручную при помощи функции VkFlushMappedMemoryRanges().
         memcpy(mapped, data, bufferSize);
     }
     else

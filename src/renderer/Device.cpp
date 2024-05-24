@@ -531,23 +531,6 @@ VkSampleCountFlagBits WrpDevice::getMaxUsableMSAASampleCount()
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties)
-{
-    // getting available memory types and heaps on this device
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-    {
-        // checking appropriate memory type existence among the device ones
-        if ((memoryTypeFilter & (1 << i)) &&
-            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Failed to find suitable memory type!");
-}
-
 void WrpDevice::createBuffer(
     VkDeviceSize size,
     VkBufferUsageFlags usage,
@@ -582,8 +565,25 @@ void WrpDevice::createBuffer(
         throw std::runtime_error("Failed to allocate vertex buffer memory!");
     }
 
-    // associating buffer with allocated memory
+    // associating buffer with the allocated memory
     vkBindBufferMemory(device_, buffer, deviceMemoryForBuffer, 0);
+}
+
+uint32_t WrpDevice::findMemoryType(uint32_t memoryTypeFilter, VkMemoryPropertyFlags properties)
+{
+    // getting available memory types and heaps on this device
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        // checking appropriate memory type existence among the device ones
+        if ((memoryTypeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
 }
 
 VkCommandBuffer WrpDevice::beginSingleTimeCommands()
