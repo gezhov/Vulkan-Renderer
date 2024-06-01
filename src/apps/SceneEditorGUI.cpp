@@ -385,7 +385,7 @@ void SceneEditorGUI::renderTransformGizmo(TransformComponent& transform)
         currentGizmoMode = ImGuizmo::LOCAL;
     }
 
-    glm::mat4 modelMat = transform.mat4();
+    glm::mat4 modelMat = transform.modelMatrix();
     glm::mat4 deltaMat{};
     glm::mat4 guizmoProj(camera.getProjection());
     guizmoProj[1][1] *= -1;

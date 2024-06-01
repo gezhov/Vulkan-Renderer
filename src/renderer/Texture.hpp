@@ -26,7 +26,7 @@ private:
     void createTextureSampler(uint32_t mipLevels);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
-        VkImageLayout newLayout, uint32_t mipLevels);
+        VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount = 1);
     void generateMipmaps(VkImage image, VkFormat imageFormat, VkImageTiling imageTiling,
         int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 

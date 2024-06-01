@@ -107,7 +107,7 @@ void SimpleRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         if (obj.model == nullptr || obj.model->hasTextures == true) continue;
 
         SimplePushConstantData push{};
-        push.modelMatrix = obj.transform.mat4();
+        push.modelMatrix = obj.transform.modelMatrix();
         push.normalMatrix = obj.transform.normalMatrix();
 
         for (auto& info : obj.model->getSubMeshesInfos())

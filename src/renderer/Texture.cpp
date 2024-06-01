@@ -38,7 +38,7 @@ void WrpTexture::createTexture(const std::string& path)
 
     if (!pixels)
     {
-        throw std::runtime_error("Failed to load texture image!");
+        throw std::runtime_error("Failed to load texture image: " + path);
     }
 
     // host visible staging buffer for image data transfering 
@@ -110,8 +110,8 @@ void WrpTexture::createTextureImage(
     wrpDevice.createImageWithInfo(imageInfo, properties, image, imageMemory);
 }
 
-void WrpTexture::transitionImageLayout (VkImage image, VkFormat format,
-    VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
+void WrpTexture::transitionImageLayout(VkImage image, VkFormat format,
+    VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
 {
     VkCommandBuffer commandBuffer = wrpDevice.beginSingleTimeCommands();
 
@@ -128,7 +128,7 @@ void WrpTexture::transitionImageLayout (VkImage image, VkFormat format,
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.layerCount = layerCount;
 
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;

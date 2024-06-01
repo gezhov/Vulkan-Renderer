@@ -1,6 +1,6 @@
 #include "SceneObject.hpp"
 
-glm::mat4 TransformComponent::mat4()
+glm::mat4 TransformComponent::modelMatrix()
 {
     // Ниже представлено оптимизированное создание матрицы афинных преобразований.
     // Она конструируется по столбцам. Первые три столбца это линейные преобразования,

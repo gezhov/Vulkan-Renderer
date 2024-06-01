@@ -232,7 +232,7 @@ void TextureRenderSystem::renderSceneObjects(FrameInfo& frameInfo)
         auto& obj = frameInfo.sceneObjects[id];
 
         TextureSystemPushConstantData push{};
-        push.modelMatrix = obj.transform.mat4();
+        push.modelMatrix = obj.transform.modelMatrix();
         push.normalMatrix = obj.transform.normalMatrix();
 
         // прикрепление буфера вершин (модели) и буфера индексов к буферу команд (создание привязки)
