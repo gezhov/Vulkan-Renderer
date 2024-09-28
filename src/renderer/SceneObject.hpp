@@ -25,6 +25,8 @@ struct TransformComponent
     // Построение матрицы нормали для приведения позиции нормалей вершин к мировому пространству (world space).
     // Эта матрица очень похожа на матрицу преобразования для самих вершин, за исключением некоторых моментов.
     glm::mat3 normalMatrix();
+
+    void fromModelMatrix(glm::mat4& modelMatrix);
 };
 
 struct PointLightComponent

@@ -314,23 +314,5 @@ void RMResearchGUI::renderTransformGizmo(TransformComponent& transform)
     ImGuizmo::Manipulate(glm::value_ptr(camera.getView()), glm::value_ptr(guizmoProj), currentGizmoOperation,
         currentGizmoMode, glm::value_ptr(modelMat), glm::value_ptr(deltaMat), nullptr);
 
-    /*if (transform.parent != nullptr) {
-        modelMat = glm::inverse(transform.parent->GetMatrix()) * modelMat;
-    }
-    transform.transform = modelMat;*/
-
-    /*glm::vec3 deltaTranslation{};
-    glm::vec3 deltaRotation{};
-    glm::vec3 deltaScale{};*/
-    /*ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(deltaMat), glm::value_ptr(deltaTranslation),
-        glm::value_ptr(deltaRotation), glm::value_ptr(deltaScale));*/
-
-    glm::vec3 empty{};
-
-    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMat), glm::value_ptr(transform.translation),
-        glm::value_ptr(empty), glm::value_ptr(transform.scale));
-
-    // Преобразование градусов в радианы.
-    // todo: поворот дёргается. нужен фикс
-    //transform.rotation = glm::radians(transform.rotation);
+    transform.fromModelMatrix(modelMat);
 }
