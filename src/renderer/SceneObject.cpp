@@ -68,6 +68,45 @@ glm::mat3 TransformComponent::normalMatrix()
     };
 }
 
+void TransformComponent::fromModelMatrix(glm::mat4& modelMatrix)
+{
+    // Extract translation directly from the model matrix
+    translation = glm::vec3(modelMatrix[3]);
+
+    // Extract scale factors by taking the length of each column vector
+    scale.x = glm::length(glm::vec3(modelMatrix[0]));
+    scale.y = glm::length(glm::vec3(modelMatrix[1]));
+    scale.z = glm::length(glm::vec3(modelMatrix[2]));
+
+    // Extract rotation component by converting the rotation matrix to Euler angles
+    glm::mat3 rotationMatrix = glm::mat3(modelMatrix);
+
+    // Normalize the rotation matrix
+    rotationMatrix[0] /= scale.x;
+    rotationMatrix[1] /= scale.y;
+    rotationMatrix[2] /= scale.z;
+
+    // Extract individual rotation matrix elements for convenience
+    const float m00 = rotationMatrix[0][0];
+    const float m01 = rotationMatrix[0][1];
+    const float m02 = rotationMatrix[0][2];
+    const float m10 = rotationMatrix[1][0];
+    const float m11 = rotationMatrix[1][1];
+    const float m12 = rotationMatrix[1][2];
+    const float m20 = rotationMatrix[2][0];
+    const float m21 = rotationMatrix[2][1];
+    const float m22 = rotationMatrix[2][2];
+
+    // Calculate yaw (rotation around Y-axis)
+    rotation.y = atan2f(m20, m22);
+
+    // Calculate pitch (rotation around X-axis)
+    rotation.x = atan2f(-m21, sqrtf(m20 * m20 + m22 * m22));
+
+    // Calculate roll (rotation around Z-axis)
+    rotation.z = atan2f(m01, m11);
+}
+
 SceneObject SceneObject::makePointLight(float intensity, float radius, glm::vec3 color)
 {
     SceneObject sceneObj = SceneObject::createSceneObject("PointLight");
